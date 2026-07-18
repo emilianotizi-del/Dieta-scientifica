@@ -38,6 +38,10 @@ header.top .datebadge{font-size:.8rem;color:var(--ink2)}
 .chip.pieno{background:var(--oliva-s);color:var(--oliva)}
 .chip.ricarica{background:var(--grano-s);color:var(--grano)}
 .chip.veg{background:var(--oliva-s);color:var(--oliva)}
+.chip.no{background:var(--pomodoro-s);color:var(--pomodoro)}
+.microrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.84rem}
+.microrow:last-child{border-bottom:none}
+.microrow .small{display:block}
 /* barre macro */
 .macro{margin-top:10px}
 .macro .row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:2px}
@@ -180,6 +184,22 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
   </div>
 
   <div class="card">
+    <h2>Acqua</h2>
+    <div class="stepgoal">
+      <div><div class="big" id="waterNow">0</div><div class="small">litri bevuti</div></div>
+      <div style="flex:1">
+        <div class="bar"><i class="k" id="waterBar" style="width:0%"></i></div>
+        <div class="small">Obiettivo di oggi: <b id="waterGoal">–</b> L</div>
+      </div>
+    </div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn ghost sm" data-water="200">+ bicchiere (200 ml)</button>
+      <button class="btn ghost sm" data-water="500">+ 0,5 L</button>
+      <button class="btn ghost sm" id="btnWaterManual">✎ Imposta</button>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Allenamento di oggi <span class="chip pieno" id="woBadge"></span></h2>
     <div id="woList"></div>
     <div class="btnrow" style="margin-top:10px">
@@ -204,6 +224,11 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
   <div class="card">
     <h2>Macro: totali settimanali</h2>
     <div id="weekMacro"></div>
+  </div>
+  <div class="card">
+    <h2>Copertura micronutrienti · 7 giorni</h2>
+    <div id="microList"></div>
+    <div class="small" style="margin-top:6px">Stima qualitativa basata sui gruppi alimentari che registri. Il conteggio puntuale in mg/µg arriverà con il database esteso della v2.</div>
   </div>
   <div class="card">
     <h2>Diario ultimi 7 giorni</h2>
@@ -1013,7 +1038,9 @@ const CAPS=[[/cipolla|cipollotto/i,80],[/^aglio/i,10],[/porro/i,150],[/succo di 
  [/gallette|fette biscottate|cracker|grissini|taralli|biscotti|frollini/i,60],
  [/mandorle|^noci|nocciole|pistacchi|anacardi|pinoli|arachidi|semi di|frutta secca|macadamia|pecan|cocco/i,40],
  [/cioccolat/i,30],[/guanciale|pancetta|lardo|speck|salame|mortadella|coppa/i,50],[/peperoncino/i,15],
- [/bottarga|acciughe sott/i,20],[/olive/i,50]];
+ [/bottarga|acciughe sott/i,20],[/olive/i,50],
+ [/mozzarella|feta|primo sale|caprino|stracchino|crescenza|ricotta/i,125],
+ [/^uovo|uova strapazzate|frittata/i,180],[/yogurt|skyr/i,250]];
 function capOf(f){ for(const [re,g] of CAPS) if(re.test(f[0])) return g; return 500; }
 function scale(f,grams){ const k=grams/100;
   const nm=f[0].replace(/\((secc\w+|crud\w+)\)/i,"(peso a crudo)");
@@ -1031,9 +1058,16 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
         X=pool("x",ctx), FR=pool("fr",ctx), Sn=pool("s",ctx), A=pool("a",ctx);
   const byName=(arr,re)=>arr.filter(o=>re.test(o.f[0]));
   const olio=FOOD_DB.find(f=>f[0]==="Olio extravergine d'oliva");
+  const addFruit=(share,prob)=>{ if(ctx.fruitLeft>0&&r()<prob){
+    const fr=pick(FR,r); if(fr){ addFit(fr.f,kcalTarget*share,80,200); ctx.fruitLeft--; } } };
   /* proteine magre per integrazioni (veg-compatibili se serve) */
-  const Pbase=P.filter(o=>o.f[2]<=250&&!/secch|(secca)|cicerchie/i.test(o.f[0]));
+  const isMain=(name==="Pranzo"||name==="Cena");
+  const noMainRe=/yogurt|skyr|kefir|fette biscottate|biscott|frollini|cornetto|muesli|corn flakes|porridge|crusca|cappucc|caff|marmellata|miele|pancake|plumcake|ciambellone|crostata|barretta|pan bauletto|gallette/i;
+  const slotOK=f=>!isMain||!noMainRe.test(f[0]);
+  const Pbase=P.filter(o=>o.f[2]<=250&&!/secch|(secca)|cicerchie/i.test(o.f[0])&&slotOK(o.f));
   const hiP=Pbase.filter(o=>o.f[3]>=15&&o.f[2]<=210);
+  const EGGS=byName(Pbase,/^uovo|uova strapazzate|frittata/i);
+  const CHEESES=byName(P,/mozzarella light|mozzarella$|primo sale|feta|caprino fresco|stracchino|crescenza|ricotta vaccina|ricotta di pecora|fiocchi di latte/i);
   const lean=o=>o.f[2]/Math.max(o.f[3],1)<=7.5;
   const needLean=protTarget&&(protTarget*4)/Math.max(kcalTarget,1)>0.30;
   const Pmain=needLean&&Pbase.filter(lean).length?Pbase.filter(lean):Pbase;
@@ -1046,17 +1080,17 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     const c=pick(byName([...Sn,...C],/avena|porridge|fette|pan(e|carr)|gallette|muesli|pancake/i),r)||pick(Sn,r);
     if(c) addFit(c.f,kcalTarget*0.45,25,90);
     const p=pick(bProt.length?bProt:hiP,r); if(p) addFit(p.f,kcalTarget*0.35,100,250);
-    const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.20,80,200);
+    addFruit(0.20,0.7);
   } else if(name==="Spuntino"){
     if(r()<0.6&&bProt.length){ const p=pick(bProt,r); addFit(p.f,kcalTarget*0.6,100,200);
-      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.4,80,180); }
+      addFruit(0.4,0.8); }
     else { const s=pick(Sn,r); if(s) addFit(s.f,kcalTarget*0.7,15,60);
-      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.3,80,150); }
+      addFruit(0.3,0.8); }
   } else { /* Pranzo o Cena */
     const style=r();
     if(style<0.30 && X.length){ /* piatto unico + eventuale rinforzo proteico */
       const x=pick(X,r); addFit(x.f,kcalTarget*0.75,200,420);
-      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.10,100,180);
+      addFruit(0.10,0.35);
     } else if(style<0.60){ /* primo "proteico": pasta + sugo + fonte proteica + olio */
       const c=pick(byName(C,/pasta|spaghetti|riso|farro|orzo|couscous|bulgur|quinoa|gnocchi|orecchiette/i),r)||pick(C,r);
       if(c) addFit(c.f,kcalTarget*0.42,50,120);
@@ -1069,7 +1103,11 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       if(olio) addFit(olio,kcalTarget*0.12,5,25);
       const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.08,100,250);
     } else { /* secondo + contorno + pane + olio */
-      const p=pick(Pmain,r); if(p) addFit(p.f,kcalTarget*0.40,90,280);
+      const roll=r(); let p;
+      if(roll<0.18&&EGGS.length) p=pick(EGGS,r);
+      else if(roll<0.36&&CHEESES.length) p=pick(CHEESES,r);
+      else p=pick(Pmain,r);
+      if(p) addFit(p.f,kcalTarget*0.40,90,280);
       const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.10,120,300);
       const b=pick(byName(C,/pane|friselle|carasau/i),r)||pick(C,r);
       if(b) addFit(b.f,kcalTarget*0.28,30,110);
@@ -1102,7 +1140,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   for(let t=0;t<2;t++){
     const cur=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0);
     const gap=kcalTarget-cur; if(gap<kcalTarget*0.08) break;
-    const dense=[...G,...Sn].filter(o=>o.f[2]>=300&&o.f[3]<15&&!raw.some(x=>x.f[0]===o.f[0]));
+    const dense=[...G,...Sn].filter(o=>o.f[2]>=300&&o.f[3]<15&&slotOK(o.f)&&!raw.some(x=>x.f[0]===o.f[0]));
     const breads=byName(C,/pane|gallette|friselle|grissini/i).filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
     const src2=gap>260&&breads.length?breads:(dense.length?dense:C);
     const fill=pick(src2,r); if(!fill) break;
@@ -1134,7 +1172,7 @@ function genMenu(dateKey,force){
   const schema=schemaOfDay(dateKey); const veg=isVegDay(dateKey);
   const m={...macros(dateKey)}; const month=dateFromKey(dateKey).getMonth()+1;
   if(veg) m.p=Math.min(m.p,Math.round(m.kcal*0.34/4));
-  const ctx={veg,month,recent:recentFoodIds(dateKey)};
+  const ctx={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2};
   const split=schema==="if168"
     ? [["Pranzo",0.46],["Spuntino",0.10],["Cena",0.44]]
     : [["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]];
@@ -1175,7 +1213,8 @@ function shuffle(a,r){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.flo
 /* ============================================================
    LOG giornaliero
    ============================================================ */
-function dayLog(k=todayKey()){ if(!U.log[k]) U.log[k]={pasti:[],passi:0,wo:false}; return U.log[k]; }
+function dayLog(k=todayKey()){ if(!U.log[k]) U.log[k]={pasti:[],passi:0,wo:false,acqua:0};
+  const l=U.log[k]; if(l.acqua==null) l.acqua=0; return l; }
 function totalsOf(k){ const l=U.log[k];
   if(!l) return {kcal:0,p:0,c:0,fat:0};
   return l.pasti.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0}); }
@@ -1229,6 +1268,11 @@ function renderToday(){
   const log=dayLog(); const goal=stepsGoalToday();
   $("#stepsNow").textContent=fmt(log.passi); $("#stepsGoal").textContent=fmt(goal);
   $("#stepsBar").style.width=Math.min(log.passi/goal*100,100)+"%";
+  /* acqua: ~35 ml per kg, arrotondato al quarto di litro */
+  const wGoal=Math.round(pesoAttuale()*35/250)*250;
+  $("#waterNow").textContent=(log.acqua/1000).toFixed(2).replace(".",",");
+  $("#waterGoal").textContent=(wGoal/1000).toFixed(2).replace(".",",");
+  $("#waterBar").style.width=Math.min(log.acqua/wGoal*100,100)+"%";
   /* allenamento */
   const wo=genWorkout(k);
   $("#woBadge").textContent=log.wo?"✓ fatto":wo.label.split("·")[1];
@@ -1254,6 +1298,8 @@ $("#btnWoRegen").onclick=()=>{ U.salt=(U.salt||0)+1; delete U.woCache[todayKey()
 $("#btnWoDone").onclick=()=>{ dayLog().wo=true; save(); render(); toast("Allenamento registrato 💪"); };
 $$("[data-steps]").forEach(b=>b.onclick=()=>{ dayLog().passi+=+b.dataset.steps; save(); render(); });
 $("#btnStepsManual").onclick=()=>{ const v=prompt("Passi totali di oggi:",dayLog().passi); if(v!==null){ dayLog().passi=Math.max(0,parseInt(v)||0); save(); render(); } };
+$$("[data-water]").forEach(b=>b.onclick=()=>{ dayLog().acqua+=+b.dataset.water; save(); render(); });
+$("#btnWaterManual").onclick=()=>{ const v=prompt("Acqua di oggi in ml:",dayLog().acqua); if(v!==null){ dayLog().acqua=Math.max(0,parseInt(v)||0); save(); render(); } };
 
 /* --- ricerca alimenti --- */
 let dlgFood=null;
@@ -1295,17 +1341,52 @@ function renderWeek(){
   const sumT=data.reduce((a,d)=>a+d.tot.kcal,0), sumG=data.reduce((a,d)=>a+d.target.kcal,0);
   $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> / ${fmt(sumG)} kcal
     (${sumT<=sumG?"nei limiti ✓":"sopra di "+fmt(Math.round(sumT-sumG))+" kcal"}). La linea nera indica l'obiettivo del giorno.`;
+  renderMicro(days);
   const mac=data.reduce((a,d)=>({p:a.p+d.tot.p,c:a.c+d.tot.c,f:a.f+d.tot.fat}),{p:0,c:0,f:0});
   const macT=data.reduce((a,d)=>({p:a.p+d.target.p,c:a.c+d.target.c,f:a.f+d.target.f}),{p:0,c:0,f:0});
   $("#weekMacro").innerHTML=[["Proteine",mac.p,macT.p,"p"],["Carboidrati",mac.c,macT.c,"c"],["Grassi",mac.f,macT.f,"f"]]
     .map(([n,v,t,cl])=>`<div class="row" style="display:flex;justify-content:space-between;font-size:.78rem"><span>${n}</span><span><b>${fmt(Math.round(v))}</b> / ${fmt(Math.round(t))} g settimanali</span></div>
     <div class="bar"><i class="${cl}" style="width:${Math.min(v/t*100,100)}%"></i></div>`).join("");
-  $("#weekTable").innerHTML=`<tr><th>Giorno</th><th>kcal</th><th>Obiett.</th><th>Prot</th><th>Passi</th><th>💪</th></tr>`+
-    data.map(d=>{ const dd=dateFromKey(d.k); const l=U.log[d.k]||{passi:0,wo:false};
+  $("#weekTable").innerHTML=`<tr><th>Giorno</th><th>kcal</th><th>Obiett.</th><th>Prot</th><th>Passi</th><th>💧L</th><th>💪</th></tr>`+
+    data.map(d=>{ const dd=dateFromKey(d.k); const l=U.log[d.k]||{passi:0,wo:false,acqua:0};
       return `<tr><td>${GIORNI[dd.getDay()]} ${dd.getDate()}</td><td>${fmt(Math.round(d.tot.kcal))}</td>
-      <td>${fmt(d.target.kcal)}</td><td>${Math.round(d.tot.p)}g</td><td>${fmt(l.passi)}</td><td>${l.wo?"✓":"–"}</td></tr>`; }).join("");
+      <td>${fmt(d.target.kcal)}</td><td>${Math.round(d.tot.p)}g</td><td>${fmt(l.passi)}</td><td>${((l.acqua||0)/1000).toFixed(1)}</td><td>${l.wo?"✓":"–"}</td></tr>`; }).join("");
 }
 
+function renderMicro(days){
+  const acc={vegG:0,frP:0,fishD:new Set(),legD:new Set(),dairyD:new Set(),nutD:new Set(),wholeD:new Set(),eggD:new Set()};
+  const fishRe=/orata|branzino|merluzzo|nasello|sogliola|platessa|salmone|tonno|sgombro|alici|sardine|trota|spada|ricciola|dentice|rombo|cernia|triglia|baccal|polpo|calamar|seppia|gamber|scampi|cozze|vongole|ostrich|capesante|granchio|halibut|persico|lampuga|cefalo|acciughe|pesce|paranza|pescatora|mare/i;
+  const legRe=/lenticchie|ceci|fagioli|fave|piselli|lupini|tofu|tempeh|edamame|hummus|azuki|falafel|cicerchie|legumi/i;
+  const wholeRe=/integrale|integrali|farro|orzo|avena|quinoa|bulgur|venere|saraceno|miglio|crusca|segale/i;
+  const eggRe=/^uovo|uova|albume|frittata/i;
+  days.forEach(k=>{ const l=U.log[k]; if(!l) return;
+    l.pasti.forEach(it=>{
+      const f=it.id!=null?FOOD_DB[it.id]:null; const nm=it.name||"";
+      const cat=f?f[1]:"";
+      if(cat==="verdura"&&f[7]==="v") acc.vegG+=it.g;
+      if(cat==="frutta"&&f&&f[7]==="fr") acc.frP+=it.g/150;
+      if(cat==="pesce"||fishRe.test(nm)) acc.fishD.add(k+nm.slice(0,6));
+      if(cat==="legumi"||legRe.test(nm)) acc.legD.add(k+nm.slice(0,6));
+      if(cat==="latticini"||/parmigiano|grana|pecorino/i.test(nm)) acc.dairyD.add(k);
+      if(cat==="fruttasecca"||/mandorle|noci|nocciole|pistacchi|semi di/i.test(nm)) acc.nutD.add(k);
+      if(wholeRe.test(nm)) acc.wholeD.add(k+nm.slice(0,6));
+      if(eggRe.test(nm)) acc.eggD.add(k+nm.slice(0,6));
+    });
+  });
+  const nDays=days.filter(k=>U.log[k]&&U.log[k].pasti.length).length||1;
+  const rows=[
+    ["Verdura",(acc.vegG/nDays).toFixed(0)+" g/die",acc.vegG/nDays>=300?2:acc.vegG/nDays>=150?1:0,"vit. C, folati, potassio, fibre"],
+    ["Frutta",(acc.frP/nDays).toFixed(1)+" porz/die",acc.frP/nDays>=1&&acc.frP/nDays<=2.5?2:acc.frP/nDays>=0.5?1:0,"vit. C, polifenoli"],
+    ["Pesce",acc.fishD.size+" volte/sett",acc.fishD.size>=2?2:acc.fishD.size>=1?1:0,"omega-3, vit. D, iodio, B12"],
+    ["Legumi",acc.legD.size+" volte/sett",acc.legD.size>=3?2:acc.legD.size>=1?1:0,"ferro, magnesio, fibre"],
+    ["Latticini",acc.dairyD.size+" giorni su 7",acc.dairyD.size>=5?2:acc.dairyD.size>=3?1:0,"calcio, B2, B12"],
+    ["Frutta secca e semi",acc.nutD.size+" volte/sett",acc.nutD.size>=3?2:acc.nutD.size>=1?1:0,"vit. E, magnesio, zinco"],
+    ["Cereali integrali",acc.wholeD.size+" volte/sett",acc.wholeD.size>=4?2:acc.wholeD.size>=2?1:0,"fibre, vit. gruppo B"],
+    ["Uova",acc.eggD.size+" volte/sett",acc.eggD.size>=2&&acc.eggD.size<=5?2:acc.eggD.size>=1?1:0,"colina, B12, vit. D"]];
+  $("#microList").innerHTML=rows.map(([n,v,s,hint])=>`
+    <div class="microrow"><span>${n}<span class="small">${hint}</span></span>
+    <span style="text-align:right">${v}<br><span class="chip ${s===2?"pieno":s===1?"ricarica":"no"}">${s===2?"✓ ok":s===1?"△ quasi":"✗ manca"}</span></span></div>`).join("");
+}
 /* --- PROGRESSI --- */
 function renderProg(){
   const list=$("#weightList");
