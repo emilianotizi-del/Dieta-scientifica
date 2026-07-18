@@ -1016,6 +1016,25 @@ function stepsGoalToday(dateKey=todayKey()){
 /* ============================================================
    MOTORE · generatore menu
    ============================================================ */
+/* Fasce pasto (gusto italiano): c=colazione s=spuntino p=pranzo e=cena */
+const SLOT_RULES=[
+ [/caff|cappucc|t\u00e8 verde|orzo in tazza|spremuta|latte |bevanda di|kefir/i,"cs"],
+ [/yogurt|skyr/i,"cs"],
+ [/fette biscottate|biscott|frollini|cornetto|muesli|corn flakes|avena|porridge|crusca|pancake|plumcake|ciambellone|crostata|pan bauletto|barretta|marmellata|miele|pane e ricotta|toast integrale con fesa/i,"cs"],
+ [/gallette|cracker/i,"cs"],
+ [/gelato|granita|sorbetto/i,"s"],
+ [/grissini|taralli/i,"spe"],
+ [/^pane |pancarr\u00e9|pane bianco|pane integrale|pane di segale|pane di altamura|pane casereccio|pane azzimo/i,"cspe"],
+ [/ricotta|fiocchi di latte|albume/i,"cspe"],
+ [/mozzarella|burrata|stracciatella|scamorza|provola|parmigiano|grana|pecorino|gorgonzola|stracchino|crescenza|caprino|feta|primo sale|formaggio spalmabile|mascarpone|burro/i,"pe"],
+ [/^uovo|uova|frittata/i,"pe"],
+ [/panino|tramezzino|piadina|toast prosciutto/i,"ps"],
+ [/mandorle|^noci|nocciole|pistacchi|anacardi|arachidi|pecan|brasile|macadamia|cocco|mix frutta secca|uvetta|datteri|prugne secche|albicocche secche|fichi secchi/i,"cs"]];
+const CAT_SLOTS={carne:"pe",pesce:"pe",salumi:"pe",piatti:"pe",verdura:"pe",legumi:"pe",
+  condimenti:"pe",cereali:"pe",latticini:"cs",uova:"pe",fruttasecca:"cs",frutta:"cspe",
+  colazione:"cs",bevande:"cs",dolci:"cs"};
+function slotsOf(f){ for(const [re,s] of SLOT_RULES) if(re.test(f[0])) return s; return CAT_SLOTS[f[1]]||"cspe"; }
+const MEAL_CODE={Colazione:"c",Spuntino:"s",Pranzo:"p",Cena:"e"};
 function excluded(name){ return (U.esclusioni||[]).some(e=>e && name.toLowerCase().includes(e.trim().toLowerCase())); }
 function isVegFood(f){ const cat=f[1];
   if(cat==="carne"||cat==="pesce"||cat==="salumi") return false;
@@ -1049,23 +1068,29 @@ function fitGrams(f,targetKcal,min,max){
   const g=Math.round((targetKcal/(f[2]||1))*100/5)*5; return Math.max(min,Math.min(max,g)); }
 
 function buildMeal(name,kcalTarget,protTarget,r,ctx){
-  const raw=[]; const items=[]; const clamp=(g,mn,mx)=>Math.max(mn,Math.min(mx,Math.round(g/5)*5));
+  const raw=[]; const items=[];
+  const clamp=(g,mn,mx,st=5)=>Math.max(mn,Math.min(mx,Math.round(g/st)*st));
+  const stepOf=f=>f[7]!=="fr"?5:(/anguria|melone|ananas|macedonia/i.test(f[0])?50:25);
   const add=(f,g,min,max)=>{ if(!f) return; const mx=Math.min(max??500,capOf(f));
-    const mn=Math.min(min??10,mx);
-    raw.push({f,g:clamp(g,mn,mx),min:mn,max:mx}); };
+    const mn=Math.min(min??10,mx); const st=stepOf(f);
+    raw.push({f,g:clamp(g,mn,mx,st),min:mn,max:mx,st}); };
   const addFit=(f,target,min,max)=>{ if(f) add(f,fitGrams(f,target,min,max),min,max); };
-  const P=pool("p",ctx), C=pool("c",ctx), V=pool("v",ctx), G=pool("g",ctx),
-        X=pool("x",ctx), FR=pool("fr",ctx), Sn=pool("s",ctx), A=pool("a",ctx);
+  const mealCode=MEAL_CODE[name]||"p";
+  const inSlot=o=>slotsOf(o.f).includes(mealCode);
+  const P=pool("p",ctx).filter(inSlot), C=pool("c",ctx).filter(inSlot), V=pool("v",ctx).filter(inSlot),
+        G=pool("g",ctx).filter(inSlot), X=pool("x",ctx).filter(inSlot), FR=pool("fr",ctx).filter(inSlot),
+        Sn=pool("s",ctx).filter(inSlot), A=pool("a",ctx).filter(inSlot);
   const byName=(arr,re)=>arr.filter(o=>re.test(o.f[0]));
   const olio=FOOD_DB.find(f=>f[0]==="Olio extravergine d'oliva");
   const addFruit=(share,prob)=>{ if(ctx.fruitLeft>0&&r()<prob){
-    const fr=pick(FR,r); if(fr){ addFit(fr.f,kcalTarget*share,80,200); ctx.fruitLeft--; } } };
+    const fr=pick(FR,r); if(fr){
+      const mn=/anguria|melone|ananas|macedonia/i.test(fr.f[0])?200
+        :/mirtilli|lamponi|ribes|more|fragole|ciliegie|uva|frutti di bosco/i.test(fr.f[0])?100:125;
+      addFit(fr.f,Math.max(kcalTarget*share,45),mn,300); ctx.fruitLeft--; } } };
   /* proteine magre per integrazioni (veg-compatibili se serve) */
-  const isMain=(name==="Pranzo"||name==="Cena");
-  const noMainRe=/yogurt|skyr|kefir|fette biscottate|biscott|frollini|cornetto|muesli|corn flakes|porridge|crusca|cappucc|caff|marmellata|miele|pancake|plumcake|ciambellone|crostata|barretta|pan bauletto|gallette/i;
-  const slotOK=f=>!isMain||!noMainRe.test(f[0]);
-  const Pbase=P.filter(o=>o.f[2]<=250&&!/secch|(secca)|cicerchie/i.test(o.f[0])&&slotOK(o.f));
-  const hiP=Pbase.filter(o=>o.f[3]>=15&&o.f[2]<=210);
+  const Pbase=P.filter(o=>o.f[2]<=250&&!/secch|(secca)|cicerchie/i.test(o.f[0]));
+  const hiPmin=(mealCode==="p"||mealCode==="e")?15:9;
+  const hiP=Pbase.filter(o=>o.f[3]>=hiPmin&&o.f[2]<=210);
   const EGGS=byName(Pbase,/^uovo|uova strapazzate|frittata/i);
   const CHEESES=byName(P,/mozzarella light|mozzarella$|primo sale|feta|caprino fresco|stracchino|crescenza|ricotta vaccina|ricotta di pecora|fiocchi di latte/i);
   const lean=o=>o.f[2]/Math.max(o.f[3],1)<=7.5;
@@ -1074,7 +1099,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const eff=o=>o.f[2]/Math.max(o.f[3],1);
   const bProt=byName(P,/yogurt greco|skyr|fiocchi di latte|ricotta|albume/i)
     .filter(o=>o.f[3]>=8&&eff(o)<=9.5);
-  const isPitem=x=>x.f[3]>=10;
+  const isPitem=x=>x.f[3]>=10&&x.f[2]/Math.max(x.f[3],1)<=15;
 
   if(name==="Colazione"){
     const c=pick(byName([...Sn,...C],/avena|porridge|fette|pan(e|carr)|gallette|muesli|pancake/i),r)||pick(Sn,r);
@@ -1120,11 +1145,11 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     const pTot=raw.reduce((s,x)=>s+x.f[3]*x.g/100,0);
     if(protTarget&&pTot<protTarget*0.92){
       const rp=Math.min(protTarget/Math.max(pTot,1),1.7);
-      raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rp,x.min,x.max));
+      raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rp,x.min,x.max,x.st));
     }
     const kTot=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
     const rk=kcalTarget/kTot; if(Math.abs(1-rk)<0.04) break;
-    raw.filter(x=>!isPitem(x)).forEach(x=>x.g=clamp(x.g*rk,x.min,x.max));
+    raw.filter(x=>!isPitem(x)).forEach(x=>x.g=clamp(x.g*rk,x.min,x.max,x.st));
   }
   /* proteine ancora corte → aggiungi una fonte magra dedicata */
   for(let t=0;t<2;t++){
@@ -1140,7 +1165,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   for(let t=0;t<2;t++){
     const cur=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0);
     const gap=kcalTarget-cur; if(gap<kcalTarget*0.08) break;
-    const dense=[...G,...Sn].filter(o=>o.f[2]>=300&&o.f[3]<15&&slotOK(o.f)&&!raw.some(x=>x.f[0]===o.f[0]));
+    const dense=[...G,...Sn].filter(o=>o.f[2]>=300&&o.f[3]<15&&!raw.some(x=>x.f[0]===o.f[0]));
     const breads=byName(C,/pane|gallette|friselle|grissini/i).filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
     const src2=gap>260&&breads.length?breads:(dense.length?dense:C);
     const fill=pick(src2,r); if(!fill) break;
@@ -1152,15 +1177,15 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     /* 1) prima gli alimenti non proteici (minimi dimezzabili) */
     const rNP=Math.max(kcalTarget/kT,0.5);
     raw.filter(x=>!isPitem(x)).forEach(x=>{
-      const mn=Math.max(10,Math.round(x.min*0.5/5)*5);
-      x.g=clamp(x.g*rNP,Math.min(mn,x.max),x.max); });
+      const mn=x.f[7]==="fr"?x.min:Math.max(10,Math.round(x.min*0.5/x.st)*x.st);
+      x.g=clamp(x.g*rNP,Math.min(mn,x.max),x.max,x.st); });
     kT=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
     if(kT<=kcalTarget*1.06) break;
     /* 2) poi i proteici, senza scendere sotto l'82% del target proteico */
     const pT=raw.reduce((s,x)=>s+x.f[3]*x.g/100,0);
     const floorOk=protTarget&&pT>0.82*protTarget;
     const rP=Math.min(1,Math.max(kcalTarget/kT, floorOk?(0.82*protTarget)/pT:0.78, 0.55));
-    raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rP,Math.min(x.min,x.max),x.max));
+    raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rP,Math.min(x.min,x.max),x.max,x.st));
   }
   raw.forEach(x=>items.push(scale(x.f,x.g)));
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
@@ -1276,8 +1301,9 @@ function renderToday(){
   /* allenamento */
   const wo=genWorkout(k);
   $("#woBadge").textContent=log.wo?"✓ fatto":wo.label.split("·")[1];
+  const yt=e=>"https://www.youtube.com/results?search_query="+encodeURIComponent("esecuzione corretta "+e[0]+" tutorial");
   $("#woList").innerHTML=`<div class="small" style="margin-bottom:6px"><b>${wo.label}</b> — ${wo.format}</div>`+
-    wo.ex.map(e=>`<div class="ex"><span>${e[0]}<br><span class="small">${e[3]}</span></span><span class="kg">${KG_MAP[e[2]]}</span></div>`).join("");
+    wo.ex.map(e=>`<div class="ex"><span>${e[0]} <a href="${yt(e)}" target="_blank" rel="noopener" title="Guarda la tecnica su YouTube" style="text-decoration:none">▶️</a><br><span class="small">${e[3]}</span></span><span class="kg">${KG_MAP[e[2]]}</span></div>`).join("");
   /* stagione */
   const month=d.getMonth()+1;
   const seas=FOOD_DB.filter(f=>(f[1]==="verdura"||f[1]==="frutta")&&f[6]!==0&&f[6].includes(month)&&!excluded(f[0]));
