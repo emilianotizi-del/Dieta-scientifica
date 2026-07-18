@@ -358,7 +358,7 @@ const FOOD_DB=[
 ["Pomodori secchi sott'olio","verdura",213,5,23,12,0,"g"],
 ["Olive nere","verdura",235,1.6,6,22,0,"g"],
 ["Olive verdi","verdura",142,1,3.8,13.9,0,"g"],
-["Capperi","verdura",23,2.4,4.9,0.9,0,"g"],
+["Capperi","verdura",23,2.4,4.9,0.9,0,"a"],
 ["Peperoncino fresco","verdura",40,1.9,8.8,0.4,[7,8,9],"v"],
 ["Sedano rapa","verdura",42,1.5,9.2,0.3,[10,11,12,1,2],"v"],
 ["Topinambur","verdura",73,2,17.4,0,[10,11,12,1,2],"v"],
@@ -371,7 +371,7 @@ const FOOD_DB=[
 ["Arancia","frutta",47,0.9,11.8,0.1,[12,1,2,3,4],"fr"],
 ["Mandarino","frutta",53,0.8,13.3,0.3,[11,12,1,2],"fr"],
 ["Clementine","frutta",47,0.9,12,0.2,[11,12,1,2],"fr"],
-["Limone","frutta",29,1.1,9.3,0.3,0,"g"],
+["Limone","frutta",29,1.1,9.3,0.3,0,"a"],
 ["Pompelmo","frutta",42,0.8,10.7,0.1,[12,1,2,3,4],"fr"],
 ["Banana","frutta",89,1.1,22.8,0.3,0,"fr"],
 ["Kiwi","frutta",61,1.1,14.7,0.5,[11,12,1,2,3,4],"fr"],
@@ -650,9 +650,9 @@ const FOOD_DB=[
 /* ---- CONDIMENTI, OLI, SALSE ---- */
 ["Olio extravergine d'oliva","condimenti",884,0,0,100,0,"g"],
 ["Olio di semi di girasole","condimenti",884,0,0,100,0,"g"],
-["Aceto di vino","condimenti",19,0,0.9,0,0,"g"],
-["Aceto balsamico","condimenti",88,0.5,17,0,0,"g"],
-["Succo di limone","condimenti",25,0.4,7,0,0,"g"],
+["Aceto di vino","condimenti",19,0,0.9,0,0,"a"],
+["Aceto balsamico","condimenti",88,0.5,17,0,0,"a"],
+["Succo di limone","condimenti",25,0.4,7,0,0,"a"],
 ["Passata di pomodoro","condimenti",30,1.3,5.2,0.3,0,"v"],
 ["Pomodori pelati","condimenti",24,1.2,3.5,0.4,0,"v"],
 ["Doppio concentrato di pomodoro","condimenti",82,4.9,14.9,0.5,0,"g"],
@@ -674,7 +674,7 @@ const FOOD_DB=[
 ["Zucchero","condimenti",392,0,100,0,0,"d"],
 ["Cacao amaro in polvere","condimenti",355,20,10,25,0,"g"],
 ["Lievito di birra fresco","condimenti",78,12.1,4,0.4,0,"g"],
-["Sale, spezie ed erbe aromatiche","condimenti",0,0,0,0,0,"g"],
+["Sale, spezie ed erbe aromatiche","condimenti",0,0,0,0,0,"a"],
 ["Brodo vegetale","condimenti",5,0.3,0.5,0.1,0,"b"],
 /* ---- COLAZIONE E SNACK ---- */
 ["Pane integrale tostato + velo di marmellata","colazione",250,10,48,2.5,0,"s"],
@@ -972,7 +972,8 @@ function kcalDay(dateKey){
   /* normalizza perché 2*0.85+4*1+1.22=6.92 → correggi a media esatta */
   return Math.round(m*mult*7/6.92); }
 function macros(dateKey){
-  const kcal=kcalDay(dateKey); const p=Math.round(U.protKg*pesoAttuale());
+  const kcal=kcalDay(dateKey);
+  const p=Math.min(Math.round(U.protKg*pesoAttuale()),Math.round(kcal*0.45/4));
   const f=Math.max(Math.round(kcal*0.27/9), Math.round(0.6*pesoAttuale()));
   const c=Math.max(Math.round((kcal-p*4-f*9)/4),40);
   return {kcal,p,c,f}; }
@@ -996,64 +997,132 @@ function isVegFood(f){ const cat=f[1];
   if(f[7]==="x") return f[8]===1; return true; }
 function inSeason(f,month){ return f[6]===0 || f[6].includes(month); }
 function pool(role,{veg=false,month,recent}){ 
-  return FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>
-    f[7]===role && inSeason(f,month) && !excluded(f[0]) && (!veg||isVegFood(f)))
-    .filter(({i})=>!recent.has(i) || Math.random()<0.15); }
+  const base=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>
+    f[7]===role && inSeason(f,month) && !excluded(f[0]) && (!veg||isVegFood(f)));
+  const fresh=base.filter(({i})=>!recent.has(i));
+  return fresh.length>=3?fresh:base; }
 function pick(arr,r){ return arr[Math.floor(r()*arr.length)]; }
 function recentFoodIds(dateKey){ const set=new Set();
   const d=dateFromKey(dateKey);
   for(let i=1;i<=4;i++){ const k=todayKey(new Date(d-i*864e5));
     const m=U.menuCache[k]; if(m) m.meals.forEach(me=>me.items.forEach(it=>set.add(it.id))); }
   return set; }
+const CAPS=[[/cipolla|cipollotto/i,80],[/^aglio/i,10],[/porro/i,150],[/succo di limone|^limone$/i,30],
+ [/capperi|aceto/i,15],[/concentrato/i,30],[/parmigiano|grana|pecorino|gorgonzola/i,30],[/^olio/i,25],
+ [/^burro$|burro di|crema di mandorle|tahina/i,25],[/pesto|maionese|senape|ketchup|salsa/i,30],[/miele|marmellata|zucchero|cacao/i,30],
+ [/gallette|fette biscottate|cracker|grissini|taralli|biscotti|frollini/i,60],
+ [/mandorle|^noci|nocciole|pistacchi|anacardi|pinoli|arachidi|semi di|frutta secca|macadamia|pecan|cocco/i,40],
+ [/cioccolat/i,30],[/guanciale|pancetta|lardo|speck|salame|mortadella|coppa/i,50],[/peperoncino/i,15],
+ [/bottarga|acciughe sott/i,20],[/olive/i,50]];
+function capOf(f){ for(const [re,g] of CAPS) if(re.test(f[0])) return g; return 500; }
 function scale(f,grams){ const k=grams/100;
-  return {id:FOOD_DB.indexOf(f),name:f[0],g:grams,kcal:Math.round(f[2]*k),p:+(f[3]*k).toFixed(1),c:+(f[4]*k).toFixed(1),fat:+(f[5]*k).toFixed(1)}; }
+  const nm=f[0].replace(/\((secc\w+|crud\w+)\)/i,"(peso a crudo)");
+  return {id:FOOD_DB.indexOf(f),name:nm,g:grams,kcal:Math.round(f[2]*k),p:+(f[3]*k).toFixed(1),c:+(f[4]*k).toFixed(1),fat:+(f[5]*k).toFixed(1)}; }
 function fitGrams(f,targetKcal,min,max){ 
   const g=Math.round((targetKcal/(f[2]||1))*100/5)*5; return Math.max(min,Math.min(max,g)); }
 
-function buildMeal(name,kcalTarget,r,ctx){
-  const raw=[]; const items=[];
-  const add=(f,g,min,max)=>{ if(f) raw.push({f,g,min:min??20,max:max??500}); };
+function buildMeal(name,kcalTarget,protTarget,r,ctx){
+  const raw=[]; const items=[]; const clamp=(g,mn,mx)=>Math.max(mn,Math.min(mx,Math.round(g/5)*5));
+  const add=(f,g,min,max)=>{ if(!f) return; const mx=Math.min(max??500,capOf(f));
+    const mn=Math.min(min??10,mx);
+    raw.push({f,g:clamp(g,mn,mx),min:mn,max:mx}); };
   const addFit=(f,target,min,max)=>{ if(f) add(f,fitGrams(f,target,min,max),min,max); };
-  const P=pool("p",ctx), C=pool("c",ctx), V=pool("v",ctx), G=pool("g",ctx), X=pool("x",ctx), FR=pool("fr",ctx), Sn=pool("s",ctx);
+  const P=pool("p",ctx), C=pool("c",ctx), V=pool("v",ctx), G=pool("g",ctx),
+        X=pool("x",ctx), FR=pool("fr",ctx), Sn=pool("s",ctx), A=pool("a",ctx);
+  const byName=(arr,re)=>arr.filter(o=>re.test(o.f[0]));
+  const olio=FOOD_DB.find(f=>f[0]==="Olio extravergine d'oliva");
+  /* proteine magre per integrazioni (veg-compatibili se serve) */
+  const Pbase=P.filter(o=>o.f[2]<=250&&!/secch|(secca)|cicerchie/i.test(o.f[0]));
+  const hiP=Pbase.filter(o=>o.f[3]>=15&&o.f[2]<=210);
+  const lean=o=>o.f[2]/Math.max(o.f[3],1)<=7.5;
+  const needLean=protTarget&&(protTarget*4)/Math.max(kcalTarget,1)>0.30;
+  const Pmain=needLean&&Pbase.filter(lean).length?Pbase.filter(lean):Pbase;
+  const eff=o=>o.f[2]/Math.max(o.f[3],1);
+  const bProt=byName(P,/yogurt greco|skyr|fiocchi di latte|ricotta|albume/i)
+    .filter(o=>o.f[3]>=8&&eff(o)<=9.5);
+  const isPitem=x=>x.f[3]>=10;
+
   if(name==="Colazione"){
-    const s=pick(Sn,r); if(s) addFit(s.f,kcalTarget*0.8,25,120);
-    const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.2,80,200);
+    const c=pick(byName([...Sn,...C],/avena|porridge|fette|pan(e|carr)|gallette|muesli|pancake/i),r)||pick(Sn,r);
+    if(c) addFit(c.f,kcalTarget*0.45,25,90);
+    const p=pick(bProt.length?bProt:hiP,r); if(p) addFit(p.f,kcalTarget*0.35,100,250);
+    const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.20,80,200);
   } else if(name==="Spuntino"){
-    if(r()<0.5){const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget,100,250);}
-    else {const s=pick(Sn,r); if(s) addFit(s.f,kcalTarget,15,60);}
+    if(r()<0.6&&bProt.length){ const p=pick(bProt,r); addFit(p.f,kcalTarget*0.6,100,200);
+      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.4,80,180); }
+    else { const s=pick(Sn,r); if(s) addFit(s.f,kcalTarget*0.7,15,60);
+      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.3,80,150); }
   } else { /* Pranzo o Cena */
     const style=r();
-    if(style<0.35 && X.length){ /* piatto unico */
-      const x=pick(X,r); addFit(x.f,kcalTarget*0.88,200,450);
-      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.12,100,200);
-    } else if(style<0.65){ /* primo + contorno */
-      const c=pick(C,r); if(c) addFit(c.f,kcalTarget*0.55,50,130);
-      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.12,150,300);
-      const g=pick(G,r); if(g) addFit(g.f,kcalTarget*0.18,5,20);
-      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.15,100,200);
-    } else { /* secondo + contorno + pane */
-      const p=pick(P,r); if(p) addFit(p.f,kcalTarget*0.42,90,250);
-      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.12,150,300);
-      const pane=C.filter(({f})=>f[0].toLowerCase().includes("pane")||f[0].includes("Gallette")||f[0].includes("Friselle"));
-      const b=pick(pane.length?pane:C,r); if(b) addFit(b.f,kcalTarget*0.28,30,110);
-      const g=pick(G,r); if(g) addFit(g.f,kcalTarget*0.18,5,20);
+    if(style<0.30 && X.length){ /* piatto unico + eventuale rinforzo proteico */
+      const x=pick(X,r); addFit(x.f,kcalTarget*0.75,200,420);
+      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.10,100,180);
+    } else if(style<0.60){ /* primo "proteico": pasta + sugo + fonte proteica + olio */
+      const c=pick(byName(C,/pasta|spaghetti|riso|farro|orzo|couscous|bulgur|quinoa|gnocchi|orecchiette/i),r)||pick(C,r);
+      if(c) addFit(c.f,kcalTarget*0.42,50,120);
+      const sugo=pick(byName([...V,...G],/passata|pelati|sugo|pesto|rag\u00f9|pomodorini/i),r);
+      if(sugo) addFit(sugo.f,kcalTarget*0.08,80,200);
+      let prPool=byName(Pbase,/lenticchie|ceci|fagioli|tonno|gamber|macinato|pollo|tofu|vongole/i).filter(o=>o.f[3]>=7);
+      if(needLean&&prPool.filter(lean).length) prPool=prPool.filter(lean);
+      const pr=pick(prPool.length?prPool:hiP,r);
+      if(pr) addFit(pr.f,kcalTarget*0.30,60,220);
+      if(olio) addFit(olio,kcalTarget*0.12,5,25);
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.08,100,250);
+    } else { /* secondo + contorno + pane + olio */
+      const p=pick(Pmain,r); if(p) addFit(p.f,kcalTarget*0.40,90,280);
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.10,120,300);
+      const b=pick(byName(C,/pane|friselle|carasau/i),r)||pick(C,r);
+      if(b) addFit(b.f,kcalTarget*0.28,30,110);
+      if(olio) addFit(olio,kcalTarget*0.15,5,25);
+      if(A.length&&r()<0.4){ const a=pick(A,r); add(a.f,10,5,15); }
     }
   }
-  /* ribilanciamento: avvicina il totale del pasto al target rispettando i limiti di porzione */
-  for(let pass=0;pass<3;pass++){
-    const cur=raw.reduce((a,x)=>a+x.f[2]*x.g/100,0)||1;
-    const ratio=kcalTarget/cur; if(Math.abs(1-ratio)<0.05) break;
-    raw.forEach(x=>{ x.g=Math.max(x.min,Math.min(x.max,Math.round(x.g*ratio/5)*5)); });
+  /* ribilanciamento a due obiettivi: prima le proteine, poi le kcal sugli altri alimenti */
+  for(let t=0;t<4;t++){
+    const pTot=raw.reduce((s,x)=>s+x.f[3]*x.g/100,0);
+    if(protTarget&&pTot<protTarget*0.92){
+      const rp=Math.min(protTarget/Math.max(pTot,1),1.7);
+      raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rp,x.min,x.max));
+    }
+    const kTot=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
+    const rk=kcalTarget/kTot; if(Math.abs(1-rk)<0.04) break;
+    raw.filter(x=>!isPitem(x)).forEach(x=>x.g=clamp(x.g*rk,x.min,x.max));
   }
-  /* se manca ancora energia, integra con alimenti densi (olio, pane, frutta secca) */
+  /* proteine ancora corte → aggiungi una fonte magra dedicata */
   for(let t=0;t<2;t++){
-    const cur=raw.reduce((a,x)=>a+x.f[2]*x.g/100,0);
+    const pNow=raw.reduce((s,x)=>s+x.f[3]*x.g/100,0);
+    if(!protTarget||pNow>=protTarget*0.85||!hiP.length) break;
+    let cand=hiP.filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
+    if(!cand.length) cand=hiP;
+    cand=cand.slice().sort((a,b)=>eff(a)-eff(b)).slice(0,4);
+    const p=pick(cand,r);
+    if(p){ const need=(protTarget-pNow)/(p.f[3]/100); add(p.f,need,40,220); }
+  }
+  /* kcal ancora corte → integra con alimenti densi non proteici */
+  for(let t=0;t<2;t++){
+    const cur=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0);
     const gap=kcalTarget-cur; if(gap<kcalTarget*0.08) break;
-    const dense=[...G,...Sn].filter(o=>o.f[2]>=300 && !raw.some(x=>x.f[0]===o.f[0]));
-    const breads=C.filter(o=>/pane|gallette|friselle|grissini/i.test(o.f[0]) && !raw.some(x=>x.f[0]===o.f[0]));
+    const dense=[...G,...Sn].filter(o=>o.f[2]>=300&&o.f[3]<15&&!raw.some(x=>x.f[0]===o.f[0]));
+    const breads=byName(C,/pane|gallette|friselle|grissini/i).filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
     const src2=gap>260&&breads.length?breads:(dense.length?dense:C);
     const fill=pick(src2,r); if(!fill) break;
-    add(fill.f,fitGrams(fill.f,gap,10,150),10,150);
+    addFit(fill.f,gap,10,150);
+  }
+  for(let t=0;t<3;t++){
+    let kT=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
+    if(kT<=kcalTarget*1.06) break;
+    /* 1) prima gli alimenti non proteici (minimi dimezzabili) */
+    const rNP=Math.max(kcalTarget/kT,0.5);
+    raw.filter(x=>!isPitem(x)).forEach(x=>{
+      const mn=Math.max(10,Math.round(x.min*0.5/5)*5);
+      x.g=clamp(x.g*rNP,Math.min(mn,x.max),x.max); });
+    kT=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
+    if(kT<=kcalTarget*1.06) break;
+    /* 2) poi i proteici, senza scendere sotto l'82% del target proteico */
+    const pT=raw.reduce((s,x)=>s+x.f[3]*x.g/100,0);
+    const floorOk=protTarget&&pT>0.82*protTarget;
+    const rP=Math.min(1,Math.max(kcalTarget/kT, floorOk?(0.82*protTarget)/pT:0.78, 0.55));
+    raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rP,Math.min(x.min,x.max),x.max));
   }
   raw.forEach(x=>items.push(scale(x.f,x.g)));
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
@@ -1063,12 +1132,13 @@ function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey]) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
   const schema=schemaOfDay(dateKey); const veg=isVegDay(dateKey);
-  const m=macros(dateKey); const month=dateFromKey(dateKey).getMonth()+1;
+  const m={...macros(dateKey)}; const month=dateFromKey(dateKey).getMonth()+1;
+  if(veg) m.p=Math.min(m.p,Math.round(m.kcal*0.34/4));
   const ctx={veg,month,recent:recentFoodIds(dateKey)};
   const split=schema==="if168"
     ? [["Pranzo",0.46],["Spuntino",0.10],["Cena",0.44]]
     : [["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]];
-  const meals=split.map(([n,q])=>buildMeal(n,m.kcal*q,r,ctx));
+  const meals=split.map(([n,q])=>buildMeal(n,m.kcal*q,m.p*q,r,ctx));
   const menu={schema,veg,dayType:dayType(dateKey),target:m,meals,eaten:{}};
   U.menuCache[dateKey]=menu;
   /* mantieni cache leggera */
