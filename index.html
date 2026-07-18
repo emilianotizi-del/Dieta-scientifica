@@ -1,0 +1,1356 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#22333B">
+<title>Rotta 80 · Coach dieta e allenamento</title>
+<style>
+:root{
+  --bg:#F6F4EC; --card:#FFFFFF; --ink:#22333B; --ink2:#5C6B72; --line:#E4E0D3;
+  --oliva:#55643B; --oliva-s:#EEF0E3; --pomodoro:#B23A2B; --pomodoro-s:#F7E6E1;
+  --grano:#C9932A; --grano-s:#F8EFDA; --mare:#2E5E6E; --mare-s:#E2EDF0;
+  --ok:#3E7A4E; --r14:14px; --shadow:0 1px 3px rgba(34,51,59,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  background:var(--bg);color:var(--ink);padding-bottom:84px;line-height:1.45}
+h1,h2,h3{font-weight:700;letter-spacing:-.01em}
+.small{font-size:.8rem;color:var(--ink2)}
+.wrap{max-width:560px;margin:0 auto;padding:14px 14px 0}
+header.top{display:flex;align-items:baseline;justify-content:space-between;padding:10px 2px 6px}
+header.top .logo{font-size:1.15rem;font-weight:800;letter-spacing:.02em}
+header.top .logo em{font-style:normal;color:var(--pomodoro)}
+header.top .datebadge{font-size:.8rem;color:var(--ink2)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r14);
+  box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.card h2{font-size:.95rem;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.eyebrow{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);font-weight:600}
+/* ANELLO DEL GIORNO (signature) */
+.dial{display:flex;gap:16px;align-items:center}
+.dial svg{flex:0 0 auto}
+.dial .num{font-size:1.9rem;font-weight:800;line-height:1}
+.dial .num span{font-size:.85rem;font-weight:600;color:var(--ink2)}
+.chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700}
+.chip.basso{background:var(--mare-s);color:var(--mare)}
+.chip.pieno{background:var(--oliva-s);color:var(--oliva)}
+.chip.ricarica{background:var(--grano-s);color:var(--grano)}
+.chip.veg{background:var(--oliva-s);color:var(--oliva)}
+/* barre macro */
+.macro{margin-top:10px}
+.macro .row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:2px}
+.bar{height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin-bottom:8px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .4s}
+.bar .p{background:var(--pomodoro)} .bar .c{background:var(--grano)} .bar .f{background:var(--oliva)} .bar .k{background:var(--mare)}
+.over i{background:var(--pomodoro)!important}
+/* pasti */
+.meal{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.meal .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.meal .mname{font-weight:700;font-size:.88rem}
+.meal ul{list-style:none}
+.meal li{display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;color:var(--ink)}
+.meal li .q{color:var(--ink2);font-variant-numeric:tabular-nums}
+.meal.done{background:var(--oliva-s);border-color:transparent}
+button{font:inherit;border:none;cursor:pointer;border-radius:10px}
+.btn{background:var(--ink);color:#fff;padding:10px 16px;font-weight:600;font-size:.88rem}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:6px 10px;font-size:.78rem}
+.btn.accent{background:var(--pomodoro)}
+.btn:active{transform:scale(.97)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+/* form */
+input,select{font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%;background:#fff;color:var(--ink)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--mare);outline-offset:1px}
+label{font-size:.78rem;font-weight:600;color:var(--ink2);display:block;margin:8px 0 4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+/* ricerca cibi */
+.foodresults{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:6px}
+.fooditem{display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--line);font-size:.85rem;cursor:pointer}
+.fooditem:last-child{border-bottom:none}
+.fooditem:active{background:var(--oliva-s)}
+.fooditem .fk{color:var(--ink2);font-size:.75rem}
+.loglist li{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:6px 0;border-bottom:1px dashed var(--line)}
+.loglist li:last-child{border-bottom:none}
+.del{background:none;color:var(--pomodoro);font-size:1rem;padding:2px 6px}
+/* allenamento */
+.ex{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.87rem}
+.ex:last-child{border-bottom:none}
+.ex .kg{color:var(--mare);font-weight:700;font-variant-numeric:tabular-nums}
+.stepgoal{display:flex;align-items:center;gap:14px}
+.stepgoal .big{font-size:1.5rem;font-weight:800}
+/* settimana */
+.weekbars{display:flex;gap:6px;align-items:flex-end;height:110px;margin:10px 0 4px}
+.wb{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.wb .col{width:100%;max-width:34px;border-radius:6px 6px 0 0;background:var(--mare);min-height:3px;position:relative}
+.wb .col.overq{background:var(--pomodoro)}
+.wb .col .tline{position:absolute;left:-3px;right:-3px;height:2px;background:var(--ink)}
+.wb .lbl{font-size:.68rem;color:var(--ink2)}
+canvas{width:100%;height:auto;display:block}
+/* tabelle settimanali */
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{text-align:right;padding:5px 4px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+/* slider proteine */
+input[type=range]{padding:0;height:28px;accent-color:var(--pomodoro)}
+.explain{background:var(--mare-s);border-radius:10px;padding:10px 12px;font-size:.8rem;margin-top:8px}
+.explain b{color:var(--mare)}
+/* nav */
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--ink);display:flex;
+  padding:6px max(8px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-bottom));z-index:50}
+nav button{flex:1;background:none;color:#9FB0B8;font-size:.68rem;font-weight:600;
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:10px}
+nav button .ico{font-size:1.15rem;line-height:1}
+nav button.on{color:#fff}
+nav button.on .ico{transform:translateY(-1px)}
+.page{display:none}.page.on{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.season{display:flex;gap:6px;overflow-x:auto;padding:4px 0;scrollbar-width:none}
+.season::-webkit-scrollbar{display:none}
+.season span{flex:0 0 auto;background:var(--oliva-s);color:var(--oliva);font-size:.75rem;
+  font-weight:600;padding:5px 10px;border-radius:999px}
+.notice{background:var(--grano-s);border-radius:10px;padding:10px 12px;font-size:.8rem;margin-top:8px}
+.hero-eta{display:flex;gap:10px;margin-top:10px}
+.hero-eta .box{flex:1;background:var(--bg);border-radius:10px;padding:8px 10px}
+.hero-eta .box b{display:block;font-size:1.05rem}
+.hero-eta .box span{font-size:.7rem;color:var(--ink2)}
+dialog{border:none;border-radius:16px;padding:16px;width:min(92vw,420px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(34,51,59,.45)}
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:9px 16px;border-radius:999px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:60}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="logo">ROTTA·<em>80</em></div><div class="datebadge" id="topdate"></div></header>
+
+<!-- ============ OGGI ============ -->
+<section class="page on" id="pg-oggi">
+  <div class="card">
+    <div class="eyebrow">Obiettivo di oggi</div>
+    <div class="dial" style="margin-top:8px">
+      <svg id="dialSvg" width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
+        <circle cx="48" cy="48" r="41" fill="none" stroke="#E4E0D3" stroke-width="9"/>
+        <circle id="dialArc" cx="48" cy="48" r="41" fill="none" stroke="#2E5E6E" stroke-width="9"
+          stroke-linecap="round" stroke-dasharray="257.6" stroke-dashoffset="257.6" transform="rotate(-90 48 48)"/>
+        <text id="dialPct" x="48" y="53" text-anchor="middle" font-size="17" font-weight="800" fill="#22333B">0%</text>
+      </svg>
+      <div>
+        <div class="num"><span id="kcalEaten">0</span> / <b id="kcalTarget">–</b> <span>kcal</span></div>
+        <div style="margin-top:6px"><span class="chip" id="dayTypeChip">–</span> <span class="chip veg" id="vegChip" hidden>🌿 veg</span></div>
+        <div class="small" id="schemaLabel" style="margin-top:5px"></div>
+      </div>
+    </div>
+    <div class="macro" id="macroBars"></div>
+  </div>
+
+  <div class="card">
+    <h2>Menu proposto <button class="btn ghost sm" id="btnRegen">↻ Rigenera</button></h2>
+    <div id="menuList"></div>
+    <div class="small">Tocca “Mangiato” per registrare il pasto così com’è, oppure registra liberamente qui sotto.</div>
+  </div>
+
+  <div class="card">
+    <h2>Registra liberamente</h2>
+    <input type="search" id="foodSearch" placeholder="Cerca tra ~500 alimenti… (es. orata, farro)" autocomplete="off">
+    <div class="foodresults" id="foodResults" hidden></div>
+    <ul class="loglist" id="logList" style="margin-top:8px"></ul>
+  </div>
+
+  <div class="card">
+    <h2>Camminata</h2>
+    <div class="stepgoal">
+      <div><div class="big" id="stepsNow">0</div><div class="small">passi registrati</div></div>
+      <div style="flex:1">
+        <div class="bar"><i class="k" id="stepsBar" style="width:0%"></i></div>
+        <div class="small">Obiettivo di oggi: <b id="stepsGoal">–</b> passi</div>
+      </div>
+    </div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn ghost sm" data-steps="1000">+1.000</button>
+      <button class="btn ghost sm" data-steps="2000">+2.000</button>
+      <button class="btn ghost sm" data-steps="5000">+5.000</button>
+      <button class="btn ghost sm" id="btnStepsManual">✎ Imposta</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Allenamento di oggi <span class="chip pieno" id="woBadge"></span></h2>
+    <div id="woList"></div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn sm" id="btnWoDone">✓ Fatto</button>
+      <button class="btn ghost sm" id="btnWoRegen">↻ Cambia esercizi</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Di stagione adesso</div>
+    <div class="season" id="seasonStrip"></div>
+  </div>
+</section>
+
+<!-- ============ SETTIMANA ============ -->
+<section class="page" id="pg-sett">
+  <div class="card">
+    <h2>Calorie della settimana</h2>
+    <div class="weekbars" id="weekBars"></div>
+    <div class="small" id="weekKcalSummary"></div>
+  </div>
+  <div class="card">
+    <h2>Macro: totali settimanali</h2>
+    <div id="weekMacro"></div>
+  </div>
+  <div class="card">
+    <h2>Diario ultimi 7 giorni</h2>
+    <table id="weekTable"></table>
+  </div>
+</section>
+
+<!-- ============ PROGRESSI ============ -->
+<section class="page" id="pg-prog">
+  <div class="card">
+    <h2>Peso</h2>
+    <div class="grid2">
+      <input type="number" step="0.1" inputmode="decimal" id="weightInput" placeholder="es. 94,0">
+      <button class="btn" id="btnWeight">Registra peso</button>
+    </div>
+    <canvas id="weightChart" width="640" height="300" style="margin-top:12px" aria-label="Grafico del peso"></canvas>
+    <div class="hero-eta" id="etaBoxes"></div>
+    <div class="notice" id="weightNotice" hidden></div>
+  </div>
+  <div class="card">
+    <h2>Storico pesate</h2>
+    <ul class="loglist" id="weightList"></ul>
+  </div>
+</section>
+
+<!-- ============ PROFILO ============ -->
+<section class="page" id="pg-prof">
+  <div class="card">
+    <h2>Profilo <select id="userSel" style="width:auto;font-size:.8rem;padding:5px 8px"></select></h2>
+    <div class="grid2">
+      <div><label>Nome</label><input id="pNome"></div>
+      <div><label>Sesso</label><select id="pSesso"><option value="M">Uomo</option><option value="F">Donna</option></select></div>
+      <div><label>Età</label><input type="number" id="pEta" inputmode="numeric"></div>
+      <div><label>Altezza (cm)</label><input type="number" id="pAlt" inputmode="numeric"></div>
+      <div><label>Peso obiettivo (kg)</label><input type="number" step="0.5" id="pGoal" inputmode="decimal"></div>
+      <div><label>Passi base/die</label><input type="number" step="500" id="pSteps" inputmode="numeric"></div>
+    </div>
+    <label>Ritmo di dimagrimento</label>
+    <select id="pRitmo">
+      <option value="moderato">Moderato · ~0,5 kg/settimana (−500 kcal)</option>
+      <option value="sostenuto">Sostenuto · ~0,75 kg/settimana (−750 kcal)</option>
+      <option value="aggressivo">Aggressivo ma sicuro · ~1 kg/sett (−1000 kcal, con ricariche)</option>
+    </select>
+    <div class="notice">Il piano non scende mai sotto una soglia di sicurezza calcolata sul tuo metabolismo basale. Per deficit oltre ~1.000 kcal/die serve supervisione medica.</div>
+    <label>Proteine: <b id="protVal"></b> g per kg di peso</label>
+    <input type="range" id="pProt" min="1.2" max="2.4" step="0.1">
+    <div class="explain" id="protExplain"></div>
+    <label>Giorni vegetariani a settimana (casuali)</label>
+    <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
+    <label>Schema pasti</label>
+    <select id="pSchema">
+      <option value="flex">Flessibile: decide l’app giorno per giorno</option>
+      <option value="if168">Sempre 16:8 (salto colazione)</option>
+      <option value="colaz">Sempre colazione leggera + 2 pasti</option>
+    </select>
+    <label>Alimenti esclusi (separa con virgola)</label>
+    <input id="pEscl" placeholder="fegato, finocchio">
+    <div class="btnrow" style="margin-top:12px">
+      <button class="btn" id="btnSaveProf">Salva profilo</button>
+      <button class="btn ghost" id="btnAddUser">+ Nuovo utente</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Dati</h2>
+    <div class="btnrow">
+      <button class="btn ghost sm" id="btnExport">⬇ Esporta backup</button>
+      <button class="btn ghost sm" id="btnImport">⬆ Importa backup</button>
+      <input type="file" id="importFile" accept=".json" hidden>
+    </div>
+    <div class="small" style="margin-top:8px" id="storageInfo"></div>
+  </div>
+</section>
+</div>
+
+<nav aria-label="Navigazione principale">
+  <button data-pg="oggi" class="on"><span class="ico">☀️</span>Oggi</button>
+  <button data-pg="sett"><span class="ico">📊</span>Settimana</button>
+  <button data-pg="prog"><span class="ico">⚖️</span>Progressi</button>
+  <button data-pg="prof"><span class="ico">👤</span>Profilo</button>
+</nav>
+
+<dialog id="dlgQty">
+  <h3 id="dlgFoodName" style="margin-bottom:6px"></h3>
+  <div class="small" id="dlgFoodInfo"></div>
+  <label>Quantità (grammi)</label>
+  <input type="number" id="dlgGrams" inputmode="numeric" value="100">
+  <label>Pasto</label>
+  <select id="dlgMeal"><option>Colazione</option><option>Pranzo</option><option>Cena</option><option>Spuntino</option></select>
+  <div class="btnrow" style="margin-top:12px">
+    <button class="btn" id="dlgAdd">Aggiungi</button>
+    <button class="btn ghost" id="dlgCancel">Annulla</button>
+  </div>
+</dialog>
+<div class="toast" id="toast"></div>
+<script>
+/* ============================================================
+   DATI · Database alimenti (~500 voci)
+   Formato: [nome, categoria, kcal/100g, prot, carb, grassi, stagione(0=tutto l'anno|[mesi]), ruolo, vegFlag?]
+   Ruoli: p=proteina c=carboidrato v=verdura fr=frutta g=grasso/condimento
+          x=piatto completo s=colazione/snack b=bevanda d=dolce
+   ============================================================ */
+const FOOD_DB=[
+/* ---- VERDURE ---- */
+["Pomodoro ramato","verdura",19,1,3.5,0.2,[6,7,8,9],"v"],
+["Pomodorini ciliegino","verdura",22,1,4.2,0.3,[5,6,7,8,9],"v"],
+["Zucchine","verdura",16,1.3,2.3,0.2,[5,6,7,8,9],"v"],
+["Melanzane","verdura",21,1.1,4.4,0.2,[6,7,8,9],"v"],
+["Peperoni","verdura",25,0.9,5.5,0.3,[6,7,8,9,10],"v"],
+["Cetrioli","verdura",14,0.7,2.5,0.1,[5,6,7,8,9],"v"],
+["Lattuga","verdura",17,1.2,2.5,0.2,0,"v"],
+["Rucola","verdura",28,2.6,3.9,0.7,0,"v"],
+["Radicchio rosso","verdura",18,1.4,3.5,0.1,[10,11,12,1,2],"v"],
+["Indivia belga","verdura",19,1.1,3.5,0.2,[10,11,12,1,2,3],"v"],
+["Spinaci","verdura",25,3.4,2.9,0.4,[10,11,12,1,2,3,4],"v"],
+["Bietola","verdura",19,1.8,3.7,0.1,[5,6,7,8,9,10],"v"],
+["Cicoria","verdura",17,1.4,2.7,0.2,[10,11,12,1,2,3],"v"],
+["Broccoli","verdura",34,3.6,6.6,0.4,[10,11,12,1,2,3],"v"],
+["Cavolfiore","verdura",25,2,5,0.3,[10,11,12,1,2,3],"v"],
+["Cavolo nero","verdura",35,3.3,6.3,0.7,[11,12,1,2],"v"],
+["Cavolo cappuccio","verdura",25,1.3,5.8,0.1,[10,11,12,1,2,3],"v"],
+["Cavoletti di Bruxelles","verdura",43,3.4,8.9,0.3,[11,12,1,2],"v"],
+["Verza","verdura",27,2,6.1,0.1,[10,11,12,1,2],"v"],
+["Carciofi","verdura",47,3.3,10.5,0.2,[2,3,4,5,11,12],"v"],
+["Asparagi","verdura",20,2.2,3.9,0.1,[3,4,5,6],"v"],
+["Fagiolini","verdura",31,1.8,7,0.2,[6,7,8,9],"v"],
+["Carote","verdura",41,0.9,9.6,0.2,0,"v"],
+["Sedano","verdura",16,0.7,3,0.2,0,"v"],
+["Finocchio","verdura",31,1.2,7.3,0.2,[10,11,12,1,2,3,4],"v"],
+["Cipolla","verdura",40,1.1,9.3,0.1,0,"v"],
+["Cipollotto","verdura",32,1.8,7.3,0.2,[4,5,6],"v"],
+["Porro","verdura",61,1.5,14.2,0.3,[10,11,12,1,2,3],"v"],
+["Aglio","verdura",149,6.4,33,0.5,0,"v"],
+["Zucca","verdura",26,1,6.5,0.1,[9,10,11,12,1],"v"],
+["Patate","verdura",77,2,17.5,0.1,0,"c"],
+["Patate dolci","verdura",86,1.6,20.1,0.1,[9,10,11,12,1],"c"],
+["Funghi champignon","verdura",22,3.1,3.3,0.3,0,"v"],
+["Funghi porcini","verdura",26,3.9,3.6,0.4,[9,10,11],"v"],
+["Barbabietola","verdura",43,1.6,9.6,0.2,[9,10,11,12,1,2],"v"],
+["Rape","verdura",28,0.9,6.4,0.1,[10,11,12,1,2,3],"v"],
+["Cime di rapa","verdura",22,2.9,2,0.3,[11,12,1,2,3],"v"],
+["Friarielli","verdura",24,3,2.2,0.4,[11,12,1,2,3],"v"],
+["Scarola","verdura",17,1.3,2.8,0.2,[10,11,12,1,2,3],"v"],
+["Puntarelle","verdura",18,1.4,2.9,0.2,[11,12,1,2,3],"v"],
+["Agretti","verdura",17,1.8,2.2,0.2,[3,4,5],"v"],
+["Fave fresche","verdura",72,5.5,12,0.6,[4,5,6],"v"],
+["Piselli freschi","verdura",81,5.4,14.4,0.4,[4,5,6],"v"],
+["Taccole","verdura",42,2.8,7.5,0.2,[4,5,6],"v"],
+["Ravanelli","verdura",16,0.7,3.4,0.1,[4,5,6,7,8,9],"v"],
+["Songino (valeriana)","verdura",21,2,3.6,0.4,[10,11,12,1,2,3],"v"],
+["Lattuga romana","verdura",17,1.2,3.3,0.3,[4,5,6,7,8,9,10],"v"],
+["Misticanza","verdura",20,1.5,3,0.3,0,"v"],
+["Pomodori secchi sott'olio","verdura",213,5,23,12,0,"g"],
+["Olive nere","verdura",235,1.6,6,22,0,"g"],
+["Olive verdi","verdura",142,1,3.8,13.9,0,"g"],
+["Capperi","verdura",23,2.4,4.9,0.9,0,"g"],
+["Peperoncino fresco","verdura",40,1.9,8.8,0.4,[7,8,9],"v"],
+["Sedano rapa","verdura",42,1.5,9.2,0.3,[10,11,12,1,2],"v"],
+["Topinambur","verdura",73,2,17.4,0,[10,11,12,1,2],"v"],
+["Erbette di campo","verdura",23,2.5,3,0.3,[3,4,5,10,11],"v"],
+["Pomodoro cuore di bue","verdura",18,0.9,3.5,0.2,[7,8,9],"v"],
+["Insalata iceberg","verdura",14,0.9,3,0.1,0,"v"],
+/* ---- FRUTTA ---- */
+["Mela","frutta",52,0.3,13.8,0.2,[9,10,11,12,1,2,3,4],"fr"],
+["Pera","frutta",57,0.4,15.2,0.1,[8,9,10,11,12,1],"fr"],
+["Arancia","frutta",47,0.9,11.8,0.1,[12,1,2,3,4],"fr"],
+["Mandarino","frutta",53,0.8,13.3,0.3,[11,12,1,2],"fr"],
+["Clementine","frutta",47,0.9,12,0.2,[11,12,1,2],"fr"],
+["Limone","frutta",29,1.1,9.3,0.3,0,"g"],
+["Pompelmo","frutta",42,0.8,10.7,0.1,[12,1,2,3,4],"fr"],
+["Banana","frutta",89,1.1,22.8,0.3,0,"fr"],
+["Kiwi","frutta",61,1.1,14.7,0.5,[11,12,1,2,3,4],"fr"],
+["Fragole","frutta",32,0.7,7.7,0.3,[4,5,6],"fr"],
+["Ciliegie","frutta",63,1.1,16,0.2,[5,6,7],"fr"],
+["Albicocche","frutta",48,1.4,11.1,0.4,[6,7,8],"fr"],
+["Pesca","frutta",39,0.9,9.5,0.3,[6,7,8,9],"fr"],
+["Pesca noce","frutta",44,1.1,10.6,0.3,[6,7,8,9],"fr"],
+["Susine","frutta",46,0.7,11.4,0.3,[7,8,9],"fr"],
+["Uva bianca","frutta",69,0.7,18.1,0.2,[8,9,10],"fr"],
+["Uva nera","frutta",67,0.6,17.3,0.4,[8,9,10],"fr"],
+["Fichi","frutta",74,0.8,19.2,0.3,[8,9],"fr"],
+["Fichi d'India","frutta",41,0.7,9.6,0.5,[8,9,10],"fr"],
+["Melone","frutta",34,0.8,8.2,0.2,[6,7,8,9],"fr"],
+["Anguria","frutta",30,0.6,7.6,0.2,[6,7,8],"fr"],
+["Cachi","frutta",70,0.6,18.6,0.2,[10,11,12],"fr"],
+["Melagrana","frutta",83,1.7,18.7,1.2,[10,11,12],"fr"],
+["Castagne bollite","frutta",120,2,26,1.4,[10,11,12],"c"],
+["Mirtilli","frutta",57,0.7,14.5,0.3,[6,7,8],"fr"],
+["Lamponi","frutta",52,1.2,11.9,0.7,[6,7,8,9],"fr"],
+["More","frutta",43,1.4,9.6,0.5,[7,8,9],"fr"],
+["Ribes","frutta",56,1.4,13.8,0.2,[6,7,8],"fr"],
+["Ananas","frutta",50,0.5,13.1,0.1,0,"fr"],
+["Mango","frutta",60,0.8,15,0.4,0,"fr"],
+["Avocado","frutta",160,2,8.5,14.7,0,"g"],
+["Nespole","frutta",47,0.4,12.1,0.2,[5,6],"fr"],
+["Prugne secche","frutta",240,2.2,63.9,0.4,0,"s"],
+["Albicocche secche","frutta",241,3.4,62.6,0.5,0,"s"],
+["Fichi secchi","frutta",249,3.3,63.9,0.9,0,"s"],
+["Uvetta","frutta",299,3.1,79.2,0.5,0,"s"],
+["Datteri","frutta",282,2.5,75,0.4,0,"s"],
+["Pesche sciroppate sgocciolate","frutta",56,0.4,14,0.1,0,"fr"],
+["Macedonia di frutta fresca","frutta",50,0.6,12,0.2,0,"fr"],
+["Frutti di bosco misti","frutta",50,1,11.5,0.5,[6,7,8,9],"fr"],
+["Papaya","frutta",43,0.5,10.8,0.3,0,"fr"],
+["Amarene","frutta",50,1,12.2,0.3,[6,7],"fr"],
+["Loti vaniglia","frutta",65,0.6,17,0.2,[10,11],"fr"],
+["Cedro","frutta",30,0.9,8,0.1,[12,1,2],"fr"],
+["Bergamotto (succo)","frutta",37,0.5,8.9,0.1,[12,1,2],"b"],
+["Arance rosse","frutta",45,0.9,11.2,0.1,[1,2,3],"fr"],
+["Kumquat","frutta",71,1.9,15.9,0.9,[12,1,2],"fr"],
+["Corbezzoli","frutta",76,0.8,18,0.4,[10,11,12],"fr"],
+["Gelso nero","frutta",43,1.4,9.8,0.4,[6,7],"fr"],
+["Cocomero baby","frutta",30,0.6,7.6,0.2,[6,7,8],"fr"],
+["Mela cotta","frutta",56,0.3,14.8,0.2,[10,11,12,1,2,3],"fr"],
+["Pere cotte al forno","frutta",63,0.4,16.5,0.1,[10,11,12,1],"fr"],
+/* ---- CEREALI, PANE, PASTA ---- */
+["Pasta di semola (secca)","cereali",353,12,72,1.5,0,"c"],
+["Pasta integrale (secca)","cereali",324,13,62,2.5,0,"c"],
+["Spaghetti (secchi)","cereali",353,12,72,1.5,0,"c"],
+["Pasta di legumi (secca)","cereali",335,22,50,2.5,0,"c"],
+["Riso bianco (crudo)","cereali",358,6.7,80,0.6,0,"c"],
+["Riso integrale (crudo)","cereali",337,7.5,73,2.2,0,"c"],
+["Riso basmati (crudo)","cereali",356,7.5,78,0.9,0,"c"],
+["Riso venere (crudo)","cereali",340,8.5,70,2.5,0,"c"],
+["Farro perlato (crudo)","cereali",335,12.5,67,2,0,"c"],
+["Orzo perlato (crudo)","cereali",319,10.4,70,1.4,0,"c"],
+["Quinoa (cruda)","cereali",368,14.1,64.2,6.1,0,"c"],
+["Couscous (secco)","cereali",376,12.8,77.4,0.6,0,"c"],
+["Bulgur (secco)","cereali",342,12.3,75.9,1.3,0,"c"],
+["Miglio (crudo)","cereali",378,11,72.9,4.2,0,"c"],
+["Avena (fiocchi)","cereali",389,16.9,66.3,6.9,0,"s"],
+["Polenta (farina di mais)","cereali",362,8.7,76.9,2.7,[10,11,12,1,2],"c"],
+["Grano saraceno (crudo)","cereali",343,13.3,71.5,3.4,0,"c"],
+["Pane bianco","cereali",265,9,49,3.2,0,"c"],
+["Pane integrale","cereali",247,13,41,3.4,0,"c"],
+["Pane di segale","cereali",259,8.5,48.3,3.3,0,"c"],
+["Pane di Altamura","cereali",270,9.5,52,1.5,0,"c"],
+["Pane casereccio","cereali",275,8.8,54,1.8,0,"c"],
+["Pane azzimo","cereali",377,10.7,77.8,1.2,0,"c"],
+["Piadina","cereali",319,7.6,54.4,8,0,"c"],
+["Focaccia genovese","cereali",303,7.2,44,11.3,0,"c"],
+["Pane carasau","cereali",377,10.9,79.3,2.3,0,"c"],
+["Friselle integrali","cereali",350,12,68,2.5,0,"c"],
+["Taralli","cereali",439,9.5,60,17.5,0,"s"],
+["Grissini","cereali",433,12.3,68.4,12.9,0,"c"],
+["Cracker integrali","cereali",427,10.5,68,13,0,"s"],
+["Gallette di riso","cereali",387,7.5,81.5,2.8,0,"s"],
+["Gallette di mais","cereali",385,8,80,2.5,0,"s"],
+["Fette biscottate","cereali",408,11.3,75.9,6,0,"s"],
+["Fette biscottate integrali","cereali",395,13,70,6.5,0,"s"],
+["Pancarré integrale","cereali",250,10,44,3.5,0,"c"],
+["Tortillas di grano","cereali",312,8.5,52,7.5,0,"c"],
+["Gnocchi di patate","cereali",156,3.5,33,0.5,0,"c"],
+["Pasta fresca all'uovo","cereali",288,11,54,3.5,0,"c"],
+["Ravioli ricotta e spinaci","cereali",210,8.5,30,6.5,0,"c"],
+["Tortellini freschi","cereali",290,12,42,8,0,"c"],
+["Muesli senza zuccheri","cereali",380,10,62,9,0,"s"],
+["Corn flakes","cereali",378,7.5,84,0.9,0,"s"],
+["Crusca d'avena","cereali",246,17.3,66.2,7,0,"s"],
+["Farina di ceci","cereali",334,21.8,47.4,4.9,0,"c"],
+["Semola per couscous integrale","cereali",360,13,72,1.9,0,"c"],
+["Riso per sushi (crudo)","cereali",356,6.5,79,0.7,0,"c"],
+["Orecchiette fresche","cereali",280,10,57,1.5,0,"c"],
+["Pizza base (impasto crudo)","cereali",271,8.5,53,2.5,0,"c"],
+/* ---- LEGUMI ---- */
+["Ceci secchi","legumi",364,19.3,60.7,6,0,"p"],
+["Ceci lessati","legumi",164,8.9,27.4,2.6,0,"p"],
+["Lenticchie secche","legumi",353,24.6,60.1,1.1,0,"p"],
+["Lenticchie lessate","legumi",116,9,20.1,0.4,0,"p"],
+["Fagioli borlotti lessati","legumi",133,9,23,0.5,0,"p"],
+["Fagioli cannellini lessati","legumi",111,7.5,19.9,0.5,0,"p"],
+["Fagioli neri lessati","legumi",132,8.9,23.7,0.5,0,"p"],
+["Fave secche","legumi",341,26.1,58.3,1.5,0,"p"],
+["Piselli surgelati","legumi",77,5.4,13.6,0.4,0,"v"],
+["Cicerchie","legumi",315,26,52,1,0,"p"],
+["Lupini ammollati","legumi",119,16.4,9.9,2.9,0,"p"],
+["Soia edamame","legumi",122,11.9,8.9,5.2,0,"p"],
+["Tofu al naturale","legumi",76,8.1,1.9,4.8,0,"p"],
+["Tofu affumicato","legumi",117,15,1,6,0,"p"],
+["Tempeh","legumi",193,18.5,9.4,10.8,0,"p"],
+["Hummus di ceci","legumi",166,7.9,14.3,9.6,0,"g"],
+["Lenticchie rosse decorticate (secche)","legumi",358,25,60,1.2,0,"p"],
+["Fagioli all'uccelletto (pronti)","legumi",95,5.5,13,2.5,0,"x",1],
+["Burger di legumi","legumi",180,10,20,6.5,0,"p"],
+["Falafel","legumi",333,13.3,31.8,17.8,0,"p"],
+["Azuki lessati","legumi",128,7.5,24.8,0.1,0,"p"],
+["Pasta e fagioli (piatto)","legumi",110,5.5,16,2.8,0,"x",1],
+/* ---- CARNE ---- */
+["Petto di pollo","carne",110,23.3,0,1.2,0,"p"],
+["Fusi di pollo senza pelle","carne",119,19.6,0,4.4,0,"p"],
+["Pollo intero arrosto","carne",171,27,0,6.9,0,"p"],
+["Fesa di tacchino","carne",107,24,0,1,0,"p"],
+["Coscia di tacchino","carne",125,20,0,4.9,0,"p"],
+["Vitello magro","carne",107,20.7,0,2.7,0,"p"],
+["Bovino adulto magro","carne",129,21.8,0,4.6,0,"p"],
+["Hamburger di manzo magro","carne",180,19.5,0,11.5,0,"p"],
+["Tagliata di manzo","carne",140,22,0,5.8,0,"p"],
+["Filetto di maiale","carne",122,21.5,0,4,0,"p"],
+["Lonza di maiale","carne",157,21.3,0,8,0,"p"],
+["Braciola di maiale","carne",211,18.5,0,15,0,"p"],
+["Agnello magro","carne",159,20,0,8.8,0,"p"],
+["Coniglio","carne",118,19.9,0,4.3,0,"p"],
+["Cavallo","carne",106,19.8,0,2.7,0,"p"],
+["Salsiccia di suino","carne",304,15.4,0.7,26.7,0,"p"],
+["Salsiccia di pollo","carne",175,17,1,11,0,"p"],
+["Macinato magro 5%","carne",137,21,0,5,0,"p"],
+["Scaloppina di vitello (cruda)","carne",107,20.7,0,2.7,0,"p"],
+["Spezzatino di manzo (crudo)","carne",127,21,0,4.5,0,"p"],
+["Costine di agnello","carne",282,17,0,23.5,0,"p"],
+["Anatra senza pelle","carne",135,18.3,0,6.5,0,"p"],
+["Faraona","carne",158,23.4,0,6.4,0,"p"],
+["Quaglia","carne",134,21.8,0,4.5,0,"p"],
+["Polpette di carne (crude)","carne",190,15,6,12,0,"p"],
+["Roast beef","carne",120,25,0.5,2.3,0,"p"],
+["Straccetti di pollo","carne",110,23.3,0,1.2,0,"p"],
+["Arista di maiale","carne",145,22,0,6.2,0,"p"],
+["Tacchino macinato","carne",148,19.7,0,7.7,0,"p"],
+["Galletto alla griglia","carne",150,25,0,5.5,0,"p"],
+/* ---- SALUMI ---- */
+["Prosciutto crudo sgrassato","salumi",159,27.5,0,5.2,0,"p"],
+["Prosciutto cotto sgrassato","salumi",132,19.8,0.9,5.6,0,"p"],
+["Bresaola","salumi",151,32,0.4,2.6,0,"p"],
+["Fesa di tacchino al forno (affettato)","salumi",104,22,1.5,1.2,0,"p"],
+["Petto di pollo arrosto (affettato)","salumi",102,21,1.8,1.4,0,"p"],
+["Speck","salumi",303,28.3,0.5,20.9,0,"p"],
+["Salame Milano","salumi",384,26.7,1.5,31,0,"p"],
+["Mortadella","salumi",288,15.7,1.5,25,0,"p"],
+["Coppa","salumi",398,24.6,1,33.4,0,"p"],
+["Pancetta tesa","salumi",458,20.9,0.8,41.5,0,"g"],
+["Guanciale","salumi",600,15,0,60,0,"g"],
+["Lardo di Colonnata","salumi",770,4,0,84,0,"g"],
+["Wurstel di pollo","salumi",230,13,3,18,0,"p"],
+["Culatello","salumi",198,29,0.5,9,0,"p"],
+["Lonzino stagionato","salumi",190,30,1,7.5,0,"p"],
+["Prosciutto di Praga","salumi",145,20,1,7,0,"p"],
+/* ---- PESCE ---- */
+["Orata","pesce",121,20.7,1.2,3.8,0,"p"],
+["Branzino (spigola)","pesce",97,16.5,0.6,3,0,"p"],
+["Merluzzo/nasello","pesce",82,17.8,0.3,0.9,0,"p"],
+["Sogliola","pesce",86,16.9,0.8,1.7,0,"p"],
+["Platessa","pesce",79,16.7,0.7,1.2,0,"p"],
+["Salmone fresco","pesce",208,20.4,0,13.4,0,"p"],
+["Salmone affumicato","pesce",147,22.5,0.5,6.3,0,"p"],
+["Tonno fresco","pesce",144,23.3,0,4.9,0,"p"],
+["Tonno in scatola al naturale","pesce",103,25.1,0,0.3,0,"p"],
+["Tonno sott'olio sgocciolato","pesce",192,25.2,0,10.1,0,"p"],
+["Sgombro fresco","pesce",205,18.6,0,13.9,[3,4,5,6,7,8,9],"p"],
+["Sgombro in scatola al naturale","pesce",150,22,0,7,0,"p"],
+["Alici fresche","pesce",96,16.8,1.5,2.6,[4,5,6,7,8,9],"p"],
+["Alici marinate","pesce",140,15,2,8,0,"p"],
+["Sardine fresche","pesce",129,20.8,1.5,4.5,[4,5,6,7,8,9],"p"],
+["Trota","pesce",86,14.7,0,3,0,"p"],
+["Trota salmonata","pesce",120,19,0,4.9,0,"p"],
+["Pesce spada","pesce",118,18,1,4.7,[5,6,7,8,9],"p"],
+["Ricciola","pesce",146,21,0,6.7,[6,7,8,9],"p"],
+["Dentice","pesce",100,20,0.7,1.9,0,"p"],
+["Rombo","pesce",95,16.3,1.2,3,0,"p"],
+["Cernia","pesce",92,19.4,0,1.5,0,"p"],
+["Triglia","pesce",123,15.8,1.1,6.2,[9,10,11],"p"],
+["Baccalà ammollato","pesce",95,21.6,0,1,0,"p"],
+["Polpo","pesce",57,10.6,1.4,1,0,"p"],
+["Calamari","pesce",68,12.6,0.6,1.7,0,"p"],
+["Seppia","pesce",72,14,0.7,1.5,0,"p"],
+["Gamberi","pesce",71,13.6,0.6,0.6,0,"p"],
+["Gamberoni","pesce",85,16,0.9,0.9,0,"p"],
+["Scampi","pesce",90,16.5,0.5,2,0,"p"],
+["Cozze","pesce",84,11.7,3.4,2.7,0,"p"],
+["Vongole","pesce",72,10.2,2.2,2.5,0,"p"],
+["Ostriche","pesce",69,10.2,5.4,0.9,0,"p"],
+["Capesante","pesce",89,17,2.4,0.8,0,"p"],
+["Granchio (polpa)","pesce",83,17.9,0.5,1.1,0,"p"],
+["Surimi","pesce",95,7.6,13.4,0.9,0,"p"],
+["Filetti di sgombro grigliati","pesce",190,20,0,12,0,"p"],
+["Halibut","pesce",110,20.8,0,2.3,0,"p"],
+["Pesce persico","pesce",91,18.6,0,1.6,0,"p"],
+["Lampuga","pesce",85,18.5,0,0.7,[8,9,10],"p"],
+["Cefalo (muggine)","pesce",127,15.8,0.7,6.8,0,"p"],
+["Acciughe sott'olio sgocciolate","pesce",206,25.9,0.2,11.3,0,"g"],
+["Bottarga","pesce",395,43,1,25,0,"g"],
+["Tartare di tonno","pesce",144,23.3,0,4.9,0,"p"],
+["Carpaccio di pesce spada","pesce",118,18,1,4.7,[5,6,7,8,9],"p"],
+["Moscardini","pesce",63,11,1.5,1.2,0,"p"],
+/* ---- LATTICINI E UOVA ---- */
+["Latte parzialmente scremato","latticini",46,3.3,4.9,1.5,0,"b"],
+["Latte intero","latticini",64,3.3,4.7,3.6,0,"b"],
+["Latte scremato","latticini",34,3.4,4.9,0.1,0,"b"],
+["Bevanda di soia senza zuccheri","latticini",33,3.3,0.6,1.9,0,"b"],
+["Bevanda di avena","latticini",47,0.8,7.5,1.4,0,"b"],
+["Yogurt greco 0%","latticini",57,10.3,3.6,0.2,0,"p"],
+["Yogurt greco 2%","latticini",73,9.9,3.9,2,0,"p"],
+["Yogurt greco intero","latticini",115,6.4,4,9,0,"s"],
+["Yogurt bianco magro","latticini",36,3.9,4.5,0.1,0,"s"],
+["Yogurt bianco intero","latticini",66,3.8,4.3,3.9,0,"s"],
+["Skyr","latticini",63,11,4,0.2,0,"p"],
+["Kefir","latticini",46,3.3,4.1,1.5,0,"b"],
+["Ricotta vaccina","latticini",146,8.8,3.5,10.9,0,"p"],
+["Ricotta di pecora","latticini",157,9.5,4.2,11.5,0,"p"],
+["Fiocchi di latte","latticini",99,11.1,3.4,4.5,0,"p"],
+["Mozzarella","latticini",253,18.7,0.7,19.5,0,"p"],
+["Mozzarella light","latticini",163,20,1,9,0,"p"],
+["Mozzarella di bufala","latticini",288,16.7,0.4,24.4,0,"p"],
+["Burrata","latticini",330,13,1.5,30,0,"p"],
+["Stracciatella di burrata","latticini",280,11,2,26,0,"g"],
+["Scamorza","latticini",334,25,1,25.6,0,"p"],
+["Provola affumicata","latticini",330,25,1,25,0,"p"],
+["Parmigiano Reggiano","latticini",392,32.4,0,29.7,0,"g"],
+["Grana Padano","latticini",398,33,0,29,0,"g"],
+["Pecorino Romano","latticini",408,28.5,0.2,32.5,0,"g"],
+["Gorgonzola","latticini",324,19.1,0.1,27.5,0,"g"],
+["Stracchino","latticini",300,18.5,1.9,25.1,0,"p"],
+["Crescenza light","latticini",210,15,2.5,15.5,0,"p"],
+["Caprino fresco","latticini",228,14,2.5,18,0,"p"],
+["Feta","latticini",264,14.2,4.1,21.3,0,"p"],
+["Primo sale","latticini",280,20,2,21,0,"p"],
+["Formaggio spalmabile light","latticini",155,8.5,4.5,11.5,0,"g"],
+["Burro","latticini",758,0.8,1.1,83.4,0,"g"],
+["Mascarpone","latticini",455,4.6,4.2,47,0,"g"],
+["Uovo intero","uova",128,12.4,0.5,8.7,0,"p"],
+["Albume d'uovo","uova",43,10.7,0.7,0.2,0,"p"],
+["Uova di quaglia","uova",158,13,0.4,11,0,"p"],
+["Frittata semplice","uova",178,13,1,13.5,0,"p"],
+["Uovo sodo","uova",128,12.4,0.5,8.7,0,"p"],
+["Uova strapazzate","uova",150,12.5,1,10.5,0,"p"],
+/* ---- FRUTTA SECCA E SEMI ---- */
+["Mandorle","fruttasecca",603,22,4.6,55.3,0,"s"],
+["Noci","fruttasecca",689,14.3,5.1,68.1,0,"s"],
+["Nocciole","fruttasecca",655,13.8,6.1,64.1,0,"s"],
+["Pistacchi","fruttasecca",608,18.1,8.1,56.1,0,"s"],
+["Anacardi","fruttasecca",598,15,33,46,0,"s"],
+["Pinoli","fruttasecca",673,13.7,13.1,68.4,0,"g"],
+["Arachidi tostate","fruttasecca",598,29,8.5,50,0,"s"],
+["Noci pecan","fruttasecca",691,9.2,13.9,72,0,"s"],
+["Noci del Brasile","fruttasecca",659,14.3,12.3,66.4,0,"s"],
+["Macadamia","fruttasecca",718,7.9,13.8,75.8,0,"s"],
+["Semi di zucca","fruttasecca",559,30.2,10.7,49,0,"g"],
+["Semi di girasole","fruttasecca",584,20.8,20,51.5,0,"g"],
+["Semi di lino","fruttasecca",534,18.3,28.9,42.2,0,"g"],
+["Semi di chia","fruttasecca",486,16.5,42.1,30.7,0,"g"],
+["Semi di sesamo","fruttasecca",573,17.7,23.4,49.7,0,"g"],
+["Burro di arachidi 100%","fruttasecca",588,25.8,20,50,0,"g"],
+["Crema di mandorle 100%","fruttasecca",614,21.2,18.8,55.5,0,"g"],
+["Tahina","fruttasecca",595,17,21.2,53.8,0,"g"],
+["Cocco disidratato","fruttasecca",660,6.9,23.7,64.5,0,"s"],
+["Mix frutta secca (30g porzione)","fruttasecca",620,17,12,55,0,"s"],
+/* ---- CONDIMENTI, OLI, SALSE ---- */
+["Olio extravergine d'oliva","condimenti",884,0,0,100,0,"g"],
+["Olio di semi di girasole","condimenti",884,0,0,100,0,"g"],
+["Aceto di vino","condimenti",19,0,0.9,0,0,"g"],
+["Aceto balsamico","condimenti",88,0.5,17,0,0,"g"],
+["Succo di limone","condimenti",25,0.4,7,0,0,"g"],
+["Passata di pomodoro","condimenti",30,1.3,5.2,0.3,0,"v"],
+["Pomodori pelati","condimenti",24,1.2,3.5,0.4,0,"v"],
+["Doppio concentrato di pomodoro","condimenti",82,4.9,14.9,0.5,0,"g"],
+["Pesto alla genovese","condimenti",435,4.5,7,43,0,"g"],
+["Pesto di pomodori secchi","condimenti",340,4,15,29,0,"g"],
+["Salsa di soia","condimenti",53,8,4.9,0,0,"g"],
+["Senape","condimenti",66,4.4,5.8,3.3,0,"g"],
+["Maionese","condimenti",680,1.1,2.5,75,0,"g"],
+["Maionese light","condimenti",270,0.8,8,26,0,"g"],
+["Ketchup","condimenti",112,1.2,25.8,0.2,0,"g"],
+["Salsa yogurt (tzatziki)","condimenti",95,3.5,4,7,0,"g"],
+["Guacamole","condimenti",150,2,8,12.5,0,"g"],
+["Sugo pronto al basilico","condimenti",55,1.5,7.5,2,0,"v"],
+["Ragù di carne","condimenti",115,6.5,4,8,0,"g"],
+["Salsa di noci","condimenti",395,8,8,37,0,"g"],
+["Miele","condimenti",304,0.6,80.3,0,0,"d"],
+["Marmellata senza zuccheri aggiunti","condimenti",130,0.5,32,0.1,0,"d"],
+["Marmellata classica","condimenti",222,0.5,58.7,0.1,0,"d"],
+["Zucchero","condimenti",392,0,100,0,0,"d"],
+["Cacao amaro in polvere","condimenti",355,20,10,25,0,"g"],
+["Lievito di birra fresco","condimenti",78,12.1,4,0.4,0,"g"],
+["Sale, spezie ed erbe aromatiche","condimenti",0,0,0,0,0,"g"],
+["Brodo vegetale","condimenti",5,0.3,0.5,0.1,0,"b"],
+/* ---- COLAZIONE E SNACK ---- */
+["Pane integrale tostato + velo di marmellata","colazione",250,10,48,2.5,0,"s"],
+["Porridge di avena con latte p.s.","colazione",95,4.5,13.5,2.5,0,"s"],
+["Yogurt greco con mirtilli","colazione",70,8,6.5,1.2,[6,7,8],"s"],
+["Yogurt greco con miele e noci","colazione",130,8,10,6.5,0,"s"],
+["Caffè espresso","colazione",2,0.1,0.3,0,0,"b"],
+["Caffè macchiato","colazione",12,0.6,0.9,0.5,0,"b"],
+["Cappuccino","colazione",38,2,4,1.5,0,"b"],
+["Tè verde","colazione",1,0,0.2,0,0,"b"],
+["Orzo in tazza","colazione",8,0.2,1.8,0,0,"b"],
+["Spremuta d'arancia","colazione",45,0.7,10.5,0.2,[12,1,2,3,4],"b"],
+["Biscotti secchi","colazione",416,7.2,80.2,7.9,0,"s"],
+["Biscotti integrali","colazione",420,8,72,10.5,0,"s"],
+["Frollini","colazione",480,6.5,70,19,0,"s"],
+["Cornetto semplice","colazione",370,7.5,45,18,0,"s"],
+["Cornetto integrale al miele","colazione",350,8,48,14,0,"s"],
+["Pan bauletto integrale","colazione",270,9.5,48,4.5,0,"s"],
+["Crostata alla marmellata","colazione",370,5,60,12.5,0,"d"],
+["Ciambellone","colazione",390,6,52,17,0,"d"],
+["Plumcake allo yogurt","colazione",360,6.5,50,15,0,"d"],
+["Barretta ai cereali","colazione",395,6,68,11,0,"s"],
+["Barretta proteica","colazione",370,32,32,11,0,"s"],
+["Pancake proteici","colazione",190,14,22,5,0,"s"],
+["Pane e ricotta con miele","colazione",210,9,28,7,0,"s"],
+["Toast integrale con fesa di tacchino","colazione",200,13,28,4.5,0,"s"],
+["Frutta secca mista (porzione 25g)","colazione",615,16,12,55,0,"s"],
+["Parmigiano a cubetti (snack)","colazione",392,32.4,0,29.7,0,"s"],
+["Cioccolato fondente 85%","colazione",580,9.5,22,49,0,"d"],
+["Cioccolato fondente 70%","colazione",545,7.9,33.5,42,0,"d"],
+["Gelato artigianale alla frutta","colazione",130,1.5,28,1.5,[5,6,7,8,9],"d"],
+["Gelato artigianale alla crema","colazione",210,4,26,10,[5,6,7,8,9],"d"],
+/* ---- BEVANDE ---- */
+["Acqua","bevande",0,0,0,0,0,"b"],
+["Acqua frizzante","bevande",0,0,0,0,0,"b"],
+["Vino rosso (bicchiere 125ml)","bevande",83,0.1,2.6,0,0,"b"],
+["Vino bianco (bicchiere 125ml)","bevande",82,0.1,2.6,0,0,"b"],
+["Prosecco (flûte 100ml)","bevande",74,0.2,1.6,0,0,"b"],
+["Birra chiara (33cl = 100g x3.3)","bevande",43,0.5,3.6,0,0,"b"],
+["Birra artigianale IPA","bevande",55,0.6,4.5,0,0,"b"],
+["Spritz","bevande",90,0,8,0,0,"b"],
+["Amaro (30ml)","bevande",250,0,25,0,0,"b"],
+["Succo di frutta 100%","bevande",45,0.3,10.5,0.1,0,"b"],
+["Coca cola","bevande",42,0,10.6,0,0,"b"],
+["Bibita zero","bevande",0.5,0,0,0,0,"b"],
+["Tè freddo in bottiglia","bevande",28,0,7,0,0,"b"],
+["Acqua tonica","bevande",34,0,8.5,0,0,"b"],
+["Centrifugato di verdure","bevande",30,1,6,0.2,0,"b"],
+["Estratto arancia e carota","bevande",40,0.7,9,0.2,[12,1,2,3],"b"],
+["Latte di mandorla senza zuccheri","bevande",15,0.5,0.2,1.2,0,"b"],
+["Caffè d'orzo e latte","bevande",30,1.5,3.5,1,0,"b"],
+/* ---- DOLCI E EXTRA ---- */
+["Tiramisù","dolci",400,6,35,26,0,"d"],
+["Panna cotta","dolci",298,3.5,25,20.5,0,"d"],
+["Sorbetto al limone","dolci",130,0.2,32,0.1,[5,6,7,8,9],"d"],
+["Granita siciliana","dolci",95,0.2,24,0,[6,7,8],"d"],
+["Cannolo siciliano","dolci",420,8,45,23,0,"d"],
+["Pastiera napoletana","dolci",360,7,48,15.5,[3,4],"d"],
+["Colomba pasquale","dolci",390,6.5,55,16,[3,4],"d"],
+["Panettone","dolci",380,6.5,52,16,[12,1],"d"],
+["Pandoro","dolci",410,6.8,50,20.5,[12,1],"d"],
+["Torrone","dolci",479,10.5,65,20,[12,1],"d"],
+["Struffoli","dolci",430,6,58,19,[12,1],"d"],
+["Chiacchiere di carnevale","dolci",520,7,60,28,[1,2],"d"],
+["Castagnole","dolci",440,6.5,55,21,[1,2],"d"],
+["Zeppole di San Giuseppe","dolci",330,6,38,17,[3],"d"],
+["Frittelle di mele","dolci",250,4,38,9,[10,11,12,1],"d"],
+["Maritozzo con panna","dolci",405,6,42,24,0,"d"],
+["Cornetto alla crema","dolci",400,7,48,20,0,"d"],
+["Babà al rum","dolci",320,6,45,12,0,"d"],
+["Sfogliatella riccia","dolci",395,6.5,48,20,0,"d"],
+["Crostatina di frutta","dolci",330,4.5,52,11.5,0,"d"],
+["Torta margherita","dolci",370,7,55,13.5,0,"d"],
+["Torta caprese","dolci",450,8,38,30,0,"d"],
+["Salame di cioccolato","dolci",480,7,50,28,0,"d"],
+["Budino al cioccolato","dolci",150,3.5,24,4.5,0,"d"],
+["Cioccolatino (1 pezzo ~10g)","dolci",530,6,55,32,0,"d"],
+["Meringa","dolci",380,5.5,90,0,0,"d"],
+/* ---- PIATTI COMPLETI MEDITERRANEI (per 100g di piatto pronto) ---- */
+["Pasta al pomodoro e basilico","piatti",150,5,26,2.8,0,"x",1],
+["Pasta aglio, olio e peperoncino","piatti",190,5.5,28,6.5,0,"x",1],
+["Pasta alla puttanesca","piatti",165,5.5,25,5,0,"x",0],
+["Pasta alle vongole","piatti",155,8,23,3.8,0,"x",0],
+["Pasta al pesto","piatti",210,6.5,27,8.8,0,"x",1],
+["Pasta cacio e pepe","piatti",230,9.5,28,9,0,"x",1],
+["Pasta alla carbonara","piatti",240,10,26,11,0,"x",0],
+["Pasta all'amatriciana","piatti",215,8,27,8.5,0,"x",0],
+["Pasta alla gricia","piatti",235,9.5,26,11,0,"x",0],
+["Pasta alla Norma","piatti",175,6,25,6,[6,7,8,9],"x",1],
+["Pasta con tonno e pomodorini","piatti",170,9,24,4.5,0,"x",0],
+["Pasta zucchine e gamberetti","piatti",150,8,22,3.5,[5,6,7,8,9],"x",0],
+["Pasta broccoli e salsiccia","piatti",190,9,23,7.5,[10,11,12,1,2],"x",0],
+["Pasta e ceci","piatti",135,6.5,20,3.5,0,"x",1],
+["Pasta e lenticchie","piatti",130,6.8,20,2.8,0,"x",1],
+["Pasta e patate","piatti",140,4.5,24,3,0,"x",1],
+["Orecchiette alle cime di rapa","piatti",160,6,23,5,[11,12,1,2,3],"x",1],
+["Lasagne alla bolognese","piatti",190,9.5,17,9.5,0,"x",0],
+["Lasagne di verdure","piatti",145,6.5,15,6.5,0,"x",1],
+["Cannelloni ricotta e spinaci","piatti",165,7.5,16,8,0,"x",1],
+["Risotto ai funghi porcini","piatti",140,3.5,24,3.2,[9,10,11],"x",1],
+["Risotto alla milanese","piatti",155,3.8,26,4,0,"x",1],
+["Risotto agli asparagi","piatti",135,4,23,3,[3,4,5],"x",1],
+["Risotto alla pescatora","piatti",145,7.5,22,3.2,0,"x",0],
+["Risotto zucca e rosmarino","piatti",130,3.5,23,2.8,[9,10,11,12],"x",1],
+["Minestrone di verdure","piatti",45,2,7,1,0,"x",1],
+["Ribollita toscana","piatti",85,3.5,12,2.5,[10,11,12,1,2],"x",1],
+["Zuppa di farro e legumi","piatti",95,4.5,15,2,[10,11,12,1,2,3],"x",1],
+["Zuppa di lenticchie","piatti",80,5,12,1.5,[10,11,12,1,2],"x",1],
+["Vellutata di zucca","piatti",55,1.5,8,2,[9,10,11,12,1],"x",1],
+["Crema di cavolfiore","piatti",50,2,6,2,[11,12,1,2],"x",1],
+["Zuppa di pesce (cacciucco)","piatti",95,11,4,3.8,0,"x",0],
+["Pollo alla cacciatora","piatti",130,15,3,6.5,0,"x",0],
+["Pollo al limone","piatti",120,18,2,4.5,0,"x",0],
+["Pollo arrosto con patate","piatti",160,13,10,7.5,0,"x",0],
+["Scaloppine al limone","piatti",135,16,4,6,0,"x",0],
+["Saltimbocca alla romana","piatti",165,19,1,9.5,0,"x",0],
+["Spezzatino con piselli","piatti",120,12,6,5.5,0,"x",0],
+["Polpette al sugo","piatti",170,12,7,10.5,0,"x",0],
+["Bollito misto","piatti",180,22,0,10,[11,12,1,2],"x",0],
+["Arrosto di vitello","piatti",150,21,1,7,0,"x",0],
+["Tagliata con rucola e grana","piatti",165,22,1,8.5,0,"x",0],
+["Orata al forno con patate","piatti",130,13,8,5,0,"x",0],
+["Branzino al sale","piatti",100,17,0.5,3.2,0,"x",0],
+["Pesce spada alla griglia","piatti",125,19,1,5,[5,6,7,8,9],"x",0],
+["Salmone al forno con verdure","piatti",165,17,3,9.5,0,"x",0],
+["Merluzzo alla livornese","piatti",95,14,4,2.8,0,"x",0],
+["Baccalà alla vicentina","piatti",180,16,3,11.5,0,"x",0],
+["Alici al forno con pangrattato","piatti",150,16,6,7,[4,5,6,7,8,9],"x",0],
+["Polpo con patate","piatti",90,9,8,2.8,0,"x",0],
+["Insalata di mare","piatti",95,12,3,4,0,"x",0],
+["Impepata di cozze","piatti",85,11,3.5,2.8,0,"x",0],
+["Calamari alla griglia","piatti",85,14,1.5,2.5,0,"x",0],
+["Frittura di paranza","piatti",250,16,12,15,0,"x",0],
+["Parmigiana di melanzane","piatti",190,8,10,13,[6,7,8,9],"x",1],
+["Melanzane grigliate marinate","piatti",65,1.5,5,4.5,[6,7,8,9],"x",1],
+["Caponata siciliana","piatti",95,1.8,10,5.5,[6,7,8,9],"x",1],
+["Peperonata","piatti",75,1.2,9,4,[6,7,8,9],"x",1],
+["Frittata di zucchine","piatti",145,10,3.5,10.5,[5,6,7,8,9],"x",1],
+["Frittata di cipolle","piatti",155,10,6,10.5,0,"x",1],
+["Uova al pomodoro (in purgatorio)","piatti",115,8.5,4,7.5,0,"x",1],
+["Caprese (mozzarella e pomodoro)","piatti",165,10,3,12.5,[6,7,8,9],"x",1],
+["Insalata greca","piatti",110,4.5,5,8,[6,7,8,9],"x",1],
+["Panzanella toscana","piatti",120,3.5,17,4.5,[6,7,8],"x",1],
+["Insalata di riso","piatti",145,5,22,4,[6,7,8],"x",0],
+["Insalata di farro con verdure","piatti",135,4.5,21,3.8,[5,6,7,8,9],"x",1],
+["Insalata di pollo","piatti",120,15,3,5.5,0,"x",0],
+["Insalata di tonno, fagioli e cipolla","piatti",125,11,9,5,0,"x",0],
+["Pinzimonio con olio evo","piatti",55,1.2,4,3.8,0,"x",1],
+["Pizza margherita","piatti",270,10.5,33,10.5,0,"x",1],
+["Pizza marinara","piatti",240,7,36,7.5,0,"x",1],
+["Pizza con verdure grigliate","piatti",235,8.5,32,8,0,"x",1],
+["Pizza diavola","piatti",290,11,32,13,0,"x",0],
+["Cous cous di verdure","piatti",130,4,22,3,0,"x",1],
+["Cous cous di pesce alla trapanese","piatti",140,9,20,2.8,0,"x",0],
+["Gateau di patate","piatti",165,7,17,8,0,"x",1],
+["Tortino di alici e patate","piatti",140,11,10,6.5,[4,5,6,7,8],"x",0],
+["Vitello tonnato","piatti",190,18,2,12,0,"x",0],
+["Tonno scottato al sesamo","piatti",180,22,3,9,0,"x",0],
+["Poke bowl salmone e riso","piatti",150,9,18,5,0,"x",0],
+["Bowl quinoa, ceci e verdure","piatti",140,6,18,5,0,"x",1],
+["Gnocchi al pomodoro","piatti",140,4,26,2.5,0,"x",1],
+["Gnocchi alla sorrentina","piatti",175,7,24,6,0,"x",1],
+["Trippa alla romana","piatti",120,14,3,6,0,"x",0],
+["Coda alla vaccinara","piatti",185,16,4,11.5,0,"x",0],
+["Abbacchio al forno","piatti",200,18,2,13.5,[3,4],"x",0],
+["Carciofi alla romana","piatti",90,2.8,8,5.5,[2,3,4,5],"x",1],
+["Carciofi alla giudia","piatti",150,3,9,11,[2,3,4],"x",1],
+["Supplì al telefono","piatti",240,7,32,9.5,0,"x",1],
+["Fiori di zucca ripieni fritti","piatti",210,7,15,14,[5,6,7,8],"x",1],
+["Verdure grigliate miste","piatti",60,1.8,5,3.8,[5,6,7,8,9],"x",1],
+["Verdure al forno","piatti",80,1.8,9,4.5,0,"x",1],
+["Purè di patate","piatti",100,2.5,15,3.5,0,"x",1],
+["Cicoria ripassata","piatti",60,1.8,3,4.8,[10,11,12,1,2,3],"x",1],
+["Spinaci saltati con olio","piatti",70,3,3,5,[10,11,12,1,2,3],"x",1],
+["Broccoli ripassati aglio e olio","piatti",75,3.2,5,5,[10,11,12,1,2],"x",1],
+["Fagiolini in insalata","piatti",55,1.8,6,2.8,[6,7,8,9],"x",1],
+["Tabbouleh","piatti",125,3.5,20,3.5,[6,7,8],"x",1],
+["Farinata di ceci","piatti",190,6.5,18,10.5,0,"x",1],
+["Panino con bresaola e rucola","piatti",190,14,25,3.8,0,"x",0],
+["Panino caprese","piatti",220,10,26,8.5,[6,7,8,9],"x",1],
+["Tramezzino tonno e pomodoro","piatti",210,10,24,8.5,0,"x",0],
+["Piadina crudo e stracchino","piatti",280,13,28,13,0,"x",0],
+["Toast prosciutto e formaggio","piatti",260,13,27,11,0,"x",0]
+];
+/* ============================================================
+   DATI · Esercizi con manubri (max ~16 kg) + corpo libero
+   [nome, gruppo(full|upper|lower|core), carico(0=corpo libero, 1=leggero, 2=medio, 3=pesante), nota]
+   ============================================================ */
+const EX_DB=[
+["Goblet squat","lower",3,"manubrio al petto, scendi lento"],
+["Affondi in camminata","lower",2,"un manubrio per mano"],
+["Affondi inversi","lower",2,"schiena dritta"],
+["Stacco rumeno con manubri","lower",3,"gambe semitese, schiena neutra"],
+["Squat bulgaro","lower",2,"piede posteriore su sedia"],
+["Step-up su sedia/panca","lower",2,"spingi col tallone"],
+["Ponte glutei con manubrio","lower",3,"manubrio sul bacino"],
+["Calf in piedi con manubri","lower",2,"salita lenta, pausa in alto"],
+["Squat jump (corpo libero)","lower",0,"atterraggio morbido"],
+["Panca a terra con manubri","upper",3,"gomiti a 45°"],
+["Piegamenti sulle braccia","upper",0,"corpo in linea"],
+["Rematore un braccio","upper",3,"appoggia mano su sedia"],
+["Rematore due manubri busto flesso","upper",2,"schiena piatta"],
+["Shoulder press in piedi","upper",2,"core attivo, niente inarcamento"],
+["Alzate laterali","upper",1,"gomiti morbidi"],
+["Alzate frontali","upper",1,"controlla la discesa"],
+["Curl bicipiti alternato","upper",2,"gomiti fermi"],
+["Curl a martello","upper",2,"presa neutra"],
+["French press con manubrio","upper",2,"un manubrio a due mani dietro la nuca"],
+["Kickback tricipiti","upper",1,"busto parallelo al pavimento"],
+["Pullover con manubrio","upper",2,"sdraiato, braccia semitese"],
+["Arnold press","upper",2,"rotazione fluida"],
+["Croci a terra","upper",2,"apertura controllata"],
+["Shrug (scrollate)","upper",3,"spalle su, pausa 1 secondo"],
+["Plank","core",0,"30-45 secondi, glutei contratti"],
+["Side plank","core",0,"20-30 secondi per lato"],
+["Russian twist con manubrio","core",1,"ruota il busto, non le braccia"],
+["Crunch con manubrio al petto","core",1,"sguardo in alto"],
+["Mountain climbers","core",0,"ritmo costante"],
+["Dead bug","core",0,"schiena incollata a terra"],
+["Leg raise sdraiato","core",0,"gambe tese, discesa lenta"],
+["Woodchop con manubrio","core",1,"movimento diagonale"],
+["Hollow hold","core",0,"20-30 secondi"],
+["Farmer's walk","full",3,"cammina 40 passi coi manubri"],
+["Thruster (squat + press)","full",2,"movimento unico e fluido"],
+["Renegade row","full",2,"posizione di piegamento + rematore"],
+["Swing con manubrio","full",2,"spinta d'anca, non di braccia"],
+["Devil press","full",2,"burpee + doppio manubrio sopra la testa"],
+["Clean & press","full",2,"esplosivo in salita, lento in discesa"],
+["Burpees (corpo libero)","full",0,"versione senza salto se stanco"],
+["Jumping jacks","full",0,"riscaldamento o finisher"],
+["Squat + curl + press","full",2,"catena completa"]
+];
+const KG_MAP={0:"corpo libero",1:"4–6 kg",2:"8–12 kg",3:"12–16 kg"};
+const MESI=["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+const GIORNI=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
+const PROT_EXPLAIN=[
+[1.2,1.4,"<b>1,2–1,4 g/kg</b> · Minimo raccomandato in deficit. Copre il fabbisogno base ma protegge poco la massa muscolare se il deficit è ampio."],
+[1.5,1.7,"<b>1,5–1,7 g/kg</b> · Buon compromesso: sazietà elevata e buona protezione muscolare per chi si allena 3–4 volte a settimana."],
+[1.8,2.0,"<b>1,8–2,0 g/kg</b> · Fascia consigliata dalle evidenze per dimagrimento aggressivo: massima conservazione della massa magra e forte effetto saziante."],
+[2.1,2.4,"<b>2,1–2,4 g/kg</b> · Utile con deficit molto ampi o allenamento intenso. Nessun vantaggio ulteriore oltre 2,4; controindicato solo con patologie renali."]];
+
+/* ============================================================
+   STORAGE ADAPTER — oggi localStorage, domani Supabase:
+   basta reimplementare load()/save() mantenendo l'interfaccia.
+   ============================================================ */
+const Storage={
+  KEY:"rotta80_v1", mem:null, persistent:true,
+  load(){ try{ const raw=localStorage.getItem(this.KEY); return raw?JSON.parse(raw):null; }
+          catch(e){ this.persistent=false; return this.mem; } },
+  save(state){ this.mem=state;
+    try{ localStorage.setItem(this.KEY,JSON.stringify(state)); }
+    catch(e){ this.persistent=false; } }
+};
+
+/* ============================================================
+   STATO
+   ============================================================ */
+function defaultUser(id){return{
+  id, nome:"Io", sesso:"M", eta:46, alt:186, goal:80,
+  ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
+  passiBase:6000, esclusioni:["fegato","finocchio"],
+  startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
+let S=Storage.load()||{users:[defaultUser(1)],active:1};
+let U=S.users.find(u=>u.id===S.active)||S.users[0];
+const save=()=>Storage.save(S);
+
+/* ============================================================
+   MOTORE · date, rng deterministico, fabbisogno, ciclizzazione
+   ============================================================ */
+function todayKey(d=new Date()){return d.toISOString().slice(0,10);}
+function dateFromKey(k){return new Date(k+"T12:00:00");}
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function rng(seed){let s=seed||1;return()=>{s=Math.imul(s^(s>>>15),s|1);s^=s+Math.imul(s^(s>>>7),s|61);return((s^(s>>>14))>>>0)/4294967296;};}
+
+function pesoAttuale(){ return U.pesi.length? U.pesi[U.pesi.length-1].kg : 94; }
+function bmr(){ const p=pesoAttuale();
+  return 10*p + 6.25*U.alt - 5*U.eta + (U.sesso==="M"?5:-161); }
+function tdee(){ return Math.round(bmr()*1.2 + stepsGoalToday()*0.03); }
+function deficitTarget(){ return {moderato:500,sostenuto:750,aggressivo:1000}[U.ritmo]||750; }
+function kcalMedia(){ const floor=Math.max(Math.round(bmr()*0.85),1400);
+  return Math.max(tdee()-deficitTarget(),floor); }
+
+/* Tipo giorno: pattern settimanale [2 bassi, 4 pieni, 1 ricarica] mescolato con seed della settimana.
+   Media settimanale = kcalMedia. basso −15% · pieno base · ricarica +22% */
+function weekSeed(dateKey){ const d=dateFromKey(dateKey);
+  const monday=new Date(d); monday.setDate(d.getDate()-((d.getDay()+6)%7));
+  return hash(U.id+"w"+todayKey(monday)+U.salt); }
+function dayType(dateKey){
+  const r=rng(weekSeed(dateKey)); const pattern=["basso","basso","pieno","pieno","pieno","pieno","ricarica"];
+  for(let i=pattern.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[pattern[i],pattern[j]]=[pattern[j],pattern[i]];}
+  const idx=(dateFromKey(dateKey).getDay()+6)%7; return pattern[idx]; }
+function kcalDay(dateKey){
+  const m=kcalMedia(); const t=dayType(dateKey);
+  const mult={basso:0.85,pieno:1.0,ricarica:1.22}[t];
+  /* normalizza perché 2*0.85+4*1+1.22=6.92 → correggi a media esatta */
+  return Math.round(m*mult*7/6.92); }
+function macros(dateKey){
+  const kcal=kcalDay(dateKey); const p=Math.round(U.protKg*pesoAttuale());
+  const f=Math.max(Math.round(kcal*0.27/9), Math.round(0.6*pesoAttuale()));
+  const c=Math.max(Math.round((kcal-p*4-f*9)/4),40);
+  return {kcal,p,c,f}; }
+function isVegDay(dateKey){
+  const r=rng(weekSeed(dateKey)+7); const idx=(dateFromKey(dateKey).getDay()+6)%7;
+  const days=[0,1,2,3,4,5,6]; for(let i=6;i>0;i--){const j=Math.floor(r()*(i+1));[days[i],days[j]]=[days[j],days[i]];}
+  return days.indexOf(idx)<(+U.vegDays||0); }
+function schemaOfDay(dateKey){
+  if(U.schema==="if168")return"if168"; if(U.schema==="colaz")return"colaz";
+  return rng(hash(dateKey+"s"+U.id+U.salt))()<0.5?"if168":"colaz"; }
+function stepsGoalToday(dateKey=todayKey()){
+  const weeks=Math.max(0,Math.floor((dateFromKey(dateKey)-dateFromKey(U.startDate))/(7*864e5)));
+  return Math.min(10000,(+U.passiBase||6000)+500*weeks); }
+
+/* ============================================================
+   MOTORE · generatore menu
+   ============================================================ */
+function excluded(name){ return (U.esclusioni||[]).some(e=>e && name.toLowerCase().includes(e.trim().toLowerCase())); }
+function isVegFood(f){ const cat=f[1];
+  if(cat==="carne"||cat==="pesce"||cat==="salumi") return false;
+  if(f[7]==="x") return f[8]===1; return true; }
+function inSeason(f,month){ return f[6]===0 || f[6].includes(month); }
+function pool(role,{veg=false,month,recent}){ 
+  return FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>
+    f[7]===role && inSeason(f,month) && !excluded(f[0]) && (!veg||isVegFood(f)))
+    .filter(({i})=>!recent.has(i) || Math.random()<0.15); }
+function pick(arr,r){ return arr[Math.floor(r()*arr.length)]; }
+function recentFoodIds(dateKey){ const set=new Set();
+  const d=dateFromKey(dateKey);
+  for(let i=1;i<=4;i++){ const k=todayKey(new Date(d-i*864e5));
+    const m=U.menuCache[k]; if(m) m.meals.forEach(me=>me.items.forEach(it=>set.add(it.id))); }
+  return set; }
+function scale(f,grams){ const k=grams/100;
+  return {id:FOOD_DB.indexOf(f),name:f[0],g:grams,kcal:Math.round(f[2]*k),p:+(f[3]*k).toFixed(1),c:+(f[4]*k).toFixed(1),fat:+(f[5]*k).toFixed(1)}; }
+function fitGrams(f,targetKcal,min,max){ 
+  const g=Math.round((targetKcal/(f[2]||1))*100/5)*5; return Math.max(min,Math.min(max,g)); }
+
+function buildMeal(name,kcalTarget,r,ctx){
+  const raw=[]; const items=[];
+  const add=(f,g,min,max)=>{ if(f) raw.push({f,g,min:min??20,max:max??500}); };
+  const addFit=(f,target,min,max)=>{ if(f) add(f,fitGrams(f,target,min,max),min,max); };
+  const P=pool("p",ctx), C=pool("c",ctx), V=pool("v",ctx), G=pool("g",ctx), X=pool("x",ctx), FR=pool("fr",ctx), Sn=pool("s",ctx);
+  if(name==="Colazione"){
+    const s=pick(Sn,r); if(s) addFit(s.f,kcalTarget*0.8,25,120);
+    const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.2,80,200);
+  } else if(name==="Spuntino"){
+    if(r()<0.5){const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget,100,250);}
+    else {const s=pick(Sn,r); if(s) addFit(s.f,kcalTarget,15,60);}
+  } else { /* Pranzo o Cena */
+    const style=r();
+    if(style<0.35 && X.length){ /* piatto unico */
+      const x=pick(X,r); addFit(x.f,kcalTarget*0.88,200,450);
+      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.12,100,200);
+    } else if(style<0.65){ /* primo + contorno */
+      const c=pick(C,r); if(c) addFit(c.f,kcalTarget*0.55,50,130);
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.12,150,300);
+      const g=pick(G,r); if(g) addFit(g.f,kcalTarget*0.18,5,20);
+      const fr=pick(FR,r); if(fr) addFit(fr.f,kcalTarget*0.15,100,200);
+    } else { /* secondo + contorno + pane */
+      const p=pick(P,r); if(p) addFit(p.f,kcalTarget*0.42,90,250);
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.12,150,300);
+      const pane=C.filter(({f})=>f[0].toLowerCase().includes("pane")||f[0].includes("Gallette")||f[0].includes("Friselle"));
+      const b=pick(pane.length?pane:C,r); if(b) addFit(b.f,kcalTarget*0.28,30,110);
+      const g=pick(G,r); if(g) addFit(g.f,kcalTarget*0.18,5,20);
+    }
+  }
+  /* ribilanciamento: avvicina il totale del pasto al target rispettando i limiti di porzione */
+  for(let pass=0;pass<3;pass++){
+    const cur=raw.reduce((a,x)=>a+x.f[2]*x.g/100,0)||1;
+    const ratio=kcalTarget/cur; if(Math.abs(1-ratio)<0.05) break;
+    raw.forEach(x=>{ x.g=Math.max(x.min,Math.min(x.max,Math.round(x.g*ratio/5)*5)); });
+  }
+  /* se manca ancora energia, integra con alimenti densi (olio, pane, frutta secca) */
+  for(let t=0;t<2;t++){
+    const cur=raw.reduce((a,x)=>a+x.f[2]*x.g/100,0);
+    const gap=kcalTarget-cur; if(gap<kcalTarget*0.08) break;
+    const dense=[...G,...Sn].filter(o=>o.f[2]>=300 && !raw.some(x=>x.f[0]===o.f[0]));
+    const breads=C.filter(o=>/pane|gallette|friselle|grissini/i.test(o.f[0]) && !raw.some(x=>x.f[0]===o.f[0]));
+    const src2=gap>260&&breads.length?breads:(dense.length?dense:C);
+    const fill=pick(src2,r); if(!fill) break;
+    add(fill.f,fitGrams(fill.f,gap,10,150),10,150);
+  }
+  raw.forEach(x=>items.push(scale(x.f,x.g)));
+  const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
+  return {name,items,tot};
+}
+function genMenu(dateKey,force){
+  if(!force && U.menuCache[dateKey]) return U.menuCache[dateKey];
+  const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
+  const schema=schemaOfDay(dateKey); const veg=isVegDay(dateKey);
+  const m=macros(dateKey); const month=dateFromKey(dateKey).getMonth()+1;
+  const ctx={veg,month,recent:recentFoodIds(dateKey)};
+  const split=schema==="if168"
+    ? [["Pranzo",0.46],["Spuntino",0.10],["Cena",0.44]]
+    : [["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]];
+  const meals=split.map(([n,q])=>buildMeal(n,m.kcal*q,r,ctx));
+  const menu={schema,veg,dayType:dayType(dateKey),target:m,meals,eaten:{}};
+  U.menuCache[dateKey]=menu;
+  /* mantieni cache leggera */
+  const keys=Object.keys(U.menuCache).sort(); while(keys.length>21) delete U.menuCache[keys.shift()];
+  save(); return menu;
+}
+
+/* ============================================================
+   MOTORE · allenamento
+   ============================================================ */
+function genWorkout(dateKey,force){
+  if(!force && U.woCache[dateKey]) return U.woCache[dateKey];
+  const r=rng(hash(dateKey+"x"+U.id+(U.salt||0)));
+  const dow=dateFromKey(dateKey).getDay();
+  const rot=["core","upper","lower","full","upper","long","lower"]; /* dom..sab, sabato lungo */
+  const focus=rot[dow];
+  let wo;
+  if(focus==="long"){
+    const picks=[...shuffle(EX_DB.filter(e=>e[1]==="lower"),r).slice(0,2),
+                 ...shuffle(EX_DB.filter(e=>e[1]==="upper"),r).slice(0,3),
+                 ...shuffle(EX_DB.filter(e=>e[1]==="core"),r).slice(0,1)];
+    wo={label:"Sessione lunga · ~30 min",format:"3 serie × 10–12 ripetizioni · recupero 60″",ex:picks};
+  } else {
+    const poolEx=EX_DB.filter(e=>e[1]===focus||e[1]==="full");
+    wo={label:"Micro-sessione · 12 min ("+({core:"core",upper:"parte alta",lower:"gambe e glutei",full:"total body"})[focus]+")",
+        format:"3 giri di circuito · 40″ lavoro / 20″ recupero",ex:shuffle(poolEx,r).slice(0,4)};
+  }
+  U.woCache[dateKey]=wo;
+  const keys=Object.keys(U.woCache).sort(); while(keys.length>14) delete U.woCache[keys.shift()];
+  save(); return wo;
+}
+function shuffle(a,r){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ============================================================
+   LOG giornaliero
+   ============================================================ */
+function dayLog(k=todayKey()){ if(!U.log[k]) U.log[k]={pasti:[],passi:0,wo:false}; return U.log[k]; }
+function totalsOf(k){ const l=U.log[k];
+  if(!l) return {kcal:0,p:0,c:0,fat:0};
+  return l.pasti.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0}); }
+/* ============================================================
+   UI
+   ============================================================ */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const fmt=n=>n.toLocaleString("it-IT");
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
+
+/* --- navigazione --- */
+$$("nav button").forEach(b=>b.onclick=()=>{
+  $$("nav button").forEach(x=>x.classList.toggle("on",x===b));
+  $$(".page").forEach(p=>p.classList.toggle("on",p.id==="pg-"+b.dataset.pg));
+  render(); });
+
+/* --- OGGI --- */
+function renderToday(){
+  const k=todayKey(); const menu=genMenu(k); const m=menu.target; const tot=totalsOf(k);
+  const d=new Date();
+  $("#topdate").textContent=GIORNI[d.getDay()]+" "+d.getDate()+" "+MESI[d.getMonth()];
+  $("#kcalEaten").textContent=fmt(Math.round(tot.kcal));
+  $("#kcalTarget").textContent=fmt(m.kcal);
+  const pct=Math.min(tot.kcal/m.kcal,1.15);
+  $("#dialArc").style.strokeDashoffset=257.6*(1-Math.min(pct,1));
+  $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"#B23A2B":"#2E5E6E";
+  $("#dialPct").textContent=Math.round(tot.kcal/m.kcal*100)+"%";
+  const chip=$("#dayTypeChip"); chip.className="chip "+menu.dayType;
+  chip.textContent={basso:"Giorno basso",pieno:"Giorno pieno",ricarica:"Ricarica"}[menu.dayType];
+  $("#vegChip").hidden=!menu.veg;
+  $("#schemaLabel").textContent=(menu.schema==="if168"?"Schema 16:8 — oggi salti la colazione":"Colazione leggera + pranzo e cena")+" · media settimanale "+fmt(kcalMedia())+" kcal";
+  /* barre macro */
+  const bars=[["Proteine",tot.p,m.p,"p"],["Carboidrati",tot.c,m.c,"c"],["Grassi",tot.fat,m.f,"f"]];
+  $("#macroBars").innerHTML=bars.map(([n,v,t,cl])=>`
+    <div class="row"><span>${n}</span><span><b>${Math.round(v)}</b> / ${t} g</span></div>
+    <div class="bar ${v>t*1.1?"over":""}"><i class="${cl}" style="width:${Math.min(v/t*100,100)}%"></i></div>`).join("");
+  /* menu */
+  $("#menuList").innerHTML=menu.meals.map((me,i)=>`
+    <div class="meal ${menu.eaten[i]?"done":""}">
+      <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
+        <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
+      <ul>${me.items.map(it=>`<li><span>${it.name}</span><span class="q">${it.g} g · ${it.kcal} kcal</span></li>`).join("")}</ul>
+    </div>`).join("");
+  $$("#menuList [data-eat]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.eat; if(menu.eaten[i]) return;
+    menu.eaten[i]=true;
+    menu.meals[i].items.forEach(it=>dayLog().pasti.push({...it,meal:menu.meals[i].name,src:"menu"}));
+    save(); render(); toast(menu.meals[i].name+" registrato"); });
+  /* passi */
+  const log=dayLog(); const goal=stepsGoalToday();
+  $("#stepsNow").textContent=fmt(log.passi); $("#stepsGoal").textContent=fmt(goal);
+  $("#stepsBar").style.width=Math.min(log.passi/goal*100,100)+"%";
+  /* allenamento */
+  const wo=genWorkout(k);
+  $("#woBadge").textContent=log.wo?"✓ fatto":wo.label.split("·")[1];
+  $("#woList").innerHTML=`<div class="small" style="margin-bottom:6px"><b>${wo.label}</b> — ${wo.format}</div>`+
+    wo.ex.map(e=>`<div class="ex"><span>${e[0]}<br><span class="small">${e[3]}</span></span><span class="kg">${KG_MAP[e[2]]}</span></div>`).join("");
+  /* stagione */
+  const month=d.getMonth()+1;
+  const seas=FOOD_DB.filter(f=>(f[1]==="verdura"||f[1]==="frutta")&&f[6]!==0&&f[6].includes(month)&&!excluded(f[0]));
+  $("#seasonStrip").innerHTML=shuffle(seas,rng(hash(k))).slice(0,12).map(f=>`<span>${f[0]}</span>`).join("");
+  /* log libero */
+  renderLogList();
+}
+function renderLogList(){
+  const l=dayLog();
+  $("#logList").innerHTML=l.pasti.length? l.pasti.map((it,i)=>
+    `<li><span>${it.meal?it.meal+" · ":""}${it.name} <span class="small">${it.g} g</span></span>
+     <span>${it.kcal} kcal <button class="del" data-del="${i}" aria-label="Elimina">✕</button></span></li>`).join("")
+    :`<li class="small">Nessun alimento registrato oggi.</li>`;
+  $$("#logList [data-del]").forEach(b=>b.onclick=()=>{ dayLog().pasti.splice(+b.dataset.del,1); save(); render(); });
+}
+$("#btnRegen").onclick=()=>{ U.salt=(U.salt||0)+1; delete U.menuCache[todayKey()]; genMenu(todayKey(),true); save(); render(); toast("Nuovo menu generato"); };
+$("#btnWoRegen").onclick=()=>{ U.salt=(U.salt||0)+1; delete U.woCache[todayKey()]; genWorkout(todayKey(),true); save(); render(); };
+$("#btnWoDone").onclick=()=>{ dayLog().wo=true; save(); render(); toast("Allenamento registrato 💪"); };
+$$("[data-steps]").forEach(b=>b.onclick=()=>{ dayLog().passi+=+b.dataset.steps; save(); render(); });
+$("#btnStepsManual").onclick=()=>{ const v=prompt("Passi totali di oggi:",dayLog().passi); if(v!==null){ dayLog().passi=Math.max(0,parseInt(v)||0); save(); render(); } };
+
+/* --- ricerca alimenti --- */
+let dlgFood=null;
+$("#foodSearch").oninput=e=>{
+  const q=e.target.value.trim().toLowerCase(); const box=$("#foodResults");
+  if(q.length<2){ box.hidden=true; return; }
+  const res=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>f[0].toLowerCase().includes(q)).slice(0,25);
+  box.hidden=false;
+  box.innerHTML=res.length? res.map(({f,i})=>`<div class="fooditem" data-fid="${i}">
+      <span>${f[0]}</span><span class="fk">${f[2]} kcal · P${f[3]}/C${f[4]}/G${f[5]} per 100g</span></div>`).join("")
+    :`<div class="fooditem"><span class="small">Nessun risultato. Prova un sinonimo.</span></div>`;
+  $$("#foodResults [data-fid]").forEach(el=>el.onclick=()=>{
+    dlgFood=FOOD_DB[+el.dataset.fid];
+    $("#dlgFoodName").textContent=dlgFood[0];
+    $("#dlgFoodInfo").textContent=`${dlgFood[2]} kcal · ${dlgFood[3]}g prot · ${dlgFood[4]}g carb · ${dlgFood[5]}g grassi (per 100 g)`;
+    const h=new Date().getHours();
+    $("#dlgMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
+    $("#dlgGrams").value=100; $("#dlgQty").showModal(); });
+};
+$("#dlgCancel").onclick=()=>$("#dlgQty").close();
+$("#dlgAdd").onclick=()=>{
+  const g=Math.max(1,parseInt($("#dlgGrams").value)||100);
+  const it=scale(dlgFood,g); it.meal=$("#dlgMeal").value; it.src="free";
+  dayLog().pasti.push(it); save(); $("#dlgQty").close();
+  $("#foodSearch").value=""; $("#foodResults").hidden=true; render(); toast(it.name+" aggiunto"); };
+
+/* --- SETTIMANA --- */
+function renderWeek(){
+  const days=[]; const now=dateFromKey(todayKey());
+  for(let i=6;i>=0;i--){ const k=todayKey(new Date(now-i*864e5)); days.push(k); }
+  const data=days.map(k=>({k,tot:totalsOf(k),target:macros(k)}));
+  const maxK=Math.max(...data.map(d=>Math.max(d.tot.kcal,d.target.kcal)),1);
+  $("#weekBars").innerHTML=data.map(d=>{
+    const h=Math.round(d.tot.kcal/maxK*100), th=Math.round(d.target.kcal/maxK*100);
+    const dd=dateFromKey(d.k);
+    return `<div class="wb"><div class="col ${d.tot.kcal>d.target.kcal*1.05?"overq":""}" style="height:${h}%">
+      <div class="tline" style="bottom:${Math.max(th-h,0)}%"></div></div>
+      <div class="lbl">${GIORNI[dd.getDay()]}</div></div>`; }).join("");
+  const sumT=data.reduce((a,d)=>a+d.tot.kcal,0), sumG=data.reduce((a,d)=>a+d.target.kcal,0);
+  $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> / ${fmt(sumG)} kcal
+    (${sumT<=sumG?"nei limiti ✓":"sopra di "+fmt(Math.round(sumT-sumG))+" kcal"}). La linea nera indica l'obiettivo del giorno.`;
+  const mac=data.reduce((a,d)=>({p:a.p+d.tot.p,c:a.c+d.tot.c,f:a.f+d.tot.fat}),{p:0,c:0,f:0});
+  const macT=data.reduce((a,d)=>({p:a.p+d.target.p,c:a.c+d.target.c,f:a.f+d.target.f}),{p:0,c:0,f:0});
+  $("#weekMacro").innerHTML=[["Proteine",mac.p,macT.p,"p"],["Carboidrati",mac.c,macT.c,"c"],["Grassi",mac.f,macT.f,"f"]]
+    .map(([n,v,t,cl])=>`<div class="row" style="display:flex;justify-content:space-between;font-size:.78rem"><span>${n}</span><span><b>${fmt(Math.round(v))}</b> / ${fmt(Math.round(t))} g settimanali</span></div>
+    <div class="bar"><i class="${cl}" style="width:${Math.min(v/t*100,100)}%"></i></div>`).join("");
+  $("#weekTable").innerHTML=`<tr><th>Giorno</th><th>kcal</th><th>Obiett.</th><th>Prot</th><th>Passi</th><th>💪</th></tr>`+
+    data.map(d=>{ const dd=dateFromKey(d.k); const l=U.log[d.k]||{passi:0,wo:false};
+      return `<tr><td>${GIORNI[dd.getDay()]} ${dd.getDate()}</td><td>${fmt(Math.round(d.tot.kcal))}</td>
+      <td>${fmt(d.target.kcal)}</td><td>${Math.round(d.tot.p)}g</td><td>${fmt(l.passi)}</td><td>${l.wo?"✓":"–"}</td></tr>`; }).join("");
+}
+
+/* --- PROGRESSI --- */
+function renderProg(){
+  const list=$("#weightList");
+  list.innerHTML=U.pesi.length? U.pesi.slice().reverse().map((w,ri)=>{
+      const i=U.pesi.length-1-ri; const dd=dateFromKey(w.d);
+      return `<li><span>${dd.getDate()} ${MESI[dd.getMonth()]} ${dd.getFullYear()}</span>
+      <span><b>${w.kg.toFixed(1)} kg</b> <button class="del" data-wdel="${i}">✕</button></span></li>`; }).join("")
+    :`<li class="small">Registra la prima pesata il giorno in cui inizi la dieta.</li>`;
+  $$("#weightList [data-wdel]").forEach(b=>b.onclick=()=>{ U.pesi.splice(+b.dataset.wdel,1); save(); render(); });
+  /* ETA e box */
+  const p=pesoAttuale(); const perse=U.pesi.length>1?(U.pesi[0].kg-p):0;
+  const rate=deficitTarget()*7/7700; /* kg/settimana teorici */
+  const weeks=Math.max(0,(p-U.goal)/rate);
+  const eta=new Date(Date.now()+weeks*7*864e5);
+  $("#etaBoxes").innerHTML=`
+    <div class="box"><b>${p.toFixed(1)} kg</b><span>peso attuale</span></div>
+    <div class="box"><b>${perse>=0?"−":"+"}${Math.abs(perse).toFixed(1)} kg</b><span>dall'inizio</span></div>
+    <div class="box"><b>${MESI[eta.getMonth()]} ${eta.getFullYear()}</b><span>obiettivo ${U.goal} kg (~${rate.toFixed(2)} kg/sett)</span></div>`;
+  /* avviso perdita troppo rapida */
+  const n=$("#weightNotice");
+  if(U.pesi.length>=3){
+    const last=U.pesi.slice(-3); const dDays=(dateFromKey(last[2].d)-dateFromKey(last[0].d))/864e5;
+    const wRate=dDays>0?(last[0].kg-last[2].kg)/dDays*7:0;
+    if(wRate>1.3){ n.hidden=false; n.textContent="Stai perdendo più di 1,3 kg a settimana: oltre questo ritmo rischi di perdere massa muscolare. Considera di passare a un ritmo meno aggressivo o aggiungere una ricarica."; }
+    else n.hidden=true;
+  } else n.hidden=true;
+  drawChart();
+}
+function drawChart(){
+  const cv=$("#weightChart"), ctx=cv.getContext&&cv.getContext("2d");
+  if(!ctx) return;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const W=cv.width,H=cv.height,pad=36;
+  const data=U.pesi;
+  const minY=Math.min(U.goal-1,...data.map(d=>d.kg))-1;
+  const maxY=Math.max(95,...data.map(d=>d.kg))+1;
+  const y=v=>H-pad-(v-minY)/(maxY-minY)*(H-2*pad);
+  /* linea obiettivo */
+  ctx.strokeStyle="#C9932A"; ctx.setLineDash([6,5]); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pad,y(U.goal)); ctx.lineTo(W-8,y(U.goal)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle="#C9932A"; ctx.font="600 13px sans-serif"; ctx.fillText("obiettivo "+U.goal+" kg",pad,y(U.goal)-6);
+  if(!data.length){ ctx.fillStyle="#5C6B72"; ctx.fillText("Nessuna pesata ancora registrata",pad,H/2); return; }
+  const t0=dateFromKey(data[0].d).getTime(), t1=Math.max(dateFromKey(data[data.length-1].d).getTime(),t0+864e5);
+  const x=t=>pad+(t-t0)/(t1-t0)*(W-pad-14);
+  /* assi */
+  ctx.strokeStyle="#E4E0D3"; ctx.lineWidth=1; ctx.fillStyle="#5C6B72"; ctx.font="11px sans-serif";
+  for(let v=Math.ceil(minY/2)*2;v<=maxY;v+=2){ ctx.beginPath(); ctx.moveTo(pad,y(v)); ctx.lineTo(W-8,y(v)); ctx.stroke(); ctx.fillText(v,4,y(v)+4); }
+  /* trend EMA */
+  let ema=data[0].kg; const emaPts=data.map(d=>({t:dateFromKey(d.d).getTime(),v:(ema=ema*0.7+d.kg*0.3)}));
+  ctx.strokeStyle="#B23A2B"; ctx.lineWidth=2; ctx.beginPath();
+  emaPts.forEach((p,i)=>i?ctx.lineTo(x(p.t),y(p.v)):ctx.moveTo(x(p.t),y(p.v))); ctx.stroke();
+  /* punti reali */
+  ctx.strokeStyle="#2E5E6E"; ctx.lineWidth=2.5; ctx.beginPath();
+  data.forEach((d,i)=>{const px=x(dateFromKey(d.d).getTime()),py=y(d.kg); i?ctx.lineTo(px,py):ctx.moveTo(px,py);}); ctx.stroke();
+  ctx.fillStyle="#2E5E6E";
+  data.forEach(d=>{ctx.beginPath();ctx.arc(x(dateFromKey(d.d).getTime()),y(d.kg),4,0,7);ctx.fill();});
+}
+$("#btnWeight").onclick=()=>{
+  const v=parseFloat(($("#weightInput").value||"").replace(",","."));
+  if(!v||v<40||v>250){ toast("Inserisci un peso valido"); return; }
+  const k=todayKey(); const ex=U.pesi.find(w=>w.d===k);
+  if(ex) ex.kg=v; else U.pesi.push({d:k,kg:v});
+  U.pesi.sort((a,b)=>a.d<b.d?-1:1);
+  $("#weightInput").value=""; save(); render(); toast("Peso registrato: "+v.toFixed(1)+" kg");
+};
+
+/* --- PROFILO --- */
+function renderProf(){
+  const sel=$("#userSel");
+  sel.innerHTML=S.users.map(u=>`<option value="${u.id}" ${u.id===S.active?"selected":""}>${u.nome}</option>`).join("");
+  $("#pNome").value=U.nome; $("#pSesso").value=U.sesso; $("#pEta").value=U.eta;
+  $("#pAlt").value=U.alt; $("#pGoal").value=U.goal; $("#pSteps").value=U.passiBase;
+  $("#pRitmo").value=U.ritmo; $("#pProt").value=U.protKg; $("#pVeg").value=U.vegDays;
+  $("#pSchema").value=U.schema; $("#pEscl").value=(U.esclusioni||[]).join(", ");
+  updProtLabel();
+  $("#storageInfo").textContent=Storage.persistent
+    ? "Dati salvati in locale sul dispositivo (localStorage). Fai un backup periodico con Esporta."
+    : "⚠ In questo ambiente il salvataggio persistente non è disponibile: i dati vivono solo in questa sessione. Aprendo il file dal tuo telefono o da GitHub Pages il salvataggio locale funzionerà.";
+}
+function updProtLabel(){
+  const v=parseFloat($("#pProt").value); $("#protVal").textContent=v.toFixed(1).replace(".",",");
+  const ex=PROT_EXPLAIN.find(([a,b])=>v>=a&&v<=b)||PROT_EXPLAIN[2];
+  $("#protExplain").innerHTML=ex[2]+`<br><span class="small">Per te oggi: ~${Math.round(v*pesoAttuale())} g di proteine al giorno.</span>`;
+}
+$("#pProt").oninput=updProtLabel;
+$("#userSel").onchange=e=>{ S.active=+e.target.value; U=S.users.find(u=>u.id===S.active); save(); render(); };
+$("#btnAddUser").onclick=()=>{
+  const nome=prompt("Nome del nuovo utente:"); if(!nome) return;
+  const id=Math.max(...S.users.map(u=>u.id))+1;
+  const nu=defaultUser(id); nu.nome=nome; S.users.push(nu); S.active=id; U=nu; save(); render(); toast("Utente creato"); };
+$("#btnSaveProf").onclick=()=>{
+  U.nome=$("#pNome").value||U.nome; U.sesso=$("#pSesso").value; U.eta=+$("#pEta").value||U.eta;
+  U.alt=+$("#pAlt").value||U.alt; U.goal=+$("#pGoal").value||U.goal; U.passiBase=+$("#pSteps").value||U.passiBase;
+  U.ritmo=$("#pRitmo").value; U.protKg=+$("#pProt").value; U.vegDays=+$("#pVeg").value;
+  U.schema=$("#pSchema").value; U.esclusioni=$("#pEscl").value.split(",").map(s=>s.trim()).filter(Boolean);
+  delete U.menuCache[todayKey()]; save(); render(); toast("Profilo salvato — piano ricalcolato"); };
+
+/* --- backup --- */
+$("#btnExport").onclick=()=>{
+  const blob=new Blob([JSON.stringify(S,null,1)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="rotta80-backup-"+todayKey()+".json"; a.click(); };
+$("#btnImport").onclick=()=>$("#importFile").click();
+$("#importFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const data=JSON.parse(r.result);
+      if(!data.users) throw 0; S=data; U=S.users.find(u=>u.id===S.active)||S.users[0];
+      save(); render(); toast("Backup importato"); }
+    catch(err){ toast("File non valido"); } };
+  r.readAsText(f); };
+
+/* --- render generale --- */
+function render(){ renderToday(); renderWeek(); renderProg(); renderProf(); }
+render();
+</script>
+</body>
+</html>
