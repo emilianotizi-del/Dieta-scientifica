@@ -290,6 +290,13 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
       <option value="sostenuto">Sostenuto · ~0,75 kg/settimana (−750 kcal)</option>
       <option value="aggressivo">Aggressivo ma sicuro · ~1 kg/sett (−1000 kcal, con ricariche)</option>
     </select>
+    <label>Giorno di ricarica (+22% kcal)</label>
+    <select id="pRicarica">
+      <option value="auto">Automatico · casuale ogni settimana</option>
+      <option value="1">Lunedì</option><option value="2">Martedì</option><option value="3">Mercoledì</option>
+      <option value="4">Giovedì</option><option value="5">Venerdì</option><option value="6">Sabato</option>
+      <option value="0">Domenica</option>
+    </select>
     <div class="notice">Il piano non scende mai sotto una soglia di sicurezza calcolata sul tuo metabolismo basale. Per deficit oltre ~1.000 kcal/die serve supervisione medica.</div>
     <label>Proteine: <b id="protVal"></b> g per kg di peso</label>
     <input type="range" id="pProt" min="1.2" max="2.4" step="0.1">
@@ -1057,9 +1064,19 @@ function weekSeed(dateKey){ const d=dateFromKey(dateKey);
   const monday=new Date(d); monday.setDate(d.getDate()-((d.getDay()+6)%7));
   return hash(U.id+"w"+todayKey(monday)+U.salt); }
 function dayType(dateKey){
-  const r=rng(weekSeed(dateKey)); const pattern=["basso","basso","pieno","pieno","pieno","pieno","ricarica"];
+  const r=rng(weekSeed(dateKey));
+  const idx=(dateFromKey(dateKey).getDay()+6)%7; /* 0=lun … 6=dom */
+  const rd=U.ricaricaDay;
+  if(rd!=null&&rd!=="auto"){
+    const rIdx=((+rd)+6)%7;
+    if(idx===rIdx) return "ricarica";
+    const rest=["basso","basso","pieno","pieno","pieno","pieno"];
+    for(let i=rest.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]];}
+    return rest[idx>rIdx?idx-1:idx];
+  }
+  const pattern=["basso","basso","pieno","pieno","pieno","pieno","ricarica"];
   for(let i=pattern.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[pattern[i],pattern[j]]=[pattern[j],pattern[i]];}
-  const idx=(dateFromKey(dateKey).getDay()+6)%7; return pattern[idx]; }
+  return pattern[idx]; }
 function kcalDay(dateKey){
   const m=kcalMedia(); const t=dayType(dateKey);
   const mult={basso:0.85,pieno:1.0,ricarica:1.22}[t];
@@ -1731,7 +1748,8 @@ function renderProf(){
   sel.innerHTML=S.users.map(u=>`<option value="${u.id}" ${u.id===S.active?"selected":""}>${u.nome}</option>`).join("");
   $("#pNome").value=U.nome; $("#pSesso").value=U.sesso; $("#pEta").value=U.eta;
   $("#pAlt").value=U.alt; $("#pGoal").value=U.goal; $("#pSteps").value=U.passiBase;
-  $("#pRitmo").value=U.ritmo; $("#pProt").value=U.protKg; $("#pVeg").value=U.vegDays;
+  $("#pRitmo").value=U.ritmo; $("#pRicarica").value=U.ricaricaDay??"auto";
+  $("#pProt").value=U.protKg; $("#pVeg").value=U.vegDays;
   $("#pSchema").value=U.schema; $("#pEscl").value=(U.esclusioni||[]).join(", ");
   updProtLabel();
   const gl=$("#gustiList"); const chips=[];
@@ -1758,9 +1776,12 @@ $("#btnAddUser").onclick=()=>{
 $("#btnSaveProf").onclick=()=>{
   U.nome=$("#pNome").value||U.nome; U.sesso=$("#pSesso").value; U.eta=+$("#pEta").value||U.eta;
   U.alt=+$("#pAlt").value||U.alt; U.goal=+$("#pGoal").value||U.goal; U.passiBase=+$("#pSteps").value||U.passiBase;
-  U.ritmo=$("#pRitmo").value; U.protKg=+$("#pProt").value; U.vegDays=+$("#pVeg").value;
+  U.ritmo=$("#pRitmo").value; U.ricaricaDay=$("#pRicarica").value;
+  U.protKg=+$("#pProt").value; U.vegDays=+$("#pVeg").value;
   U.schema=$("#pSchema").value; U.esclusioni=$("#pEscl").value.split(",").map(s=>s.trim()).filter(Boolean);
-  delete U.menuCache[todayKey()]; save(); render(); toast("Profilo salvato — piano ricalcolato"); };
+  /* i menu futuri dipendono dalle impostazioni: rigenera tutto tranne oggi */
+  const tk=todayKey(); const keep=U.menuCache[tk]; U.menuCache={}; if(keep) U.menuCache[tk]=keep;
+  save(); render(); toast("Profilo salvato — piano ricalcolato"); };
 
 /* --- backup --- */
 $("#btnExport").onclick=()=>{
