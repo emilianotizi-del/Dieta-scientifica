@@ -27,6 +27,13 @@ header.top .datebadge{font-size:.8rem;color:var(--ink2)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r14);
   box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
 .card h2{font-size:.95rem;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.card h2::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;
+  background:var(--oliva);margin-right:8px;opacity:.85}
+#pg-oggi .card h2::before{background:var(--grano)}
+#pg-sett .card h2::before{background:var(--mare)}
+#pg-prog .card h2::before{background:var(--pomodoro)}
+#pg-prof .card h2::before{background:var(--oliva)}
+.card h2>span:first-child,.card h2>button{margin-left:auto}
 .eyebrow{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);font-weight:600}
 /* ANELLO DEL GIORNO (signature) */
 .dial{display:flex;gap:16px;align-items:center}
@@ -105,11 +112,11 @@ input[type=range]{padding:0;height:28px;accent-color:var(--pomodoro)}
 /* nav */
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--ink);display:flex;
   padding:6px max(8px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-bottom));z-index:50}
-nav button{flex:1;background:none;color:#9FB0B8;font-size:.68rem;font-weight:600;
-  display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:10px}
-nav button .ico{font-size:1.15rem;line-height:1}
-nav button.on{color:#fff}
-nav button.on .ico{transform:translateY(-1px)}
+nav button{flex:1;background:none;color:#8FA2AB;font-size:.68rem;font-weight:600;
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;transition:color .2s}
+nav button .ico{width:22px;height:22px}
+nav button.on{color:var(--acc,#fff)}
+nav button.on .ico{transform:translateY(-1px);filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
 .page{display:none}.page.on{display:block;animation:fade .25s}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .season{display:flex;gap:6px;overflow-x:auto;padding:4px 0;scrollbar-width:none}
@@ -135,6 +142,7 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 .sheetbtn{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--line);
   border-radius:12px;padding:13px 14px;margin-bottom:8px;font-size:.92rem;font-weight:600}
 .sheetbtn:active{background:var(--oliva-s)}
+.sheetbtn[hidden]{display:none!important}
 #reportView{display:none;position:fixed;inset:0;background:#fff;z-index:100;overflow:auto;padding:20px}
 #reportView.on{display:block}
 #reportView h1{font-size:1.3rem;margin-bottom:2px}
@@ -153,8 +161,10 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <div class="eyebrow">Obiettivo di oggi</div>
     <div class="dial" style="margin-top:8px">
       <svg id="dialSvg" width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
-        <circle cx="48" cy="48" r="41" fill="none" stroke="#E4E0D3" stroke-width="9"/>
-        <circle id="dialArc" cx="48" cy="48" r="41" fill="none" stroke="#2E5E6E" stroke-width="9"
+        <defs><linearGradient id="dialGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2E5E6E"/><stop offset="1" stop-color="#55643B"/></linearGradient></defs>
+        <circle cx="48" cy="48" r="41" fill="none" stroke="#E9E5D8" stroke-width="9"/>
+        <circle id="dialArc" cx="48" cy="48" r="41" fill="none" stroke="url(#dialGrad)" stroke-width="9"
           stroke-linecap="round" stroke-dasharray="257.6" stroke-dashoffset="257.6" transform="rotate(-90 48 48)"/>
         <text id="dialPct" x="48" y="53" text-anchor="middle" font-size="17" font-weight="800" fill="#22333B">0%</text>
       </svg>
@@ -396,10 +406,14 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 
 <section id="reportView"></section>
 <nav aria-label="Navigazione principale">
-  <button data-pg="oggi" class="on"><span class="ico">☀️</span>Oggi</button>
-  <button data-pg="sett"><span class="ico">📊</span>Settimana</button>
-  <button data-pg="prog"><span class="ico">⚖️</span>Progressi</button>
-  <button data-pg="prof"><span class="ico">👤</span>Profilo</button>
+  <button data-pg="oggi" class="on" style="--acc:#E8A13C">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7"/></svg>Oggi</button>
+  <button data-pg="sett" style="--acc:#6FB1C7">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V11M10 20V5M16 20v-7M22 20H2"/></svg>Settimana</button>
+  <button data-pg="prog" style="--acc:#E06A55">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5.5-5.5 3.5 3.5L20 7"/><path d="M15 7h5v5"/></svg>Progressi</button>
+  <button data-pg="prof" style="--acc:#9DB878">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.2-3.6 3.9-5.2 7-5.2s5.8 1.6 7 5.2"/></svg>Profilo</button>
 </nav>
 
 <dialog id="dlgQty">
@@ -1098,7 +1112,7 @@ const FOOD_DB=[
 ["Arance succo, fresco","frutta",33,0.5,8.2,0,[12,1,2,3,4],"fr"],
 ["Babaco, fresco","daclassificare",24,0.7,4.5,0.2,0,"n"],
 ["Banane, fresche","daclassificare",76,1.2,17.4,0.3,0,"n"],
-["Barbabietole rosse, cotte, bollite","verdura",43,2.1,7.8,0,0,"v"],
+["Barbabietole rosse, cotte, bollite","verdura",43,2.1,7.8,0,0,"n"],
 ["Barbabietole rosse, crude","verdura",25,1.1,4,0,0,"v"],
 ["Barretta al cocco ricoperta di cioccolato","fruttasecca",472,4.8,58.2,26.1,0,"s"],
 ["Besciamella","daclassificare",139,3.9,9.5,9.5,0,"n"],
@@ -1136,7 +1150,7 @@ const FOOD_DB=[
 ["Caviale, storione","pesce",255,26.9,3.3,15,0,"p"],
 ["Cavoli di Bruxelles, cotti, bolliti","verdura",53,4.7,4.6,0.6,[10,11,12,1,2,3],"v"],
 ["Cavoli di Bruxelles, crudi","verdura",47,4.2,4.2,0.5,[10,11,12,1,2,3],"v"],
-["Ceci, in scatola, scolati","legumi",111,6.7,13.9,2.3,0,"p"],
+["Ceci, in scatola, scolati","legumi",111,6.7,13.9,2.3,0,"n"],
 ["Cervello di bovino","carne",157,10,0.8,12.7,0,"n"],
 ["Cheddar","daclassificare",388,26.7,0.5,31,0,"n"],
 ["Cheese burger, fast food","daclassificare",300,16.3,30.2,13.1,0,"n"],
@@ -1144,9 +1158,9 @@ const FOOD_DB=[
 ["Ciliege, candite","frutta",252,0.4,66.4,0,[5,6,7],"fr"],
 ["Ciliege, fresche","frutta",48,0.8,11,0.1,[5,6,7],"fr"],
 ["Cioccolato, al latte","latticini",552,7.3,50.5,36.3,0,"p"],
-["Cipolle, cotte, bollite","verdura",39,1.4,7.8,0.1,0,"v"],
+["Cipolle, cotte, bollite","verdura",39,1.4,7.8,0.1,0,"n"],
 ["Cipolle, crude","verdura",28,1,5.7,0.1,0,"v"],
-["Cipolline, cotte, bollite","verdura",53,1.7,10.9,0.1,0,"v"],
+["Cipolline, cotte, bollite","verdura",53,1.7,10.9,0.1,0,"n"],
 ["Cipolline, crude","verdura",42,1.3,8.5,0.1,0,"v"],
 ["Cocco, essiccato","fruttasecca",669,5.6,16.4,62,0,"s"],
 ["Cocktail di frutta sciroppata","daclassificare",59,0.4,14.8,0,0,"n"],
@@ -1162,7 +1176,7 @@ const FOOD_DB=[
 ["Crackers, salati","cereali",386,9.4,67.5,10,0,"c"],
 ["Crema di latte, 12% di lipidi","latticini",140,2.8,4.4,12.5,0,"p"],
 ["Croissants","dolci",362,8.3,38,20.3,0,"d"],
-["Crostata, con crema al cacao, industriale","condimenti",492,4.6,67,24.7,0,"g"],
+["Crostata, con crema al cacao, industriale","condimenti",492,4.6,67,24.7,0,"n"],
 ["Cuore di equino","daclassificare",146,18.7,0.6,7.7,0,"n"],
 ["Cuore di ovino","bevande",134,16.9,0.4,7.2,0,"n"],
 ["Cuore di pollo","carne",103,14.1,0.2,5.1,0,"n"],
@@ -1173,7 +1187,7 @@ const FOOD_DB=[
 ["Dadi da brodo","condimenti",250,15.7,5,18.7,0,"g"],
 ["Edam","daclassificare",326,25.5,1.4,24.3,0,"n"],
 ["Emmenthal","daclassificare",403,28.5,3.6,30.6,0,"n"],
-["Fagioli, cotti, bolliti","legumi",117,7.9,17,0.7,0,"p"],
+["Fagioli, cotti, bolliti","legumi",117,7.9,17,0.7,0,"n"],
 ["Fegato di bovino","carne",142,20,5.9,4.4,0,"n"],
 ["Fegato di bovino, cotto","carne",190,26.7,7.9,5.9,0,"n"],
 ["Fegato di equino","daclassificare",145,22.4,5.3,4,0,"n"],
@@ -1185,8 +1199,8 @@ const FOOD_DB=[
 ["Fegato di tacchino","carne",127,17.8,0.5,6,0,"n"],
 ["Fegato di tacchino, cotto","carne",195,27.4,0.8,9.2,0,"n"],
 ["Feijoa, fresca","daclassificare",59,0.7,9.6,0.8,0,"n"],
-["Finocchi, cotti, al microonde","verdura",15,1.2,1.5,0,0,"v"],
-["Finocchi, cotti, bolliti","verdura",17,1.4,1.7,0,0,"v"],
+["Finocchi, cotti, al microonde","verdura",15,1.2,1.5,0,0,"n"],
+["Finocchi, cotti, bolliti","verdura",17,1.4,1.7,0,0,"n"],
 ["Finocchi, crudi","verdura",15,1.2,1.5,0,0,"v"],
 ["Fiocchi di formaggio magro","latticini",115,9.7,3.2,7.1,0,"p"],
 ["Fior di latte","latticini",268,20.6,0.7,20.3,0,"p"],
@@ -1202,16 +1216,16 @@ const FOOD_DB=[
 ["Funghi coltivati, prataioli, crudi","verdura",24,3.7,0.8,0.2,[9,10,11],"v"],
 ["Funghi ovuli, crudi","verdura",23,2,1.6,0.3,[9,10,11],"v"],
 ["Gamberetti con funghi e bambù","pesce",110,8.6,1.9,7.3,0,"p"],
-["Gelato confezionato, cacao, in vaschetta","condimenti",173,3.6,25.3,7.1,0,"g"],
-["Gelato confezionato, caffè, in vaschetta","bevande",245,5.1,23.9,15,0,"b"],
+["Gelato confezionato, cacao, in vaschetta","condimenti",173,3.6,25.3,7.1,0,"n"],
+["Gelato confezionato, caffè, in vaschetta","bevande",245,5.1,23.9,15,0,"n"],
 ["Gelato confezionato, cono con panna e cioccolato","latticini",291,5.1,34.9,15.5,0,"p"],
-["Gelato confezionato, cono con panna, scaglie di cioccolato e noccioline","latticini",326,4.2,33.3,20.5,0,"p"],
-["Gelato confezionato, fior di latte, in vaschetta","latticini",218,4.2,20.7,13.7,0,"p"],
-["Gelato confezionato, fior di latte, ricoperto di sorbetto alla fragola","latticini",101,1.4,21.3,1.7,0,"p"],
-["Gelato confezionato, nocciola, in vaschetta","fruttasecca",183,3.3,25.2,8.4,0,"s"],
-["Gelato confezionato, panna, in vaschetta","latticini",189,3.2,27.2,8.2,0,"p"],
-["Gelato confezionato, stracciatella, in vaschetta","dolci",193,2.9,31.5,7,0,"d"],
-["Gelato confezionato, vaniglia, in vaschetta","dolci",167,2.7,25.7,6.7,0,"d"],
+["Gelato confezionato, cono con panna, scaglie di cioccolato e noccioline","latticini",326,4.2,33.3,20.5,0,"n"],
+["Gelato confezionato, fior di latte, in vaschetta","latticini",218,4.2,20.7,13.7,0,"n"],
+["Gelato confezionato, fior di latte, ricoperto di sorbetto alla fragola","latticini",101,1.4,21.3,1.7,0,"n"],
+["Gelato confezionato, nocciola, in vaschetta","fruttasecca",183,3.3,25.2,8.4,0,"n"],
+["Gelato confezionato, panna, in vaschetta","latticini",189,3.2,27.2,8.2,0,"n"],
+["Gelato confezionato, stracciatella, in vaschetta","dolci",193,2.9,31.5,7,0,"n"],
+["Gelato confezionato, vaniglia, in vaschetta","dolci",167,2.7,25.7,6.7,0,"n"],
 ["Gelato misto fritto","dolci",252,4.2,34.7,11.7,0,"d"],
 ["Germe di frumento","daclassificare",378,26,43.5,10,0,"n"],
 ["Germogli di soia","legumi",54,6.2,3,1.4,0,"p"],
@@ -1225,42 +1239,42 @@ const FOOD_DB=[
 ["Latte di bufala","latticini",114,4.5,5.1,8.5,0,"p"],
 ["Latte di capra","carne",76,3.9,4.7,4.8,0,"p"],
 ["Latte di pecora","carne",103,5.3,5.2,6.9,0,"p"],
-["Latte di vacca, condensato, zuccherato","latticini",328,8.7,56.5,9,0,"p"],
-["Latte di vacca, evaporato, non zuccherato","latticini",134,7,8.6,8.2,0,"p"],
+["Latte di vacca, condensato, zuccherato","latticini",328,8.7,56.5,9,0,"n"],
+["Latte di vacca, evaporato, non zuccherato","latticini",134,7,8.6,8.2,0,"n"],
 ["Latteria","latticini",456,30.7,1.4,36.4,0,"p"],
 ["Lattughino IV gamma, fresco","verdura",16,1.4,1.4,0.2,0,"v"],
 ["Lattughino, fresco","verdura",16,1.5,1.4,0.2,0,"v"],
 ["Lenti colorate ripiene di cioccolato","condimenti",456,5.4,73.9,17.5,0,"g"],
-["Lenticchie, in scatola, scolate","legumi",91,5,15.4,0.5,0,"p"],
+["Lenticchie, in scatola, scolate","legumi",91,5,15.4,0.5,0,"n"],
 ["Litchi, freschi","daclassificare",72,1.1,17.2,0.1,0,"n"],
 ["Loti o kaki, freschi","frutta",70,0.6,16,0.3,[10,11,12],"fr"],
 ["Luccio","pesce",81,18.7,0.1,0.6,0,"p"],
 ["Maiale in agrodolce","carne",233,8.7,17.7,14.6,0,"p"],
 ["Mais, amido","cereali",328,0.3,87,0,0,"c"],
-["Mais, dolce, in scatola, sgocciolato","cereali",105,3.4,20.5,1.3,0,"c"],
+["Mais, dolce, in scatola, sgocciolato","cereali",105,3.4,20.5,1.3,0,"n"],
 ["Mandarini, freschi","frutta",76,0.9,17.6,0.3,[11,12,1,2],"fr"],
 ["Margarina, 100% vegetale","daclassificare",760,0.6,0.4,84,0,"n"],
 ["Margarina, 2/3 di grassi animali, 1/3 di grassi vegetali","daclassificare",760,0.7,0.4,84,0,"n"],
 ["Melagrane, fresche","frutta",68,0.5,15.9,0.2,0,"fr"],
 ["Mele cotogne, fresche","frutta",38,0.3,6.3,0.1,0,"fr"],
 ["Mele, disidratate","frutta",356,1.3,82.2,2,0,"fr"],
-["Mele, fresche, annurche","frutta",45,0.3,10.2,0.1,0,"fr"],
-["Mele, fresche, con buccia","frutta",44,0.2,10,0,0,"fr"],
-["Mele, fresche, deliziose","frutta",46,0.2,11.1,0.1,0,"fr"],
-["Mele, fresche, golden","frutta",46,0.4,10.7,0.1,0,"fr"],
-["Mele, fresche, granny smith","frutta",42,0.5,9.4,0.1,0,"fr"],
-["Mele, fresche, imperatore","frutta",48,0.2,11.3,0.1,0,"fr"],
-["Mele, fresche, renette","frutta",43,0.3,10,0.1,0,"fr"],
-["Mele, fresche, senza buccia","frutta",57,0.3,13.7,0.1,0,"fr"],
+["Mele, fresche, annurche","frutta",45,0.3,10.2,0.1,0,"n"],
+["Mele, fresche, con buccia","frutta",44,0.2,10,0,0,"n"],
+["Mele, fresche, deliziose","frutta",46,0.2,11.1,0.1,0,"n"],
+["Mele, fresche, golden","frutta",46,0.4,10.7,0.1,0,"n"],
+["Mele, fresche, granny smith","frutta",42,0.5,9.4,0.1,0,"n"],
+["Mele, fresche, imperatore","frutta",48,0.2,11.3,0.1,0,"n"],
+["Mele, fresche, renette","frutta",43,0.3,10,0.1,0,"n"],
+["Mele, fresche, senza buccia","frutta",57,0.3,13.7,0.1,0,"n"],
 ["Melù o pesce molo","pesce",72,17.4,0,0.3,0,"p"],
-["Melù o pesce molo, stoccafisso, ammollato","pesce",92,20.7,0.3,0.9,0,"p"],
-["Melù o pesce molo, stoccafisso, secco","pesce",356,80.1,1.1,3.5,0,"p"],
+["Melù o pesce molo, stoccafisso, ammollato","pesce",92,20.7,0.3,0.9,0,"n"],
+["Melù o pesce molo, stoccafisso, secco","pesce",356,80.1,1.1,3.5,0,"n"],
 ["Menta, fresca","daclassificare",49,3.8,5.3,0.7,0,"n"],
-["Merendine, con marmellata, industriale","condimenti",364,5.5,67.9,9.5,0,"g"],
-["Merendine, farcite con cacao, industriale","condimenti",410,6.2,65.5,15.1,0,"g"],
-["Merendine, tipo briosche, industriale","dolci",440,8.2,65.7,17.6,0,"d"],
-["Merendine, tipo pan di Spagna, industriale","dolci",386,7.4,62.7,13.1,0,"d"],
-["Merendine, tipo pasta frolla, industriale","cereali",447,5.3,71.7,17.1,0,"c"],
+["Merendine, con marmellata, industriale","condimenti",364,5.5,67.9,9.5,0,"n"],
+["Merendine, farcite con cacao, industriale","condimenti",410,6.2,65.5,15.1,0,"n"],
+["Merendine, tipo briosche, industriale","dolci",440,8.2,65.7,17.6,0,"n"],
+["Merendine, tipo pan di Spagna, industriale","dolci",386,7.4,62.7,13.1,0,"n"],
+["Merendine, tipo pasta frolla, industriale","cereali",447,5.3,71.7,17.1,0,"n"],
 ["Merluzzo in umido","pesce",86,9.7,1.7,4.3,0,"p"],
 ["Minestre in scatola, crema di cipolle","verdura",26,2.2,2.2,1,0,"v"],
 ["Minestre in scatola, crema di funghi","verdura",56,1,4.2,4,[9,10,11],"v"],
@@ -1281,13 +1295,13 @@ const FOOD_DB=[
 ["Panini al latte","latticini",298,9,48.1,8.7,0,"p"],
 ["Panino con hamburger piccolo, fast food","daclassificare",254,15.6,29,8.9,0,"n"],
 ["Panino, fast food","daclassificare",248,10.1,47,3,0,"n"],
-["Panna da cucina, sterilizzata, 23% di lipidi","latticini",233,2.7,4,23,0,"p"],
+["Panna da cucina, sterilizzata, 23% di lipidi","latticini",233,2.7,4,23,0,"n"],
 ["Panna da montare, 35% di lipidi","latticini",337,2.3,3.4,35,0,"p"],
 ["Papaia, fresca","frutta",33,0.4,6.9,0.1,0,"n"],
 ["Pappa reale","daclassificare",146,10,14,6,0,"n"],
 ["Pasta al ragù alla bolognese","cereali",168,8.4,16,8,0,"c"],
-["Patatine, fritte, confezionate in busta","verdura",512,5.4,58,29.6,0,"v"],
-["Patatine, fritte, fast food","verdura",283,3.3,37.6,13.7,0,"v"],
+["Patatine, fritte, confezionate in busta","verdura",512,5.4,58,29.6,0,"n"],
+["Patatine, fritte, fast food","verdura",283,3.3,37.6,13.7,0,"n"],
 ["Patè di fegato","bevande",341,12.7,1.3,31.7,0,"n"],
 ["Patè di pollo","carne",289,11.1,2.3,26.2,0,"p"],
 ["Patè di prosciutto","salumi",358,11.3,1.1,34.3,0,"p"],
@@ -1295,11 +1309,11 @@ const FOOD_DB=[
 ["Pepe nero","daclassificare",311,11.4,49,3.3,0,"n"],
 ["Peperoncini piccanti, freschi","verdura",30,1.8,3.8,0.5,[6,7,8,9,10],"v"],
 ["Pere, candite","frutta",294,1,73.9,0.4,0,"fr"],
-["Pere, fresche, Abate Fetel","frutta",59,0.2,12.7,0.3,0,"fr"],
-["Pere, fresche, Kaiser","frutta",48,0.3,9.2,0.5,0,"fr"],
-["Pere, fresche, Max-Red Barlett","frutta",50,0.3,10,0.4,0,"fr"],
-["Pere, fresche, William","frutta",52,0.3,10.2,0.5,0,"fr"],
-["Pere, fresche, senza buccia","frutta",43,0.3,8.8,0.1,0,"fr"],
+["Pere, fresche, Abate Fetel","frutta",59,0.2,12.7,0.3,0,"n"],
+["Pere, fresche, Kaiser","frutta",48,0.3,9.2,0.5,0,"n"],
+["Pere, fresche, Max-Red Barlett","frutta",50,0.3,10,0.4,0,"n"],
+["Pere, fresche, William","frutta",52,0.3,10.2,0.5,0,"n"],
+["Pere, fresche, senza buccia","frutta",43,0.3,8.8,0.1,0,"n"],
 ["Pesce gatto","pesce",92,15.5,0.2,3.3,0,"p"],
 ["Pesche, disidratate","frutta",364,4.8,88,0.9,[6,7,8,9],"fr"],
 ["Pesche, fresche, con buccia","frutta",28,0.7,5.8,0,[6,7,8,9],"fr"],
@@ -1340,8 +1354,8 @@ const FOOD_DB=[
 ["Riso al ragù alla bolognese","cereali",145,6.7,13.6,7.4,0,"c"],
 ["Riso al sugo di pomodoro","cereali",90,1.7,16.5,2.2,0,"c"],
 ["Riso, brillato","cereali",334,6.7,80.4,0.4,0,"c"],
-["Riso, brillato, cotto, bollito","cereali",100,2,24.2,0.1,0,"c"],
-["Riso, soffiato, da prima colazione","cereali",354,6,85.1,1,0,"c"],
+["Riso, brillato, cotto, bollito","cereali",100,2,24.2,0.1,0,"n"],
+["Riso, soffiato, da prima colazione","cereali",354,6,85.1,1,0,"n"],
 ["Risotto alla parmigiana","cereali",181,4.1,25.4,7.5,0,"c"],
 ["Salame Brianza","salumi",384,26.5,1,30.5,0,"p"],
 ["Salame Fabriano","salumi",420,26.5,1.5,34.3,0,"p"],
@@ -1367,14 +1381,14 @@ const FOOD_DB=[
 ["Uova di anatra, intero","carne",190,12.2,0.7,15.4,0,"p"],
 ["Uova di gallina, albume","carne",43,10.7,0,0,0,"p"],
 ["Uova di gallina, intero","carne",128,12.4,0,8.7,0,"p"],
-["Uova di gallina, intero , cotto, a frittata o strapazzato","carne",150,14.6,0,10.2,0,"p"],
-["Uova di gallina, intero , cotto, alla coque o sodo","carne",128,12.4,0,8.7,0,"p"],
-["Uova di gallina, intero, congelato","carne",128,12.4,0,8.7,0,"p"],
-["Uova di gallina, intero, in polvere","carne",537,51.9,0.4,36.4,0,"p"],
+["Uova di gallina, intero , cotto, a frittata o strapazzato","carne",150,14.6,0,10.2,0,"n"],
+["Uova di gallina, intero , cotto, alla coque o sodo","carne",128,12.4,0,8.7,0,"n"],
+["Uova di gallina, intero, congelato","carne",128,12.4,0,8.7,0,"n"],
+["Uova di gallina, intero, in polvere","carne",537,51.9,0.4,36.4,0,"n"],
 ["Uova di gallina, tuorlo","carne",325,15.8,0,29.1,0,"p"],
-["Uova di gallina, tuorlo , cotto, in camicia","carne",325,15.8,0,29.1,0,"p"],
-["Uova di gallina, tuorlo, congelato","carne",325,15.8,0,29.1,0,"p"],
-["Uova di gallina, tuorlo, in polvere","carne",642,31.2,0.02,57.5,0,"p"],
+["Uova di gallina, tuorlo , cotto, in camicia","carne",325,15.8,0,29.1,0,"n"],
+["Uova di gallina, tuorlo, congelato","carne",325,15.8,0,29.1,0,"n"],
+["Uova di gallina, tuorlo, in polvere","carne",642,31.2,0.02,57.5,0,"n"],
 ["Uova di oca, intero","carne",189,13.8,1,14.4,0,"p"],
 ["Uova di tacchina, intero","uova",147,12.8,1,10.2,0,"p"],
 ["Uva, succo, in cartone","frutta",66,0.3,17.3,0,[8,9,10],"fr"],
@@ -2188,7 +2202,7 @@ function renderToday(){
   $("#kcalTarget").textContent=fmt(m.kcal);
   const pct=Math.min(tot.kcal/m.kcal,1.15);
   $("#dialArc").style.strokeDashoffset=257.6*(1-Math.min(pct,1));
-  $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"#B23A2B":"#2E5E6E";
+  $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"#B23A2B":"url(#dialGrad)";
   $("#dialPct").textContent=Math.round(tot.kcal/m.kcal*100)+"%";
   const chip=$("#dayTypeChip"); chip.className="chip "+menu.dayType;
   chip.textContent={basso:"Giorno basso",pieno:"Giorno pieno",ricarica:"Ricarica"}[menu.dayType];
