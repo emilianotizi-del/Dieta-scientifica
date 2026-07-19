@@ -158,6 +158,17 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
       </div>
     </div>
     <div class="macro" id="macroBars"></div>
+    <div class="small" id="streakLine" style="margin-top:8px"></div>
+    <div class="notice" id="mantBanner" hidden></div>
+  </div>
+
+  <div class="card" id="fastCard" hidden>
+    <h2>Finestra 16:8</h2>
+    <div id="fastInfo" class="small"></div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn ghost sm" id="btnFastStart">🌙 Inizio digiuno (dopo l'ultimo pasto)</button>
+      <button class="btn ghost sm" id="btnFastStop" hidden>✕ Azzera</button>
+    </div>
   </div>
 
   <div class="card">
@@ -169,7 +180,10 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
   <div class="card">
     <h2>Registra liberamente</h2>
     <input type="search" id="foodSearch" placeholder="Cerca tra ~500 alimenti… (es. orata, farro)" autocomplete="off">
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button></div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button>
+      <button class="btn ghost sm" id="btnPreset">★ Pasti preset</button>
+    </div>
     <div class="foodresults" id="foodResults" hidden></div>
     <ul class="loglist" id="logList" style="margin-top:8px"></ul>
   </div>
@@ -240,6 +254,14 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
   </div>
   <div class="card">
+    <h2>Insight sui tuoi dati</h2>
+    <div id="insightList" class="small">Registra qualche giorno di pasti e attività: qui compariranno pattern e suggerimenti personali.</div>
+  </div>
+  <div class="card">
+    <h2>Menu della settimana <button class="btn ghost sm" id="btnMenuPrint">🖨 Stampa 7 giorni</button></h2>
+    <div class="small">Tutti i menu dei prossimi 7 giorni in una pagina, da attaccare al frigo accanto alla lista della spesa.</div>
+  </div>
+  <div class="card">
     <h2>Report settimanale <button class="btn ghost sm" id="btnReport">📄 Apri</button></h2>
     <div class="small">Aderenza, peso, passi, acqua e micro-copertura degli ultimi 7 giorni: da stampare o salvare in PDF, anche per il tuo medico.</div>
   </div>
@@ -267,6 +289,18 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <div class="notice" id="weightNotice" hidden></div>
   </div>
   <div class="card">
+    <h2>Misure corporee</h2>
+    <div class="grid3">
+      <div><label>Girovita (cm)</label><input type="number" step="0.5" inputmode="decimal" id="mVita"></div>
+      <div><label>Fianchi (cm)</label><input type="number" step="0.5" inputmode="decimal" id="mFianchi"></div>
+      <div><label>Collo (cm)</label><input type="number" step="0.5" inputmode="decimal" id="mCollo"></div>
+    </div>
+    <button class="btn" style="margin-top:10px" id="btnMisure">Registra misure</button>
+    <div class="hero-eta" id="bfBox"></div>
+    <ul class="loglist" id="misureList" style="margin-top:8px"></ul>
+    <div class="small">Il girovita si misura all'ombelico, rilassato. Spesso scende anche nelle settimane in cui la bilancia si ferma.</div>
+  </div>
+  <div class="card">
     <h2>Storico pesate</h2>
     <ul class="loglist" id="weightList"></ul>
   </div>
@@ -289,6 +323,7 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
       <option value="moderato">Moderato · ~0,5 kg/settimana (−500 kcal)</option>
       <option value="sostenuto">Sostenuto · ~0,75 kg/settimana (−750 kcal)</option>
       <option value="aggressivo">Aggressivo ma sicuro · ~1 kg/sett (−1000 kcal, con ricariche)</option>
+      <option value="mantenimento">Mantenimento · reverse diet (+150 kcal/sett fino al fabbisogno)</option>
     </select>
     <label>Giorno di ricarica (+22% kcal)</label>
     <select id="pRicarica">
@@ -323,6 +358,14 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <div id="gustiList" class="small"></div>
   </div>
   <div class="card">
+    <h2>Trasferimento su un altro dispositivo</h2>
+    <div class="btnrow">
+      <button class="btn ghost sm" id="btnXferOut">📤 Genera codice</button>
+      <button class="btn ghost sm" id="btnXferIn">📥 Incolla codice</button>
+    </div>
+    <div id="xferBox" class="small" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
     <h2>Passi automatici da Apple Salute</h2>
     <div class="small">Crea un <b>Comando Rapido</b> su iPhone: 1) azione "Trova campioni salute" → Passi, Oggi · 2) azione "Apri URL" con<br>
     <code style="font-size:.75rem;word-break:break-all">https://emilianotizi-del.github.io/Dieta-scientifica/?passi=[Campioni salute]</code><br>
@@ -333,6 +376,8 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <div class="btnrow">
       <button class="btn ghost sm" id="btnExport">⬇ Esporta backup</button>
       <button class="btn ghost sm" id="btnImport">⬆ Importa backup</button>
+      <button class="btn ghost sm" id="btnCsvPesi">📈 CSV pesate</button>
+      <button class="btn ghost sm" id="btnCsvDiario">📋 CSV diario</button>
       <input type="file" id="importFile" accept=".json" hidden>
     </div>
     <div class="small" style="margin-top:8px" id="storageInfo"></div>
@@ -359,6 +404,34 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <button class="btn" id="dlgAdd">Aggiungi</button>
     <button class="btn ghost" id="dlgFav">❤</button>
     <button class="btn ghost" id="dlgCancel">Annulla</button>
+  </div>
+</dialog>
+<dialog id="dlgRecipe">
+  <h3 id="recTitle" style="margin-bottom:4px"></h3>
+  <div class="small" id="recPortion"></div>
+  <b style="font-size:.85rem;display:block;margin-top:10px">Ingredienti</b>
+  <ul id="recIng" style="font-size:.85rem;padding-left:18px"></ul>
+  <b style="font-size:.85rem;display:block;margin-top:10px">Preparazione</b>
+  <ol id="recSteps" style="font-size:.85rem;padding-left:18px"></ol>
+  <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="recClose">Chiudi</button></div>
+</dialog>
+<dialog id="dlgPreset">
+  <h3 style="margin-bottom:8px">Pasti preset</h3>
+  <div id="presetList" class="small"></div>
+  <label>Salva un pasto registrato oggi</label>
+  <select id="presetMealSel"></select>
+  <div class="btnrow" style="margin-top:12px">
+    <button class="btn" id="presetSave">★ Salva come preset</button>
+    <button class="btn ghost" id="presetClose">Chiudi</button>
+  </div>
+</dialog>
+<dialog id="dlgXfer">
+  <h3 style="margin-bottom:6px">Importa dati</h3>
+  <div class="small">Incolla qui il codice generato sull'altro dispositivo. Sostituirà i dati attuali.</div>
+  <textarea id="xferTa" style="width:100%;height:110px;font:12px monospace;margin-top:8px;border:1px solid var(--line);border-radius:10px;padding:8px"></textarea>
+  <div class="btnrow" style="margin-top:10px">
+    <button class="btn" id="xferGo">Importa</button>
+    <button class="btn ghost" id="xferCancel">Annulla</button>
   </div>
 </dialog>
 <dialog id="dlgOut">
@@ -961,6 +1034,59 @@ const FOOD_DB=[
 ["Piadina crudo e stracchino","piatti",280,13,28,13,0,"x",0],
 ["Toast prosciutto e formaggio","piatti",260,13,27,11,0,"x",0]
 ];
+/* Mini-ricettario: ingredienti per 100 g di piatto finito, preparazione essenziale */
+const RECIPES={
+"Pasta al pomodoro e basilico":{i:[["pasta di semola",30],["passata di pomodoro",55],["olio evo",3],["basilico e aglio",2]],s:["Imbiondisci l'aglio nell'olio","Aggiungi la passata, 10-12 min a fuoco medio","Scola la pasta al dente, saltala nel sugo col basilico"]},
+"Pasta aglio, olio e peperoncino":{i:[["spaghetti",35],["olio evo",7],["aglio e peperoncino",3]],s:["Aglio a fettine nell'olio a fuoco dolce, peperoncino","Spaghetti al dente, salta con un mestolo d'acqua di cottura"]},
+"Pasta alla puttanesca":{i:[["pasta",30],["pelati",45],["olive e capperi",8],["acciughe",3],["olio evo",3]],s:["Sciogli le acciughe nell'olio","Pelati, olive e capperi, 10 min","Salta la pasta nel sugo"]},
+"Pasta alle vongole":{i:[["spaghetti",30],["vongole",50],["olio evo",4],["aglio, prezzemolo, vino",3]],s:["Apri le vongole con aglio e vino","Spaghetti molto al dente, finisci la cottura nel fondo delle vongole","Prezzemolo e pepe"]},
+"Pasta al pesto":{i:[["pasta",32],["pesto alla genovese",12],["fagiolini o patate (facolt.)",15]],s:["Cuoci la pasta (con fagiolini se vuoi)","Fuori dal fuoco, manteca col pesto e acqua di cottura"]},
+"Pasta cacio e pepe":{i:[["tonnarelli o spaghetti",34],["pecorino romano",12],["pepe nero",1]],s:["Tosta il pepe, sfuma con acqua di cottura","Crema di pecorino con acqua tiepida","Manteca fuori dal fuoco"]},
+"Pasta alla carbonara":{i:[["spaghetti",32],["guanciale",12],["uova (tuorli)",12],["pecorino",7]],s:["Rosola il guanciale senza grassi aggiunti","Tuorli sbattuti col pecorino","Manteca fuori dal fuoco col grasso del guanciale"]},
+"Pasta all'amatriciana":{i:[["bucatini",30],["pelati",40],["guanciale",10],["pecorino",5]],s:["Rosola il guanciale, tienilo da parte","Nel fondo cuoci i pelati 10 min","Pasta, guanciale e pecorino"]},
+"Pasta alla gricia":{i:[["rigatoni",33],["guanciale",13],["pecorino",7],["pepe",1]],s:["Guanciale croccante","Manteca pasta, grasso, pecorino e acqua di cottura"]},
+"Pasta alla Norma":{i:[["pasta",28],["melanzane",35],["passata",30],["ricotta salata",5]],s:["Melanzane a cubetti in forno o padella","Sugo di pomodoro 10 min","Unisci tutto, ricotta salata a scaglie"]},
+"Pasta con tonno e pomodorini":{i:[["pasta",30],["tonno al naturale",22],["pomodorini",35],["olio evo",3]],s:["Pomodorini in padella con olio e aglio 5 min","Aggiungi il tonno a fine cottura","Salta la pasta"]},
+"Pasta zucchine e gamberetti":{i:[["pasta",30],["zucchine",30],["gamberetti",25],["olio evo",3]],s:["Zucchine a rondelle in padella","Gamberetti 2 min con aglio","Salta la pasta con tutto"]},
+"Pasta broccoli e salsiccia":{i:[["orecchiette",30],["broccoli",35],["salsiccia",18],["olio evo",2]],s:["Broccoli lessati nella stessa acqua della pasta","Salsiccia sbriciolata rosolata","Salta tutto insieme"]},
+"Pasta e ceci":{i:[["pasta corta",22],["ceci lessati",45],["passata",15],["olio evo, rosmarino",4]],s:["Soffritto con rosmarino, ceci e passata","Metà ceci frullati per la crema","Cuoci la pasta direttamente dentro"]},
+"Pasta e lenticchie":{i:[["pasta corta",22],["lenticchie lessate",48],["sedano-carota-cipolla",12],["olio evo",3]],s:["Soffritto, lenticchie e un mestolo d'acqua","Cuoci la pasta nella zuppa"]},
+"Pasta e patate":{i:[["pasta mista",22],["patate",40],["sedano e cipolla",10],["parmigiano (crosta)",5]],s:["Soffritto, patate a tocchetti, acqua","Butta la pasta nella pentola, risotta","Manteca col parmigiano"]},
+"Orecchiette alle cime di rapa":{i:[["orecchiette",32],["cime di rapa",45],["acciughe",3],["olio evo, aglio, peperoncino",5]],s:["Cime lessate con la pasta","Acciughe sciolte in olio e aglio","Salta tutto in padella"]},
+"Risotto ai funghi porcini":{i:[["riso carnaroli",28],["porcini",25],["brodo vegetale",40],["parmigiano e olio",6]],s:["Tosta il riso, sfuma","Porcini trifolati a metà cottura","Brodo poco alla volta, manteca"]},
+"Risotto alla milanese":{i:[["riso",28],["brodo",55],["zafferano",1],["parmigiano e burro",8]],s:["Tosta il riso con poca cipolla","Brodo a mestoli, zafferano a metà","Manteca con burro e parmigiano"]},
+"Risotto zucca e rosmarino":{i:[["riso",28],["zucca",35],["brodo",30],["parmigiano",5]],s:["Zucca a dadini col soffritto","Riso, sfuma, brodo a mestoli","Manteca col parmigiano"]},
+"Risotto agli asparagi":{i:[["riso",28],["asparagi",35],["brodo",30],["parmigiano",5]],s:["Punte a parte, gambi nel brodo","Risotta con i gambi frullati","Punte e mantecatura alla fine"]},
+"Minestrone di verdure":{i:[["verdure miste di stagione",75],["legumi lessati",15],["olio evo",3],["parmigiano (facolt.)",2]],s:["Verdure a dadini, acqua fredda, 40 min","Legumi negli ultimi 10","Olio a crudo"]},
+"Ribollita toscana":{i:[["cavolo nero e verza",40],["cannellini",25],["pane raffermo",20],["olio evo",5]],s:["Zuppa di verdure e fagioli (metà frullati)","Riposo, poi 'ribolli' col pane","Olio a crudo abbondante"]},
+"Zuppa di farro e legumi":{i:[["farro",18],["legumi misti lessati",40],["pomodoro e odori",25],["olio evo",4]],s:["Soffritto, legumi, pomodoro","Farro dentro, 25-30 min con acqua","Riposo 10 min"]},
+"Zuppa di lenticchie":{i:[["lenticchie secche",25],["sedano-carota-cipolla",20],["pomodoro",15],["olio evo",3]],s:["Soffritto, lenticchie, copri d'acqua","30-35 min, sale alla fine","Olio a crudo, crostino se giorno pieno"]},
+"Vellutata di zucca":{i:[["zucca",70],["patata",15],["brodo",15],["olio e rosmarino",3]],s:["Zucca e patata nel brodo 20 min","Frulla, aggiusta di sale","Olio a crudo e rosmarino"]},
+"Pollo alla cacciatora":{i:[["pollo a pezzi",60],["pelati",25],["olive",5],["vino, rosmarino, aglio",8]],s:["Rosola il pollo, sfuma col vino","Pelati, olive e aromi","Coperchio, 35-40 min a fuoco dolce"]},
+"Pollo al limone":{i:[["petto di pollo",70],["succo di limone",12],["olio evo",4],["farina (velo)",4]],s:["Fettine infarinate appena","2 min per lato in padella","Sfuma col limone, restringi"]},
+"Scaloppine al limone":{i:[["fettine di vitello",70],["limone",12],["olio evo",5],["farina",4]],s:["Infarina le fettine","Cuoci 2 min per lato","Sfuma col limone"]},
+"Spezzatino con piselli":{i:[["manzo a cubi",55],["piselli",25],["pomodoro",12],["olio e odori",6]],s:["Rosola la carne col soffritto","Pomodoro e acqua, 1h coperto","Piselli negli ultimi 15 min"]},
+"Polpette al sugo":{i:[["macinato magro",50],["passata",35],["pane e parmigiano",10],["olio evo",3]],s:["Impasta macinato, pane bagnato, parmigiano","Forma e rosola le polpette","Cuoci nel sugo 20 min"]},
+"Orata al forno con patate":{i:[["orata",55],["patate",35],["olio evo",4],["limone e rosmarino",4]],s:["Patate a fette sotto, orata sopra","Olio, limone, rosmarino","Forno 200° per 25-30 min"]},
+"Branzino al sale":{i:[["branzino intero",70],["sale grosso (non si mangia)",0],["olio a crudo",3],["limone",3]],s:["Copri il pesce di sale grosso","Forno 200°, 25 min per 500 g","Rompi la crosta, filetta, olio a crudo"]},
+"Salmone al forno con verdure":{i:[["salmone",50],["verdure miste",42],["olio evo",4]],s:["Verdure in teglia 15 min","Salmone sopra, altri 12-15 min","Erbe e limone"]},
+"Merluzzo alla livornese":{i:[["merluzzo",60],["pelati",30],["olive e capperi",6],["olio evo",3]],s:["Sugo veloce con olive e capperi","Adagia il merluzzo nel sugo","10-12 min coperto"]},
+"Polpo con patate":{i:[["polpo",55],["patate",35],["olio evo",5],["prezzemolo e limone",4]],s:["Polpo in acqua fredda, 40-50 min","Patate lessate a parte","Condisci tiepido con olio, limone, prezzemolo"]},
+"Calamari alla griglia":{i:[["calamari",85],["olio evo",5],["limone e prezzemolo",8]],s:["Calamari puliti e asciutti","Griglia rovente 2-3 min per lato","Emulsione olio-limone-prezzemolo"]},
+"Parmigiana di melanzane":{i:[["melanzane",50],["passata",25],["mozzarella",15],["parmigiano",6]],s:["Melanzane grigliate (non fritte, versione light)","Strati con sugo, mozzarella, parmigiano","Forno 180°, 30 min"]},
+"Caponata siciliana":{i:[["melanzane",45],["sedano e cipolla",20],["pomodoro",20],["olive, capperi, aceto",10],["olio evo",4]],s:["Melanzane in padella","Agrodolce con aceto e un cucchiaino di zucchero","Riposo: è meglio il giorno dopo"]},
+"Frittata di zucchine":{i:[["uova",45],["zucchine",40],["parmigiano",6],["olio evo",4]],s:["Zucchine in padella 5 min","Uova sbattute col parmigiano","Cuoci coperto a fuoco basso, gira a metà"]},
+"Caprese (mozzarella e pomodoro)":{i:[["mozzarella",40],["pomodori",50],["olio evo e basilico",6]],s:["Fette alternate","Olio, basilico, origano, sale"]},
+"Insalata greca":{i:[["pomodori e cetrioli",55],["feta",20],["olive e cipolla rossa",15],["olio e origano",6]],s:["Tutto a pezzi grossi","Feta a cubi, olive","Olio e origano, niente aceto"]},
+"Panzanella toscana":{i:[["pane raffermo",30],["pomodori",40],["cetriolo e cipolla",20],["olio e aceto",8]],s:["Pane bagnato e strizzato","Verdure a pezzi, basilico","Olio e aceto, riposo 30 min"]},
+"Insalata di farro con verdure":{i:[["farro",30],["verdure di stagione",50],["olio evo",5],["limone o aceto",3]],s:["Farro lessato e raffreddato","Verdure a dadini (crude o grigliate)","Condisci e lascia insaporire"]},
+"Cous cous di verdure":{i:[["couscous",30],["verdure miste",55],["olio evo",4],["spezie (curcuma, cumino)",2]],s:["Verdure a dadini in padella con spezie","Couscous idratato con acqua calda","Sgrana e unisci"]},
+"Gnocchi alla sorrentina":{i:[["gnocchi",55],["passata",28],["mozzarella",12],["parmigiano e basilico",5]],s:["Sugo di pomodoro e basilico","Gnocchi scolati nel sugo","Mozzarella, forno 5 min a gratinare"]},
+"Carciofi alla romana":{i:[["carciofi",80],["olio evo",8],["mentuccia e aglio",5]],s:["Carciofi puliti e aperti","Farciti con mentuccia e aglio","A testa in giù in tegame, acqua e olio, 30 min"]},
+"Cicoria ripassata":{i:[["cicoria",85],["olio evo",7],["aglio e peperoncino",3]],s:["Lessa la cicoria","Ripassa in padella con aglio e peperoncino"]},
+"Verdure al forno":{i:[["verdure miste di stagione",90],["olio evo",6],["erbe aromatiche",2]],s:["Tutto a pezzi regolari","Olio ed erbe","Forno 200°, 25-30 min"]}
+};
+
 /* ============================================================
    DATI · Esercizi con manubri (max ~16 kg) + corpo libero
    [nome, gruppo(full|upper|lower|core), carico(0=corpo libero, 1=leggero, 2=medio, 3=pesante), nota]
@@ -1056,9 +1182,14 @@ function pesoAttuale(){ return U.pesi.length? U.pesi[U.pesi.length-1].kg : 94; }
 function bmr(){ const p=pesoAttuale();
   return 10*p + 6.25*U.alt - 5*U.eta + (U.sesso==="M"?5:-161); }
 function tdee(){ return Math.round(bmr()*1.2 + stepsGoalToday()*0.03); }
-function deficitTarget(){ return {moderato:500,sostenuto:750,aggressivo:1000}[U.ritmo]||750; }
-function kcalMedia(){ const floor=Math.max(Math.round(bmr()*0.85),1400);
-  return Math.max(tdee()-deficitTarget(),floor); }
+function deficitTarget(){ return {moderato:500,sostenuto:750,aggressivo:1000,mantenimento:0}[U.ritmo]??750; }
+function kcalMediaDeficit(){ const floor=Math.max(Math.round(bmr()*0.85),1400);
+  const d=deficitTarget()||750; return Math.max(tdee()-d,floor); }
+function kcalMedia(){
+  if(U.ritmo==="mantenimento"){
+    const w=U.mantStart?Math.max(0,Math.floor((Date.now()-dateFromKey(U.mantStart))/(7*864e5))):0;
+    return Math.min(tdee(),(U.mantBase||kcalMediaDeficit())+150*w); }
+  return kcalMediaDeficit(); }
 
 /* Tipo giorno: pattern settimanale [2 bassi, 4 pieni, 1 ricarica] mescolato con seed della settimana.
    Media settimanale = kcalMedia. basso −15% · pieno base · ricarica +22% */
@@ -1384,8 +1515,18 @@ function renderToday(){
     <div class="meal ${menu.eaten[i]?"done":""}">
       <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
         <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
-      <ul>${me.items.map((it,j)=>`<li><span>${it.name}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" data-swap="${i}:${j}" aria-label="Sostituisci">⇄</button><button class="mini" data-ban="${i}:${j}" aria-label="Non riproporre">🚫</button>`:""}</span></li>`).join("")}</ul>
+      <ul>${me.items.map((it,j)=>`<li><span>${it.name}${it.id!=null&&RECIPES[FOOD_DB[it.id][0]]?` <button class="mini" data-rec="${i}:${j}" aria-label="Ricetta">📖</button>`:""}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" data-swap="${i}:${j}" aria-label="Sostituisci">⇄</button><button class="mini" data-ban="${i}:${j}" aria-label="Non riproporre">🚫</button>`:""}</span></li>`).join("")}</ul>
     </div>`).join("");
+  $$("#menuList [data-rec]").forEach(b=>b.onclick=()=>{
+    const [mi,ii]=b.dataset.rec.split(":").map(Number);
+    const it=menu.meals[mi].items[ii]; const nm=FOOD_DB[it.id][0]; const rec=RECIPES[nm]; if(!rec) return;
+    $("#recTitle").textContent=nm;
+    $("#recPortion").textContent="Per la tua porzione di "+it.g+" g · "+it.kcal+" kcal";
+    $("#recIng").innerHTML=rec.i.map(([n,g100])=>{
+      const g=Math.round(g100*it.g/100/5)*5;
+      return `<li>${n}${g?` · <b>${g} g</b>`:""}</li>`; }).join("");
+    $("#recSteps").innerHTML=rec.s.map(s=>`<li>${s}</li>`).join("");
+    $("#dlgRecipe").showModal(); });
   $$("#menuList [data-swap]").forEach(b=>b.onclick=()=>{
     const [mi,ii]=b.dataset.swap.split(":").map(Number); swapItem(k,mi,ii); });
   $$("#menuList [data-ban]").forEach(b=>b.onclick=()=>{
@@ -1402,6 +1543,21 @@ function renderToday(){
   const log=dayLog(); const goal=stepsGoalToday();
   $("#stepsNow").textContent=fmt(log.passi); $("#stepsGoal").textContent=fmt(goal);
   $("#stepsBar").style.width=Math.min(log.passi/goal*100,100)+"%";
+  /* streak e punteggio aderenza */
+  const sc=scoreOf(k); const st=streak();
+  $("#streakLine").innerHTML=(st>0?`🔥 <b>${st}</b> giorn${st===1?"o":"i"} in rotta`:"🧭 Inizia oggi la tua serie")+
+    (sc!=null?` · punteggio di oggi <b>${sc}/100</b>`:"")+
+    ` <span style="opacity:.6">(kcal, proteine, passi, acqua, allenamento)</span>`;
+  /* banner mantenimento al raggiungimento dell'obiettivo */
+  const mb=$("#mantBanner");
+  if(U.pesi.length&&pesoAttuale()<=U.goal&&U.ritmo!=="mantenimento"){
+    mb.hidden=false;
+    mb.innerHTML=`🎉 <b>Obiettivo raggiunto!</b> Attiva la modalità mantenimento: +150 kcal a settimana fino al tuo fabbisogno, per stabilizzare il peso. <button class="btn sm" id="goMant" style="margin-top:6px">Attiva mantenimento</button>`;
+    const g=mb.querySelector("#goMant"); if(g) g.onclick=()=>{
+      U.ritmo="mantenimento"; U.mantStart=todayKey(); U.mantBase=kcalMediaDeficit();
+      U.menuCache={}; save(); render(); toast("Mantenimento attivo: risalita graduale delle kcal"); };
+  } else mb.hidden=true;
+  renderFast(menu);
   /* acqua: ~35 ml per kg, arrotondato al quarto di litro */
   const wGoal=Math.round(pesoAttuale()*35/250)*250;
   $("#waterNow").textContent=(log.acqua/1000).toFixed(2).replace(".",",");
@@ -1499,6 +1655,35 @@ $("#btnStepsManual").onclick=()=>{ const v=prompt("Passi totali di oggi:",dayLog
 $$("[data-water]").forEach(b=>b.onclick=()=>{ dayLog().acqua+=+b.dataset.water; save(); render(); });
 $("#btnWaterManual").onclick=()=>{ const v=prompt("Acqua di oggi in ml:",dayLog().acqua); if(v!==null){ dayLog().acqua=Math.max(0,parseInt(v)||0); save(); render(); } };
 
+function scoreOf(k){ const l=U.log[k]; if(!l||!l.pasti.length) return null;
+  const t=totalsOf(k), m=macros(k); let s=0;
+  const e=Math.abs(t.kcal-m.kcal)/m.kcal; s+= e<=0.05?30:e<=0.12?20:0;
+  s+= t.p>=m.p*0.85?20:t.p>=m.p*0.7?10:0;
+  const sg=stepsGoalToday(k); s+= l.passi>=sg?20:l.passi>=sg*0.75?10:0;
+  const wg=Math.round(pesoAttuale()*35/250)*250; s+= (l.acqua||0)>=wg?15:(l.acqua||0)>=wg*0.75?8:0;
+  s+= l.wo?15:0; return s; }
+function streak(){ let n=0;
+  for(let i=0;i<400;i++){ const k=todayKey(new Date(Date.now()-i*864e5));
+    const s=scoreOf(k);
+    if(i===0&&s===null) continue; /* oggi può essere ancora in corso */
+    if(s!==null&&s>=60) n++; else break; }
+  return n; }
+/* countdown 16:8 */
+function renderFast(menu){
+  const card=$("#fastCard"); const active=!!U.fastTs&&(Date.now()-U.fastTs)<20*36e5;
+  card.hidden=!(menu.schema==="if168"||active);
+  if(card.hidden) return;
+  $("#btnFastStart").hidden=active; $("#btnFastStop").hidden=!active;
+  if(!active){ $("#fastInfo").textContent="Oggi è un giorno 16:8: dopo l'ultimo pasto della sera, avvia il conteggio del digiuno."; return; }
+  const el=(Date.now()-U.fastTs)/36e5; const end=new Date(U.fastTs+16*36e5);
+  $("#fastInfo").innerHTML=el>=16
+    ? `✅ Finestra aperta: hai digiunato <b>${el.toFixed(1)} h</b>. Buon primo pasto!`
+    : `🌙 Digiuno in corso: <b>${Math.floor(el)}h ${Math.round(el%1*60)}m</b> su 16 · potrai mangiare alle <b>${end.getHours()}:${String(end.getMinutes()).padStart(2,"0")}</b>`;
+}
+$("#btnFastStart").onclick=()=>{ U.fastTs=Date.now(); save(); render(); };
+$("#btnFastStop").onclick=()=>{ U.fastTs=null; save(); render(); };
+setInterval(()=>{ const k=todayKey(); if(U.menuCache[k]&&document.getElementById("pg-oggi").classList.contains("on")) renderFast(U.menuCache[k]); },60000);
+
 /* --- ricerca alimenti --- */
 let dlgFood=null;
 $("#foodSearch").oninput=e=>{
@@ -1529,6 +1714,34 @@ $("#dlgAdd").onclick=()=>{
   dayLog().pasti.push(it); save(); $("#dlgQty").close();
   $("#foodSearch").value=""; $("#foodResults").hidden=true; render(); toast(it.name+" aggiunto"); };
 
+/* pasti preset */
+function openPreset(){
+  U.preset=U.preset||[];
+  const pl=$("#presetList");
+  pl.innerHTML=U.preset.length? U.preset.map((p,i)=>{
+    const kc=Math.round(p.items.reduce((a,x)=>a+x.kcal,0));
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed var(--line)">
+      <span><b>${p.name}</b> · ${kc} kcal</span>
+      <span><button class="btn sm" data-puse="${i}">Usa</button> <button class="mini" data-pdel="${i}">✕</button></span></div>`; }).join("")
+    :"Nessun preset salvato. Registra un pasto oggi, poi salvalo qui sotto.";
+  const meals=[...new Set(dayLog().pasti.map(x=>x.meal))];
+  $("#presetMealSel").innerHTML=meals.length?meals.map(m=>`<option>${m}</option>`).join(""):`<option value="">— nessun pasto registrato oggi —</option>`;
+  $$("#presetList [data-puse]").forEach(b=>b.onclick=()=>{
+    const p=U.preset[+b.dataset.puse];
+    p.items.forEach(x=>dayLog().pasti.push({...x}));
+    save(); $("#dlgPreset").close(); render(); toast(`"${p.name}" registrato`); });
+  $$("#presetList [data-pdel]").forEach(b=>b.onclick=()=>{ U.preset.splice(+b.dataset.pdel,1); save(); openPreset(); });
+  $("#dlgPreset").showModal();
+}
+$("#btnPreset").onclick=openPreset;
+$("#presetClose").onclick=()=>$("#dlgPreset").close();
+$("#presetSave").onclick=()=>{
+  const meal=$("#presetMealSel").value; if(!meal){ toast("Registra prima un pasto oggi"); return; }
+  const items=dayLog().pasti.filter(x=>x.meal===meal).map(x=>({...x}));
+  if(!items.length){ toast("Nessun alimento in quel pasto"); return; }
+  const name=prompt("Nome del preset:",`${meal} tipo`); if(!name) return;
+  U.preset=U.preset||[]; U.preset.push({name,items}); save(); openPreset(); toast("Preset salvato ★"); };
+
 const OUT_SIZES={leggero:[600,25,65,25],normale:[900,35,100,38],abbondante:[1300,45,140,58]};
 $("#btnOut").onclick=()=>{ const h=new Date().getHours();
   $("#outMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
@@ -1556,7 +1769,7 @@ function renderWeek(){
   const sumT=data.reduce((a,d)=>a+d.tot.kcal,0), sumG=data.reduce((a,d)=>a+d.target.kcal,0);
   $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> / ${fmt(sumG)} kcal
     (${sumT<=sumG?"nei limiti ✓":"sopra di "+fmt(Math.round(sumT-sumG))+" kcal"}). La linea nera indica l'obiettivo del giorno.`;
-  renderMicro(days);
+  renderMicro(days); renderInsights();
   const mac=data.reduce((a,d)=>({p:a.p+d.tot.p,c:a.c+d.tot.c,f:a.f+d.tot.fat}),{p:0,c:0,f:0});
   const macT=data.reduce((a,d)=>({p:a.p+d.target.p,c:a.c+d.target.c,f:a.f+d.target.f}),{p:0,c:0,f:0});
   $("#weekMacro").innerHTML=[["Proteine",mac.p,macT.p,"p"],["Carboidrati",mac.c,macT.c,"c"],["Grassi",mac.f,macT.f,"f"]]
@@ -1605,6 +1818,144 @@ $("#btnSpesaCopy").onclick=()=>{
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(()=>toast("Lista copiata")); }
   else { const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
     document.execCommand("copy"); ta.remove(); toast("Lista copiata"); } };
+
+/* ============ INSIGHT ============ */
+function renderInsights(){
+  const out=[]; const days=[];
+  for(let i=27;i>=0;i--) days.push(todayKey(new Date(Date.now()-i*864e5)));
+  const logged=days.filter(k=>U.log[k]&&U.log[k].pasti.length);
+  if(logged.length<5){ $("#insightList").textContent="Registra almeno 5 giorni di pasti: qui compariranno pattern e suggerimenti personali."; return; }
+  /* 1) giorno della settimana più difficile */
+  const byDow={};
+  logged.forEach(k=>{ const over=totalsOf(k).kcal-macros(k).kcal; const d=dateFromKey(k).getDay();
+    (byDow[d]=byDow[d]||[]).push(over); });
+  let worst=null;
+  Object.entries(byDow).forEach(([d,a])=>{ if(a.length>=2){ const m=a.reduce((x,y)=>x+y,0)/a.length;
+    if(!worst||m>worst.m) worst={d:+d,m}; } });
+  if(worst&&worst.m>120) out.push(`📅 Il tuo giorno più difficile è il <b>${["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"][worst.d]}</b>: in media +${Math.round(worst.m)} kcal sopra il target. Valuta di fissare lì la ricarica.`);
+  /* 2) passi e aderenza */
+  const hi=logged.filter(k=>(U.log[k].passi||0)>=stepsGoalToday(k));
+  const lo=logged.filter(k=>(U.log[k].passi||0)<stepsGoalToday(k));
+  if(hi.length>=3&&lo.length>=3){
+    const adh=a=>a.filter(k=>Math.abs(totalsOf(k).kcal-macros(k).kcal)/macros(k).kcal<=0.08).length/a.length;
+    const dh=Math.round((adh(hi)-adh(lo))*100);
+    if(dh>=15) out.push(`🚶 Nei giorni in cui raggiungi i passi, rispetti le kcal il <b>${dh}%</b> in più delle volte: il movimento ti tiene in rotta anche a tavola.`);
+  }
+  /* 3) proteine medie */
+  const pgap=logged.reduce((a,k)=>a+(totalsOf(k).p/macros(k).p),0)/logged.length;
+  if(pgap<0.8) out.push(`🥚 Le proteine viaggiano al <b>${Math.round(pgap*100)}%</b> del target: usa di più i "Mangiato" del menu o aggiungi una fonte magra a cena.`);
+  else if(pgap>=0.95) out.push(`💪 Proteine costantemente a target (${Math.round(pgap*100)}%): ottimo per proteggere la massa muscolare.`);
+  /* 4) acqua */
+  const wg=Math.round(pesoAttuale()*35/250)*250;
+  const wm=logged.reduce((a,k)=>a+(U.log[k].acqua||0),0)/logged.length;
+  if(wm<wg*0.6) out.push(`💧 Acqua media ${(wm/1000).toFixed(1)} L su ${(wg/1000).toFixed(1)} L: prova ad ancorarla ai pasti (2 bicchieri a pasto sono già 1,2 L).`);
+  /* 5) streak record */
+  const st=streak(); if(st>=3) out.push(`🔥 Serie attuale: <b>${st} giorni</b> in rotta. Non spezzarla stasera.`);
+  $("#insightList").innerHTML=out.length?out.map(o=>`<div style="padding:5px 0;border-bottom:1px dashed var(--line)">${o}</div>`).join(""):"Ancora nessun pattern netto: continua a registrare, i dati parleranno.";
+}
+
+/* ============ MENU 7 GIORNI STAMPABILE ============ */
+$("#btnMenuPrint").onclick=()=>{
+  const days=[]; for(let i=0;i<7;i++) days.push(todayKey(new Date(Date.now()+i*864e5)));
+  const html=days.map(k=>{ const m=genMenu(k); const d=dateFromKey(k);
+    return `<div style="margin-bottom:10px;page-break-inside:avoid">
+      <b>${GIORNI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]}</b>
+      <span class="small"> · ${({basso:"giorno basso",pieno:"giorno pieno",ricarica:"ricarica"})[m.dayType]} · ${fmt(m.target.kcal)} kcal${m.veg?" · 🌿 veg":""}${m.schema==="if168"?" · 16:8":""}</span>
+      ${m.meals.map(me=>`<div style="margin:2px 0 2px 10px"><b style="font-size:.8rem">${me.name}</b>: <span style="font-size:.8rem">${me.items.map(it=>`${it.name} ${it.g} g`).join(" · ")}</span></div>`).join("")}
+    </div>`; }).join("");
+  $("#reportView").innerHTML=`
+    <div class="noprint btnrow" style="margin-bottom:14px">
+      <button class="btn" onclick="window.print()">🖨 Stampa / salva PDF</button>
+      <button class="btn ghost" onclick="document.getElementById('reportView').classList.remove('on')">✕ Chiudi</button>
+    </div>
+    <h1>Rotta 80 · menu della settimana</h1>
+    <div class="small" style="margin-bottom:12px">${U.nome} · generato il ${new Date().toLocaleDateString("it-IT")}</div>${html}
+    <div class="small">Le quantità dei cereali sono a crudo. Sostituzioni equivalenti: usa ⇄ nell'app.</div>`;
+  $("#reportView").classList.add("on");
+};
+
+/* ============ EXPORT CSV ============ */
+function dlCsv(name,txt){ const b=new Blob(["\ufeff"+txt],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; a.click(); }
+$("#btnCsvPesi").onclick=()=>{
+  const mis=U.misure||[];
+  const rows=U.pesi.map(w=>{ const m=mis.find(x=>x.d===w.d)||{};
+    return [w.d,w.kg,m.vita||"",m.fianchi||"",m.collo||""].join(";"); });
+  dlCsv("rotta80-pesate.csv","data;kg;girovita_cm;fianchi_cm;collo_cm\n"+rows.join("\n")); };
+$("#btnCsvDiario").onclick=()=>{
+  const rows=[];
+  Object.keys(U.log).sort().forEach(k=>{ const l=U.log[k];
+    (l.pasti||[]).forEach(it=>rows.push([k,it.meal||"",'"'+it.name.replace(/"/g,"'")+'"',it.g,it.kcal,it.p,it.c,it.fat].join(";")));
+    rows.push([k,"— totali giorno —","",_ = "",Math.round(totalsOf(k).kcal),Math.round(totalsOf(k).p),Math.round(totalsOf(k).c),Math.round(totalsOf(k).fat)].join(";")); });
+  dlCsv("rotta80-diario.csv","data;pasto;alimento;grammi;kcal;proteine;carboidrati;grassi\n"+rows.join("\n")); };
+
+/* ============ MISURE CORPOREE ============ */
+function bodyFat(m){ const L=Math.log10;
+  if(!m||!m.vita||!m.collo||m.vita<=m.collo) return null;
+  if(U.sesso==="M") return 495/(1.0324-0.19077*L(m.vita-m.collo)+0.15456*L(U.alt))-450;
+  if(!m.fianchi) return null;
+  return 495/(1.29579-0.35004*L(m.vita+m.fianchi-m.collo)+0.22100*L(U.alt))-450; }
+function renderMisure(){
+  U.misure=U.misure||[];
+  const last=U.misure[U.misure.length-1];
+  const first=U.misure[0];
+  const bf=last?bodyFat(last):null;
+  $("#bfBox").innerHTML=last?`
+    <div class="box"><b>${last.vita} cm</b><span>girovita${first&&first!==last?` (${(last.vita-first.vita<=0?"":"+")+(last.vita-first.vita).toFixed(1)} cm)`:""}</span></div>
+    <div class="box"><b>${bf?bf.toFixed(1)+"%":"–"}</b><span>massa grassa stimata (US Navy)</span></div>`:"";
+  $("#misureList").innerHTML=U.misure.slice().reverse().map((m,ri)=>{
+    const i=U.misure.length-1-ri; const d=dateFromKey(m.d);
+    return `<li><span>${d.getDate()} ${MESI[d.getMonth()]}</span><span>vita ${m.vita}${m.fianchi?" · fianchi "+m.fianchi:""}${m.collo?" · collo "+m.collo:""} cm <button class="del" data-mdel="${i}">✕</button></span></li>`; }).join("");
+  $$("#misureList [data-mdel]").forEach(b=>b.onclick=()=>{ U.misure.splice(+b.dataset.mdel,1); save(); render(); });
+}
+$("#btnMisure").onclick=()=>{
+  const v=parseFloat(($("#mVita").value||"").replace(",",".")), f=parseFloat(($("#mFianchi").value||"").replace(",",".")), c=parseFloat(($("#mCollo").value||"").replace(",","."));
+  if(!v){ toast("Serve almeno il girovita"); return; }
+  U.misure=U.misure||[]; const k=todayKey();
+  const ex=U.misure.find(m=>m.d===k);
+  const rec={d:k,vita:v,fianchi:f||null,collo:c||null};
+  if(ex) Object.assign(ex,rec); else U.misure.push(rec);
+  U.misure.sort((a,b)=>a.d<b.d?-1:1);
+  $("#mVita").value=$("#mFianchi").value=$("#mCollo").value="";
+  save(); render(); toast("Misure registrate"); };
+
+/* ============ TRASFERIMENTO DATI (codice compatto) ============ */
+function lzwEnc(s){ s=unescape(encodeURIComponent(s));
+  const d={}; for(let i=0;i<256;i++) d[String.fromCharCode(i)]=i;
+  let ph="",code=256; const out=[];
+  for(const c of s){ const pc=ph+c;
+    if(d[pc]!=null) ph=pc; else { out.push(d[ph]); d[pc]=code++; ph=c; } }
+  if(ph) out.push(d[ph]);
+  let bin=""; out.forEach(n=>{ bin+=String.fromCharCode(n>>8,n&255); });
+  return btoa(bin); }
+function lzwDec(b64){ const bin=atob(b64); const codes=[];
+  for(let i=0;i<bin.length;i+=2) codes.push((bin.charCodeAt(i)<<8)|bin.charCodeAt(i+1));
+  const d={}; for(let i=0;i<256;i++) d[i]=String.fromCharCode(i);
+  let code=256, ph=d[codes[0]], out=ph;
+  for(let i=1;i<codes.length;i++){ const k=codes[i];
+    const entry=d[k]!=null?d[k]:ph+ph[0];
+    out+=entry; d[code++]=ph+entry[0]; ph=entry; }
+  return decodeURIComponent(escape(out)); }
+$("#btnXferOut").onclick=()=>{
+  const slim={v:1,active:S.active,users:S.users.map(u=>({...u,menuCache:{},woCache:{}}))};
+  const code=lzwEnc(JSON.stringify(slim));
+  const box=$("#xferBox");
+  box.innerHTML=`<b>${(code.length/1024).toFixed(1)} KB</b> · copia questo codice e incollalo sull'altro dispositivo (📥):<br>
+    <textarea readonly style="width:100%;height:90px;font:11px monospace;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:6px">${code}</textarea>
+    <button class="btn ghost sm" id="xferCopy" style="margin-top:6px">⎘ Copia</button>`;
+  $("#xferCopy").onclick=()=>{ const ta=box.querySelector("textarea"); ta.select();
+    if(navigator.clipboard) navigator.clipboard.writeText(code).then(()=>toast("Codice copiato"));
+    else { document.execCommand("copy"); toast("Codice copiato"); } }; };
+$("#btnXferIn").onclick=()=>{ $("#xferTa").value=""; $("#dlgXfer").showModal(); };
+$("#xferCancel").onclick=()=>$("#dlgXfer").close();
+$("#xferGo").onclick=()=>{
+  try{ const data=JSON.parse(lzwDec($("#xferTa").value.trim()));
+    if(!data.users) throw 0;
+    data.users.forEach(u=>{ u.menuCache=u.menuCache||{}; u.woCache=u.woCache||{}; });
+    S=data; S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null)u.soloMed=true; });
+    U=S.users.find(u=>u.id===S.active)||S.users[0];
+    save(); $("#dlgXfer").close(); render(); toast("Dati importati ✓"); }
+  catch(e){ toast("Codice non valido"); } };
 
 /* ============ REPORT SETTIMANALE ============ */
 $("#btnReport").onclick=()=>{
@@ -1695,12 +2046,17 @@ function renderProg(){
   /* ETA e box */
   const p=pesoAttuale(); const perse=U.pesi.length>1?(U.pesi[0].kg-p):0;
   const rate=deficitTarget()*7/7700; /* kg/settimana teorici */
-  const weeks=Math.max(0,(p-U.goal)/rate);
-  const eta=new Date(Date.now()+weeks*7*864e5);
+  let terzo;
+  if(U.ritmo==="mantenimento"){
+    terzo=`<div class="box"><b>Mantenimento</b><span>kcal in risalita: ${fmt(kcalMedia())} → ${fmt(tdee())}</span></div>`;
+  } else {
+    const weeks=Math.max(0,(p-U.goal)/Math.max(rate,0.01));
+    const eta=new Date(Date.now()+weeks*7*864e5);
+    terzo=`<div class="box"><b>${MESI[eta.getMonth()]} ${eta.getFullYear()}</b><span>obiettivo ${U.goal} kg (~${rate.toFixed(2)} kg/sett)</span></div>`;
+  }
   $("#etaBoxes").innerHTML=`
     <div class="box"><b>${p.toFixed(1)} kg</b><span>peso attuale</span></div>
-    <div class="box"><b>${perse>=0?"−":"+"}${Math.abs(perse).toFixed(1)} kg</b><span>dall'inizio</span></div>
-    <div class="box"><b>${MESI[eta.getMonth()]} ${eta.getFullYear()}</b><span>obiettivo ${U.goal} kg (~${rate.toFixed(2)} kg/sett)</span></div>`;
+    <div class="box"><b>${perse>=0?"−":"+"}${Math.abs(perse).toFixed(1)} kg</b><span>dall'inizio</span></div>`+terzo;
   /* avviso perdita troppo rapida */
   const n=$("#weightNotice");
   if(U.pesi.length>=3){
@@ -1709,6 +2065,7 @@ function renderProg(){
     if(wRate>1.3){ n.hidden=false; n.textContent="Stai perdendo più di 1,3 kg a settimana: oltre questo ritmo rischi di perdere massa muscolare. Considera di passare a un ritmo meno aggressivo o aggiungere una ricarica."; }
     else n.hidden=true;
   } else n.hidden=true;
+  renderMisure();
   drawChart();
 }
 function drawChart(){
