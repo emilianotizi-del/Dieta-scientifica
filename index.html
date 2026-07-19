@@ -143,6 +143,22 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
   border-radius:12px;padding:13px 14px;margin-bottom:8px;font-size:.92rem;font-weight:600}
 .sheetbtn:active{background:var(--oliva-s)}
 .sheetbtn[hidden]{display:none!important}
+/* ---- onboarding ---- */
+#onboard{position:fixed;inset:0;background:var(--bg);z-index:80;overflow-y:auto;
+  padding:max(24px,env(safe-area-inset-top)) 22px 40px}
+.ob-step{max-width:420px;margin:0 auto;padding-top:6vh;animation:obIn .35s ease}
+@keyframes obIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.ob-hero{font-size:3.2rem;margin-bottom:10px}
+.ob-h{font-size:1.25rem;margin-bottom:14px}
+.ob-p{margin-bottom:12px;line-height:1.5}
+.ob-cta{width:100%;margin-top:18px;padding:14px;font-size:1rem}
+.ob-seg.on,.ob-veg.on{background:var(--oliva-s);border-color:var(--oliva);color:var(--oliva);font-weight:700}
+.ob-card{display:block;width:100%;text-align:left;margin-top:8px;padding:12px}
+.ob-card .small{display:block;margin-top:2px}
+.ob-card.on{background:var(--oliva-s);border-color:var(--oliva)}
+.ob-dots{display:flex;gap:6px;justify-content:center;padding-top:4px}
+.ob-dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.ob-dots i.on{background:var(--oliva)}
 /* ---- tema: Mediterraneo vivo ---- */
 body.t-vivo{--bg:#F2E9D4;--card:#FFFDF4;--line:#E3DBC4;
   --oliva:#5E7038;--oliva-s:#E8EDD2;--grano:#D8991F;--grano-s:#FAEBC4;
@@ -562,6 +578,82 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <button class="btn ghost" data-feel="duro">🥵 Dura</button>
   </div>
 </dialog>
+<div id="onboard" hidden>
+  <div class="ob-dots"><i></i><i></i><i></i><i></i><i></i></div>
+
+  <section class="ob-step" data-ob="0">
+    <div class="ob-hero">🍅</div>
+    <h1 style="font-size:1.5rem;margin-bottom:8px">Rotta 80</h1>
+    <p class="ob-p">Le altre app contano quello che hai mangiato.<br><b>Questa ti dice cosa mangiare — all'italiana.</b></p>
+    <p class="ob-p small">Menu veri di cucina mediterranea, calibrati su di te, con la pizza del sabato già nel piano. Nessun account, nessuna pubblicità: i tuoi dati restano sul telefono.</p>
+    <button class="btn ob-cta" data-obnext>Iniziamo</button>
+    <button class="btn ghost sm" id="obImport" style="margin-top:10px">Ho già un backup da importare</button>
+  </section>
+
+  <section class="ob-step" data-ob="1" hidden>
+    <h2 class="ob-h">Parlami di te</h2>
+    <label>Sesso</label>
+    <div class="grid2">
+      <button class="btn ghost ob-seg on" data-sesso="M">Uomo</button>
+      <button class="btn ghost ob-seg" data-sesso="F">Donna</button>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>Età</label><input type="number" id="obEta" inputmode="numeric" value="40" min="18" max="90"></div>
+      <div><label>Altezza (cm)</label><input type="number" id="obAlt" inputmode="numeric" value="175" min="120" max="220"></div>
+    </div>
+    <button class="btn ob-cta" data-obnext>Avanti</button>
+  </section>
+
+  <section class="ob-step" data-ob="2" hidden>
+    <h2 class="ob-h">L'obiettivo</h2>
+    <div class="grid2">
+      <div><label>Peso attuale (kg)</label><input type="number" id="obPeso" inputmode="decimal" step="0.1" min="40" max="250"></div>
+      <div><label>Peso obiettivo (kg)</label><input type="number" id="obGoal" inputmode="decimal" step="0.1" min="40" max="250"></div>
+    </div>
+    <label style="margin-top:10px">Che ritmo vuoi tenere?</label>
+    <button class="btn ghost ob-card" data-ritmo="moderato">🌿 <b>Rilassato</b><span class="small">−0,5 kg a settimana circa · più margine a tavola</span></button>
+    <button class="btn ghost ob-card on" data-ritmo="sostenuto">⚖️ <b>Equilibrato</b><span class="small">−0,7 kg a settimana circa · il ritmo consigliato</span></button>
+    <button class="btn ghost ob-card" data-ritmo="aggressivo">🔥 <b>Deciso</b><span class="small">−1 kg a settimana circa · richiede costanza</span></button>
+    <label style="margin-top:10px">Passi al giorno, di solito: <b id="obPassiVal">6.000</b></label>
+    <input type="range" id="obPassi" min="2000" max="15000" step="500" value="6000">
+    <button class="btn ob-cta" data-obnext>Avanti</button>
+  </section>
+
+  <section class="ob-step" data-ob="3" hidden>
+    <h2 class="ob-h">I tuoi gusti</h2>
+    <label>C'è qualcosa che non vuoi mai nel piatto?</label>
+    <div class="grid2">
+      <input id="obEscl" placeholder="es. fegato, cozze…">
+      <button class="btn ghost" id="obAddEscl">Aggiungi</button>
+    </div>
+    <div id="obEsclList" style="margin:8px 0"></div>
+    <label>Giorni vegetariani a settimana</label>
+    <div class="grid3">
+      <button class="btn ghost ob-veg" data-veg="0">0</button>
+      <button class="btn ghost ob-veg on" data-veg="2">2</button>
+      <button class="btn ghost ob-veg" data-veg="3">3</button>
+    </div>
+    <button class="btn ob-cta" id="obBuild">Prepara il mio piano →</button>
+  </section>
+
+  <section class="ob-step" data-ob="4" hidden>
+    <h2 class="ob-h">Il tuo piano è pronto</h2>
+    <div class="card" style="margin-bottom:10px">
+      <div class="grid2">
+        <div><div class="small">Calorie nei giorni pieni</div><b id="obKcal" style="font-size:1.2rem"></b></div>
+        <div><div class="small">Arrivo stimato a obiettivo</div><b id="obEta2" style="font-size:1.2rem"></b></div>
+      </div>
+      <div class="small" style="margin-top:6px">Con 2 giorni leggeri, una ricarica a settimana e la compensazione automatica degli sgarri.</div>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="small" style="margin-bottom:6px">🎁 Il tuo primo menu — domani:</div>
+      <div id="obMenu" style="font-size:.88rem"></div>
+    </div>
+    <label>Come ti chiami?</label>
+    <input id="obNome" placeholder="Il tuo nome" maxlength="20">
+    <button class="btn ob-cta" id="obFinish">Inizia il viaggio 🚀</button>
+  </section>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 /* ============================================================
@@ -1841,6 +1933,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"],
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
+const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
 let U=S.users.find(u=>u.id===S.active)||S.users[0];
@@ -2456,6 +2549,65 @@ $("#scanAdd").onclick=()=>{
     kcal:Math.round(kcal*k),p:+(p*k).toFixed(1),c:+(c*k).toFixed(1),fat:+(f*k).toFixed(1),
     meal:$("#scanMeal").value,src:"scan"});
   save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); toast("Prodotto registrato 🛒"); };
+/* --- onboarding --- */
+const OB={step:0,sesso:"M",ritmo:"sostenuto",veg:2,escl:[]};
+function obShow(n){ OB.step=n;
+  $$("#onboard .ob-step").forEach(s=>s.hidden=+s.dataset.ob!==n);
+  $$("#onboard .ob-dots i").forEach((d,i)=>d.classList.toggle("on",i<=n));
+  $("#onboard").scrollTop=0; }
+function obEscRender(){ $("#obEsclList").innerHTML=OB.escl.map((e,i)=>
+  `<span class="chip" data-esc="${i}" style="margin:2px">${e} ✕</span>`).join("")||'<span class="small">Nessuna esclusione — perfetto.</span>';
+  $$("#obEsclList [data-esc]").forEach(c=>c.onclick=()=>{ OB.escl.splice(+c.dataset.esc,1); obEscRender(); }); }
+function startOnboarding(){
+  $("#onboard").hidden=false; obShow(0); obEscRender();
+  $$("#onboard [data-obnext]").forEach(b=>b.onclick=()=>{
+    if(OB.step===1){ const e=+$("#obEta").value, a=+$("#obAlt").value;
+      if(e<18||e>90||a<120||a>220){ toast("Controlla età e altezza"); return; } }
+    if(OB.step===2){ const p=+$("#obPeso").value, g=+$("#obGoal").value;
+      if(!p||!g||p<40||g<40){ toast("Inserisci peso attuale e obiettivo"); return; }
+      if(g>=p){ toast("L'obiettivo dev'essere sotto il peso attuale"); return; } }
+    obShow(OB.step+1); });
+  $$("[data-sesso]").forEach(b=>b.onclick=()=>{ OB.sesso=b.dataset.sesso;
+    $$("[data-sesso]").forEach(x=>x.classList.toggle("on",x===b)); });
+  $$("[data-ritmo]").forEach(b=>b.onclick=()=>{ OB.ritmo=b.dataset.ritmo;
+    $$("[data-ritmo]").forEach(x=>x.classList.toggle("on",x===b)); });
+  $$(".ob-veg").forEach(b=>b.onclick=()=>{ OB.veg=+b.dataset.veg;
+    $$(".ob-veg").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#obPassi").oninput=()=>$("#obPassiVal").textContent=(+$("#obPassi").value).toLocaleString("it-IT");
+  $("#obAddEscl").onclick=()=>{ const v=$("#obEscl").value.trim().toLowerCase();
+    if(v){ v.split(/[,;]+/).map(s=>s.trim()).filter(Boolean).forEach(x=>{ if(!OB.escl.includes(x)) OB.escl.push(x); });
+      $("#obEscl").value=""; obEscRender(); } };
+  $("#obImport").onclick=()=>{ $("#onboard").hidden=true; save();
+    [...$$('nav button')].find(b=>b.dataset.pg==="prof")?.click();
+    toast("Vai su Dati → Importa backup"); };
+  $("#obBuild").onclick=()=>{ obApply(); obReveal(); obShow(4); };
+  $("#obFinish").onclick=()=>{ const nm=$("#obNome").value.trim();
+    if(nm) U.nome=nm; save(); $("#onboard").hidden=true; render();
+    toast("Benvenuto a bordo, "+(U.nome!=="Io"?U.nome:"")+" 🍅"); };
+}
+function obApply(){
+  U.sesso=OB.sesso; U.eta=+$("#obEta").value; U.alt=+$("#obAlt").value;
+  U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo; U.passiBase=+$("#obPassi").value;
+  U.vegDays=OB.veg; U.esclusioni=OB.escl; U.startDate=todayKey();
+  U.pesi=[{d:todayKey(),kg:+$("#obPeso").value}];
+  U.menuCache={}; U.salt=hash(todayKey()+U.alt+U.goal)%1000;
+  save();
+}
+function obReveal(){
+  const dom0=todayKey(new Date(Date.now()+864e5));
+  $("#obKcal").textContent=kcalDay(dom0)+" kcal";
+  const perSett={moderato:0.45,sostenuto:0.68,aggressivo:0.9}[U.ritmo]||0.68;
+  const sett=Math.max(1,Math.ceil((pesoAttuale()-U.goal)/perSett));
+  const eta=new Date(Date.now()+sett*7*864e5);
+  $("#obEta2").textContent=eta.toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"});
+  const dom=todayKey(new Date(Date.now()+864e5));
+  const menu=genMenu(dom);
+  $("#obMenu").innerHTML=menu.meals.map(me=>
+    `<div style="margin-bottom:6px"><b>${me.nome} · ${me.items.reduce((s,i)=>s+i.kcal,0)} kcal</b><br>
+     <span class="small">${me.items.slice(0,3).map(i=>i.name).join(" · ")}${me.items.length>3?"…":""}</span></div>`).join("");
+}
+if(FIRST_RUN){ startOnboarding(); }
+
 /* --- temi --- */
 function applyTheme(){ document.body.classList.remove("t-vivo","t-notte");
   const t=(U.tema==null)?"vivo":U.tema;   /* default: Mediterraneo vivo */
