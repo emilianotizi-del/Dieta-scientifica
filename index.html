@@ -143,6 +143,28 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
   border-radius:12px;padding:13px 14px;margin-bottom:8px;font-size:.92rem;font-weight:600}
 .sheetbtn:active{background:var(--oliva-s)}
 .sheetbtn[hidden]{display:none!important}
+/* ---- tema: Mediterraneo vivo ---- */
+body.t-vivo{--bg:#F2E9D4;--card:#FFFDF4;--line:#E3DBC4;
+  --oliva:#5E7038;--oliva-s:#E8EDD2;--grano:#D8991F;--grano-s:#FAEBC4;
+  --mare:#286B82;--mare-s:#D6EAF0;--pomodoro:#C63F2E;--pomodoro-s:#F8DCD3;
+  --shadow:0 2px 6px rgba(90,70,30,.10)}
+body.t-vivo #pg-oggi .card{background:#FFFCEF}
+body.t-vivo #pg-sett .card{background:#F8FCFD}
+body.t-vivo #pg-prog .card{background:#FDF7F4}
+body.t-vivo #pg-prof .card{background:#FAFCF1}
+body.t-vivo .card h2::before{height:16px;width:5px}
+body.t-vivo nav{background:#233324}
+/* ---- tema: Notturno ---- */
+body.t-notte{--bg:#11171B;--card:#1B2328;--ink:#EAE6DA;--ink2:#98A6AD;--line:#2A343B;
+  --oliva:#A9C077;--oliva-s:#242E1C;--grano:#E3B04B;--grano-s:#332A14;
+  --mare:#7FBCD2;--mare-s:#1B2E37;--pomodoro:#E37A66;--pomodoro-s:#38211C;
+  --ok:#7CB98A;--shadow:0 1px 3px rgba(0,0,0,.5)}
+body.t-notte nav{background:#0B1013}
+body.t-notte dialog{background:var(--card);color:var(--ink)}
+body.t-notte input,body.t-notte select,body.t-notte textarea{background:#12191D;color:var(--ink);border-color:var(--line)}
+body.t-notte .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+body.t-notte #dialSvg circle:first-of-type{stroke:#2A343B}
+body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 #reportView{display:none;position:fixed;inset:0;background:#fff;z-index:100;overflow:auto;padding:20px}
 #reportView.on{display:block}
 #reportView h1{font-size:1.3rem;margin-bottom:2px}
@@ -196,7 +218,7 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 
   <div class="card">
     <h2>Registra liberamente</h2>
-    <input type="search" id="foodSearch" placeholder="Cerca tra ~1.050 alimenti… (es. orata, farro)" autocomplete="off">
+    <input type="search" id="foodSearch" placeholder="Cerca tra ~1020 alimenti… (es. orata, farro)" autocomplete="off">
     <div class="btnrow" style="margin-top:8px">
       <button class="btn ghost sm" id="btnScan">📷 Scansiona barcode</button>
       <button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button>
@@ -397,6 +419,12 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
       <button class="btn ghost sm" id="btnCsvPesi">📈 CSV pesate</button>
       <button class="btn ghost sm" id="btnCsvDiario">📋 CSV diario</button>
       <input type="file" id="importFile" accept=".json" hidden>
+    </div>
+    <label style="margin-top:4px">Aspetto</label>
+    <div class="grid3">
+      <button class="btn ghost sm" data-tema="">☀️ Classico</button>
+      <button class="btn ghost sm" data-tema="vivo">🍅 Vivo</button>
+      <button class="btn ghost sm" data-tema="notte">🌙 Notturno</button>
     </div>
     <div class="small" style="margin-top:8px" id="storageInfo"></div>
     <div class="small" style="margin-top:6px">Valori nutrizionali: elaborazione propria e <b>CREA — Tabelle di composizione degli alimenti, agg. 2019</b> (alimentinutrizione.it). I prodotti confezionati provengono da Open Food Facts.</div>
@@ -1097,36 +1125,30 @@ const FOOD_DB=[
 ["Toast prosciutto e formaggio","piatti",260,13,27,11,0,"x",0],
 /* ---- IMPORT CREA (Tabelle di composizione degli alimenti, agg. 2019 — fonte citata in app) ---- */
 ["Acciuga o alice","pesce",96,16.8,1.5,2.6,0,"p"],
-["Acciuga o alice, sott'olio","pesce",206,25.9,0.2,11.3,0,"p"],
-["Acciuga o alice, sotto sale","pesce",137,25,2.3,3.1,0,"p"],
+["Acciuga o alice sott'olio","pesce",206,25.9,0.2,11.3,0,"p"]
+["Acciuga o alice sotto sale","pesce",137,25,2.3,3.1,0,"p"]
 ["Animelle di bovino","carne",304,11.5,0.1,28.6,0,"n"],
-["Animelle di bovino, cotte","carne",434,16.4,0.2,40.9,0,"n"],
-["Anona, fresca","daclassificare",73,1.8,15.8,0.2,0,"n"],
-["Arance Moro, fresche","frutta",42,0.7,9,0.2,[12,1,2,3,4],"fr"],
-["Arance Sanguinello, fresche","frutta",47,0.7,10.6,0.1,[12,1,2,3,4],"fr"],
-["Arance Tarocco, fresche","frutta",45,0.7,10,0.2,[12,1,2,3,4],"fr"],
-["Arance Valencia, fresche","frutta",39,0.7,8,0.3,[12,1,2,3,4],"fr"],
-["Arance Washington Navel, fresche","frutta",44,1,9.4,0.2,[12,1,2,3,4],"fr"],
-["Arance bionde succo, fresco","frutta",38,0.5,9.6,0,[12,1,2,3,4],"fr"],
-["Arance bionde, fresche","frutta",45,0.7,9.9,0.2,[12,1,2,3,4],"fr"],
-["Arance succo, fresco","frutta",33,0.5,8.2,0,[12,1,2,3,4],"fr"],
-["Babaco, fresco","daclassificare",24,0.7,4.5,0.2,0,"n"],
-["Banane, fresche","daclassificare",76,1.2,17.4,0.3,0,"n"],
-["Barbabietole rosse, cotte, bollite","verdura",43,2.1,7.8,0,0,"n"],
-["Barbabietole rosse, crude","verdura",25,1.1,4,0,0,"v"],
+["Anona","daclassificare",73,1.8,15.8,0.2,0,"n"]
+["Arance Sanguinello","frutta",47,0.7,10.6,0.1,[12,1,2,3,4],"fr"]
+["Arance bionde succo","frutta",38,0.5,9.6,0,[12,1,2,3,4],"fr"]
+["Arance bionde","frutta",45,0.7,9.9,0.2,[12,1,2,3,4],"fr"]
+["Arance succo","frutta",33,0.5,8.2,0,[12,1,2,3,4],"fr"]
+["Babaco","daclassificare",24,0.7,4.5,0.2,0,"n"]
+["Barbabietole rosse bollite","verdura",43,2.1,7.8,0,0,"v"]
+["Barbabietole rosse","verdura",25,1.1,4,0,0,"v"]
 ["Barretta al cocco ricoperta di cioccolato","fruttasecca",472,4.8,58.2,26.1,0,"s"],
 ["Besciamella","daclassificare",139,3.9,9.5,9.5,0,"n"],
-["Bieta, cotta, al microonde","daclassificare",15,1.3,1.8,0.1,0,"n"],
-["Bieta, cotta, bollita","daclassificare",18,1.5,2.1,0.1,0,"n"],
-["Bieta, cruda","daclassificare",15,1.3,1.8,0.1,0,"n"],
-["Biscotti, alla soia","legumi",375,11.5,70.8,6.1,0,"p"],
-["Biscotti, wafers","cereali",452,7.1,76.2,15,0,"c"],
+["Bieta al microonde","daclassificare",15,1.3,1.8,0.1,0,"n"]
+["Bieta bollita","daclassificare",18,1.5,2.1,0.1,0,"n"]
+["Bieta","daclassificare",15,1.3,1.8,0.1,0,"n"]
+["Biscotti alla soia","legumi",375,11.5,70.8,6.1,0,"p"]
+["Biscotti wafers","cereali",452,7.1,76.2,15,0,"c"]
 ["Boga","daclassificare",87,18.3,0.8,1.2,0,"n"],
 ["Brie","daclassificare",320,19.3,0.2,26.9,0,"n"],
-["Broccoletti di rapa, cotti, bolliti","verdura",29,3.1,2.1,0.3,[10,11,12,1,2,3],"v"],
-["Broccoletti di rapa, crudi","verdura",28,2.9,2,0.3,[10,11,12,1,2,3],"v"],
-["Broccolo a testa, cotto, bollito","verdura",34,3.1,3.2,0.4,[10,11,12,1,2,3],"v"],
-["Broccolo a testa, crudo","verdura",33,3,3.1,0.4,[10,11,12,1,2,3],"v"],
+["Broccoletti di rapa bolliti","verdura",29,3.1,2.1,0.3,[10,11,12,1,2,3],"v"]
+["Broccoletti di rapa","verdura",28,2.9,2,0.3,[10,11,12,1,2,3],"v"]
+["Broccolo a testa bollito","verdura",34,3.1,3.2,0.4,[10,11,12,1,2,3],"v"]
+["Broccolo a testa","verdura",33,3,3.1,0.4,[10,11,12,1,2,3],"v"]
 ["Burrini","daclassificare",527,22.1,4.1,47,0,"n"],
 ["Butirro calabro","daclassificare",449,24.7,0.3,38.8,0,"n"],
 ["Cacioricotta di capra","carne",182,11.9,1.5,14.3,0,"p"],
@@ -1134,35 +1156,29 @@ const FOOD_DB=[
 ["Caciottina mista","daclassificare",370,26.9,1.5,28.5,0,"n"],
 ["Caciottina vaccina","daclassificare",324,21.1,3,25.4,0,"n"],
 ["Caffe' tostato","bevande",287,10.4,28.5,15.4,0,"b"],
-["Calamaro","pesce",68,12.6,0.6,1.7,0,"p"],
 ["Calamaro surgelato","pesce",68,13.1,0.6,1.5,0,"p"],
 ["Camembert","daclassificare",307,20.9,0.2,24.7,0,"n"],
-["Cannoli alla crema, industriale","daclassificare",368,6.2,41.9,20.7,0,"n"],
-["Cannoli siciliani","daclassificare",325,7.2,42.7,14.6,0,"n"],
+["Cannoli alla crema","daclassificare",368,6.2,41.9,20.7,0,"n"]
 ["Capitone","pesce",247,13,0.5,21.5,0,"p"],
 ["Caramelle tipo mou","dolci",430,2.1,71.1,17.2,0,"d"],
-["Carciofo Romanesco IGP","verdura",48,3,6.1,0.2,[11,12,1,2,3,4,5],"v"],
-["Carciofo, Spinoso sardo","verdura",45,1.9,8.9,0.2,[11,12,1,2,3,4,5],"v"],
-["Carciofo, violetto, precoce","verdura",43,2.8,5.2,0.2,[11,12,1,2,3,4,5],"v"],
+["Carciofo violetto precoce","verdura",43,2.8,5.2,0.2,[11,12,1,2,3,4,5],"v"]
 ["Castagnaccio","fruttasecca",234,3.4,39.3,6.8,0,"s"],
-["Castagne, arrostite","fruttasecca",210,3.7,41.8,2.4,0,"s"],
-["Castagne, secche","fruttasecca",315,6,62,3.4,0,"s"],
-["Caviale, storione","pesce",255,26.9,3.3,15,0,"p"],
-["Cavoli di Bruxelles, cotti, bolliti","verdura",53,4.7,4.6,0.6,[10,11,12,1,2,3],"v"],
-["Cavoli di Bruxelles, crudi","verdura",47,4.2,4.2,0.5,[10,11,12,1,2,3],"v"],
-["Ceci, in scatola, scolati","legumi",111,6.7,13.9,2.3,0,"n"],
+["Castagne arrostite","fruttasecca",210,3.7,41.8,2.4,0,"s"]
+["Castagne secche","fruttasecca",315,6,62,3.4,0,"s"]
+["Caviale storione","pesce",255,26.9,3.3,15,0,"p"]
+["Cavolini di Bruxelles bolliti","verdura",53,4.7,4.6,0.6,[10,11,12,1,2,3],"v"]
+["Cavoli di Bruxelles","verdura",47,4.2,4.2,0.5,[10,11,12,1,2,3],"v"]
+["Ceci in scatola","legumi",111,6.7,13.9,2.3,0,"p"]
 ["Cervello di bovino","carne",157,10,0.8,12.7,0,"n"],
 ["Cheddar","daclassificare",388,26.7,0.5,31,0,"n"],
-["Cheese burger, fast food","daclassificare",300,16.3,30.2,13.1,0,"n"],
-["Chicken Nuggets, fast food","daclassificare",242,17.7,15.4,12.4,0,"n"],
-["Ciliege, candite","frutta",252,0.4,66.4,0,[5,6,7],"fr"],
-["Ciliege, fresche","frutta",48,0.8,11,0.1,[5,6,7],"fr"],
-["Cioccolato, al latte","latticini",552,7.3,50.5,36.3,0,"p"],
-["Cipolle, cotte, bollite","verdura",39,1.4,7.8,0.1,0,"n"],
-["Cipolle, crude","verdura",28,1,5.7,0.1,0,"v"],
-["Cipolline, cotte, bollite","verdura",53,1.7,10.9,0.1,0,"n"],
-["Cipolline, crude","verdura",42,1.3,8.5,0.1,0,"v"],
-["Cocco, essiccato","fruttasecca",669,5.6,16.4,62,0,"s"],
+["Cheese burger fast food","daclassificare",300,16.3,30.2,13.1,0,"n"]
+["Chicken fast food","daclassificare",242,17.7,15.4,12.4,0,"n"]
+["Ciliege candite","frutta",252,0.4,66.4,0,[5,6,7],"fr"]
+["Cioccolato al latte","latticini",552,7.3,50.5,36.3,0,"p"]
+["Cipolle bollite","verdura",39,1.4,7.8,0.1,0,"v"]
+["Cipolline bollite","verdura",53,1.7,10.9,0.1,0,"v"]
+["Cipolline","verdura",42,1.3,8.5,0.1,0,"v"]
+["Cocco essiccato","fruttasecca",669,5.6,16.4,62,0,"s"]
 ["Cocktail di frutta sciroppata","daclassificare",59,0.4,14.8,0,0,"n"],
 ["Coratella di agnello","carne",109,15.7,1,4.7,0,"p"],
 ["Coratella di vitello","carne",100,17.1,0.8,3.2,0,"p"],
@@ -1170,121 +1186,110 @@ const FOOD_DB=[
 ["Cornetti","daclassificare",403,7.2,54.7,18.3,0,"n"],
 ["Corvina","daclassificare",88,20,0.2,0.8,0,"n"],
 ["Cozza o mitilo","pesce",84,11.7,3.4,2.7,0,"p"],
-["Crackers, al formaggio","latticini",498,10.1,59.2,25.5,0,"p"],
-["Crackers, alla soia","legumi",421,13.1,67.7,11.7,0,"p"],
-["Crackers, integrali","cereali",402,12,61.7,11.4,0,"c"],
-["Crackers, salati","cereali",386,9.4,67.5,10,0,"c"],
-["Crema di latte, 12% di lipidi","latticini",140,2.8,4.4,12.5,0,"p"],
+["Crackers al formaggio","latticini",498,10.1,59.2,25.5,0,"p"]
+["Crackers alla soia","legumi",421,13.1,67.7,11.7,0,"p"]
+["Crackers integrali","cereali",402,12,61.7,11.4,0,"c"]
+["Crackers salati","cereali",386,9.4,67.5,10,0,"c"]
+["Crema di latte 12% di lipidi","latticini",140,2.8,4.4,12.5,0,"p"]
 ["Croissants","dolci",362,8.3,38,20.3,0,"d"],
-["Crostata, con crema al cacao, industriale","condimenti",492,4.6,67,24.7,0,"n"],
+["Crostata con crema al cacao","condimenti",492,4.6,67,24.7,0,"g"]
 ["Cuore di equino","daclassificare",146,18.7,0.6,7.7,0,"n"],
 ["Cuore di ovino","bevande",134,16.9,0.4,7.2,0,"n"],
 ["Cuore di pollo","carne",103,14.1,0.2,5.1,0,"n"],
-["Cuore di pollo, cotto","carne",147,20.1,0.3,7.3,0,"n"],
 ["Cuore di suino","carne",159,18.3,0.4,9.4,0,"n"],
 ["Cuore di tacchino","carne",103,14.1,0.2,5.1,0,"n"],
-["Cuore di tacchino, cotto","carne",147,20.1,0.3,7.3,0,"n"],
 ["Dadi da brodo","condimenti",250,15.7,5,18.7,0,"g"],
 ["Edam","daclassificare",326,25.5,1.4,24.3,0,"n"],
 ["Emmenthal","daclassificare",403,28.5,3.6,30.6,0,"n"],
-["Fagioli, cotti, bolliti","legumi",117,7.9,17,0.7,0,"n"],
+["Fagioli bolliti","legumi",117,7.9,17,0.7,0,"p"]
 ["Fegato di bovino","carne",142,20,5.9,4.4,0,"n"],
-["Fegato di bovino, cotto","carne",190,26.7,7.9,5.9,0,"n"],
 ["Fegato di equino","daclassificare",145,22.4,5.3,4,0,"n"],
 ["Fegato di ovino","bevande",135,19.5,2,5.5,0,"n"],
 ["Fegato di pollo","carne",154,22.8,1.5,6.3,0,"n"],
-["Fegato di pollo, cotto","carne",192,29.4,2,7.4,0,"n"],
 ["Fegato di suino","carne",140,22.8,1.5,4.8,0,"n"],
-["Fegato di suino, cotto","carne",183,29.4,2,6.4,0,"n"],
 ["Fegato di tacchino","carne",127,17.8,0.5,6,0,"n"],
-["Fegato di tacchino, cotto","carne",195,27.4,0.8,9.2,0,"n"],
-["Feijoa, fresca","daclassificare",59,0.7,9.6,0.8,0,"n"],
-["Finocchi, cotti, al microonde","verdura",15,1.2,1.5,0,0,"n"],
-["Finocchi, cotti, bolliti","verdura",17,1.4,1.7,0,0,"n"],
-["Finocchi, crudi","verdura",15,1.2,1.5,0,0,"v"],
+["Feijoa","daclassificare",59,0.7,9.6,0.8,0,"n"]
+["Finocchi al microonde","verdura",15,1.2,1.5,0,0,"v"]
+["Finocchi bolliti","verdura",17,1.4,1.7,0,0,"v"]
 ["Fiocchi di formaggio magro","latticini",115,9.7,3.2,7.1,0,"p"],
 ["Fior di latte","latticini",268,20.6,0.7,20.3,0,"p"],
-["Foglie di rapa, crude","verdura",27,2.6,2.8,0.1,0,"v"],
+["Foglie di rapa","verdura",27,2.6,2.8,0.1,0,"v"]
 ["Formaggino","daclassificare",309,11.2,6,26.9,0,"n"],
 ["Formaggino con ridotto contenuto di grasso","daclassificare",239,14.7,6.5,17.3,0,"n"],
 ["Formaggio molle da tavola","latticini",377,25.4,1,30.2,0,"p"],
 ["Frumento duro","daclassificare",332,13,62.5,2.9,0,"n"],
 ["Frumento tenero","daclassificare",336,12.3,65.2,2.6,0,"n"],
-["Funghi coltivati, pleurotes, cotti, in padella","verdura",35,2.6,5.3,0.4,[9,10,11],"v"],
-["Funghi coltivati, pleurotes, crudi","verdura",37,2.2,5.6,0.3,[9,10,11],"v"],
-["Funghi coltivati, prataioli, cotti, in padella","verdura",46,7,1.5,0.4,[9,10,11],"v"],
-["Funghi coltivati, prataioli, crudi","verdura",24,3.7,0.8,0.2,[9,10,11],"v"],
-["Funghi ovuli, crudi","verdura",23,2,1.6,0.3,[9,10,11],"v"],
+["Funghi coltivati pleurotes in padella","verdura",35,2.6,5.3,0.4,[9,10,11],"v"]
+["Funghi coltivati pleurotes","verdura",37,2.2,5.6,0.3,[9,10,11],"v"]
+["Funghi coltivati prataioli in padella","verdura",46,7,1.5,0.4,[9,10,11],"v"]
+["Funghi coltivati prataioli","verdura",24,3.7,0.8,0.2,[9,10,11],"v"]
+["Funghi ovuli","verdura",23,2,1.6,0.3,[9,10,11],"v"]
 ["Gamberetti con funghi e bambù","pesce",110,8.6,1.9,7.3,0,"p"],
-["Gelato confezionato, cacao, in vaschetta","condimenti",173,3.6,25.3,7.1,0,"n"],
-["Gelato confezionato, caffè, in vaschetta","bevande",245,5.1,23.9,15,0,"n"],
-["Gelato confezionato, cono con panna e cioccolato","latticini",291,5.1,34.9,15.5,0,"p"],
-["Gelato confezionato, cono con panna, scaglie di cioccolato e noccioline","latticini",326,4.2,33.3,20.5,0,"n"],
-["Gelato confezionato, fior di latte, in vaschetta","latticini",218,4.2,20.7,13.7,0,"n"],
-["Gelato confezionato, fior di latte, ricoperto di sorbetto alla fragola","latticini",101,1.4,21.3,1.7,0,"n"],
-["Gelato confezionato, nocciola, in vaschetta","fruttasecca",183,3.3,25.2,8.4,0,"n"],
-["Gelato confezionato, panna, in vaschetta","latticini",189,3.2,27.2,8.2,0,"n"],
-["Gelato confezionato, stracciatella, in vaschetta","dolci",193,2.9,31.5,7,0,"n"],
-["Gelato confezionato, vaniglia, in vaschetta","dolci",167,2.7,25.7,6.7,0,"n"],
+["Gelato confezionato cacao in vaschetta","condimenti",173,3.6,25.3,7.1,0,"g"]
+["Gelato confezionato caffè in vaschetta","bevande",245,5.1,23.9,15,0,"b"]
+["Gelato confezionato","latticini",291,5.1,34.9,15.5,0,"p"]
+["Gelato confezionato cono con panna","latticini",326,4.2,33.3,20.5,0,"p"]
+["Gelato confezionato fior di latte in vaschetta","latticini",218,4.2,20.7,13.7,0,"p"]
+["Gelato confezionato fior di latte","latticini",101,1.4,21.3,1.7,0,"p"]
+["Gelato confezionato nocciola in vaschetta","fruttasecca",183,3.3,25.2,8.4,0,"s"]
+["Gelato confezionato panna in vaschetta","latticini",189,3.2,27.2,8.2,0,"p"]
+["Gelato confezionato stracciatella in vaschetta","dolci",193,2.9,31.5,7,0,"d"]
+["Gelato confezionato vaniglia in vaschetta","dolci",167,2.7,25.7,6.7,0,"d"]
 ["Gelato misto fritto","dolci",252,4.2,34.7,11.7,0,"d"],
 ["Germe di frumento","daclassificare",378,26,43.5,10,0,"n"],
 ["Germogli di soia","legumi",54,6.2,3,1.4,0,"p"],
 ["Gnocchi al ragù alla bolognese","daclassificare",175,8.4,15.4,9,0,"n"],
 ["Groviera","daclassificare",417,30.6,1.5,32.1,0,"n"],
-["Guava, fresca","daclassificare",31,0.7,3.5,0.5,0,"n"],
-["Hamburger, fast food","daclassificare",251,13.1,30.1,9.1,0,"n"],
-["Involtini Primavera","daclassificare",238,3.5,21.6,15.4,0,"n"],
+["Guava","daclassificare",31,0.7,3.5,0.5,0,"n"]
+["Hamburger fast food","daclassificare",251,13.1,30.1,9.1,0,"n"]
+["Involtini","daclassificare",238,3.5,21.6,15.4,0,"n"],
 ["Italico","daclassificare",316,21.2,1.2,25.2,0,"n"],
 ["Lasagna","daclassificare",196,11.7,13.4,10.8,0,"n"],
 ["Latte di bufala","latticini",114,4.5,5.1,8.5,0,"p"],
 ["Latte di capra","carne",76,3.9,4.7,4.8,0,"p"],
 ["Latte di pecora","carne",103,5.3,5.2,6.9,0,"p"],
-["Latte di vacca, condensato, zuccherato","latticini",328,8.7,56.5,9,0,"n"],
-["Latte di vacca, evaporato, non zuccherato","latticini",134,7,8.6,8.2,0,"n"],
+["Latte di vacca condensato zuccherato","latticini",328,8.7,56.5,9,0,"p"]
+["Latte di vacca evaporato non zuccherato","latticini",134,7,8.6,8.2,0,"p"]
 ["Latteria","latticini",456,30.7,1.4,36.4,0,"p"],
-["Lattughino IV gamma, fresco","verdura",16,1.4,1.4,0.2,0,"v"],
-["Lattughino, fresco","verdura",16,1.5,1.4,0.2,0,"v"],
+["Lattughino gamma","verdura",16,1.4,1.4,0.2,0,"v"]
+["Lattughino","verdura",16,1.5,1.4,0.2,0,"v"]
 ["Lenti colorate ripiene di cioccolato","condimenti",456,5.4,73.9,17.5,0,"g"],
-["Lenticchie, in scatola, scolate","legumi",91,5,15.4,0.5,0,"n"],
-["Litchi, freschi","daclassificare",72,1.1,17.2,0.1,0,"n"],
-["Loti o kaki, freschi","frutta",70,0.6,16,0.3,[10,11,12],"fr"],
+["Lenticchie in scatola","legumi",91,5,15.4,0.5,0,"p"]
+["Litchi","daclassificare",72,1.1,17.2,0.1,0,"n"]
+["Loti o kaki","frutta",70,0.6,16,0.3,[10,11,12],"fr"]
 ["Luccio","pesce",81,18.7,0.1,0.6,0,"p"],
 ["Maiale in agrodolce","carne",233,8.7,17.7,14.6,0,"p"],
-["Mais, amido","cereali",328,0.3,87,0,0,"c"],
-["Mais, dolce, in scatola, sgocciolato","cereali",105,3.4,20.5,1.3,0,"n"],
-["Mandarini, freschi","frutta",76,0.9,17.6,0.3,[11,12,1,2],"fr"],
-["Margarina, 100% vegetale","daclassificare",760,0.6,0.4,84,0,"n"],
-["Margarina, 2/3 di grassi animali, 1/3 di grassi vegetali","daclassificare",760,0.7,0.4,84,0,"n"],
-["Melagrane, fresche","frutta",68,0.5,15.9,0.2,0,"fr"],
-["Mele cotogne, fresche","frutta",38,0.3,6.3,0.1,0,"fr"],
-["Mele, disidratate","frutta",356,1.3,82.2,2,0,"fr"],
-["Mele, fresche, annurche","frutta",45,0.3,10.2,0.1,0,"n"],
-["Mele, fresche, con buccia","frutta",44,0.2,10,0,0,"n"],
-["Mele, fresche, deliziose","frutta",46,0.2,11.1,0.1,0,"n"],
-["Mele, fresche, golden","frutta",46,0.4,10.7,0.1,0,"n"],
-["Mele, fresche, granny smith","frutta",42,0.5,9.4,0.1,0,"n"],
-["Mele, fresche, imperatore","frutta",48,0.2,11.3,0.1,0,"n"],
-["Mele, fresche, renette","frutta",43,0.3,10,0.1,0,"n"],
-["Mele, fresche, senza buccia","frutta",57,0.3,13.7,0.1,0,"n"],
+["Mais amido","cereali",328,0.3,87,0,0,"c"]
+["Mais dolce in scatola sgocciolato","cereali",105,3.4,20.5,1.3,0,"c"]
+["Margarina 100% vegetale","daclassificare",760,0.6,0.4,84,0,"n"]
+["Margarina 2/3 di grassi animali 1/3 di grassi vegetali","daclassificare",760,0.7,0.4,84,0,"n"]
+["Mele cotogne","frutta",38,0.3,6.3,0.1,0,"fr"]
+["Mele disidratate","frutta",356,1.3,82.2,2,0,"fr"]
+["Mele annurche","frutta",45,0.3,10.2,0.1,0,"fr"]
+["Mele con buccia","frutta",44,0.2,10,0,0,"fr"]
+["Mele deliziose","frutta",46,0.2,11.1,0.1,0,"fr"]
+["Mele golden","frutta",46,0.4,10.7,0.1,0,"fr"]
+["Mele granny smith","frutta",42,0.5,9.4,0.1,0,"fr"]
+["Mele imperatore","frutta",48,0.2,11.3,0.1,0,"fr"]
+["Mele renette","frutta",43,0.3,10,0.1,0,"fr"]
+["Mele senza buccia","frutta",57,0.3,13.7,0.1,0,"fr"]
 ["Melù o pesce molo","pesce",72,17.4,0,0.3,0,"p"],
-["Melù o pesce molo, stoccafisso, ammollato","pesce",92,20.7,0.3,0.9,0,"n"],
-["Melù o pesce molo, stoccafisso, secco","pesce",356,80.1,1.1,3.5,0,"n"],
-["Menta, fresca","daclassificare",49,3.8,5.3,0.7,0,"n"],
-["Merendine, con marmellata, industriale","condimenti",364,5.5,67.9,9.5,0,"n"],
-["Merendine, farcite con cacao, industriale","condimenti",410,6.2,65.5,15.1,0,"n"],
-["Merendine, tipo briosche, industriale","dolci",440,8.2,65.7,17.6,0,"n"],
-["Merendine, tipo pan di Spagna, industriale","dolci",386,7.4,62.7,13.1,0,"n"],
-["Merendine, tipo pasta frolla, industriale","cereali",447,5.3,71.7,17.1,0,"n"],
+["Melù o pesce molo stoccafisso ammollato","pesce",92,20.7,0.3,0.9,0,"p"]
+["Melù o pesce molo stoccafisso secco","pesce",356,80.1,1.1,3.5,0,"p"]
+["Menta","daclassificare",49,3.8,5.3,0.7,0,"n"]
+["Merendine con marmellata","condimenti",364,5.5,67.9,9.5,0,"g"]
+["Merendine farcite con cacao","condimenti",410,6.2,65.5,15.1,0,"g"]
+["Merendine tipo briosche","dolci",440,8.2,65.7,17.6,0,"d"]
+["Merendine","dolci",386,7.4,62.7,13.1,0,"d"]
+["Merendine tipo pasta frolla","cereali",447,5.3,71.7,17.1,0,"c"]
 ["Merluzzo in umido","pesce",86,9.7,1.7,4.3,0,"p"],
-["Minestre in scatola, crema di cipolle","verdura",26,2.2,2.2,1,0,"v"],
-["Minestre in scatola, crema di funghi","verdura",56,1,4.2,4,[9,10,11],"v"],
-["Minestre in scatola, crema di pollo","carne",58,1.7,4.5,3.8,0,"p"],
-["Minestre in scatola, crema di pomodori","verdura",36,0.8,6.4,1,[6,7,8,9],"v"],
-["Minestrone, cotto","daclassificare",45,2,7.8,0.4,0,"n"],
+["Minestre in scatola crema di cipolle","verdura",26,2.2,2.2,1,0,"v"]
+["Minestre in scatola crema di funghi","verdura",56,1,4.2,4,[9,10,11],"v"]
+["Minestre in scatola crema di pollo","carne",58,1.7,4.5,3.8,0,"p"]
+["Minestre in scatola crema di pomodori","verdura",36,0.8,6.4,1,[6,7,8,9],"v"]
+["Minestrone","daclassificare",45,2,7.8,0.4,0,"n"]
 ["Mora di rovo","daclassificare",42,1.3,8.1,0,0,"n"],
 ["Nachos","daclassificare",512,6.5,63.8,26.1,0,"n"],
-["Oliva Giarraffa","daclassificare",192,1.4,0.19,20,0,"n"],
-["Oliva Nocellara del Belice","fruttasecca",211,1.4,0.06,22.1,0,"s"],
 ["Olive da tavola conservate","daclassificare",277,1.5,5,27,0,"n"],
 ["Ostrica","pesce",69,10.2,5.4,0.9,0,"p"],
 ["Palombo","pesce",80,16,1.3,1.2,0,"p"],
@@ -1293,111 +1298,96 @@ const FOOD_DB=[
 ["Pane al malto","cereali",278,8.3,56.6,2.4,0,"c"],
 ["Pane di tipo semintegrale","cereali",239,8.3,52,0.3,0,"c"],
 ["Panini al latte","latticini",298,9,48.1,8.7,0,"p"],
-["Panino con hamburger piccolo, fast food","daclassificare",254,15.6,29,8.9,0,"n"],
-["Panino, fast food","daclassificare",248,10.1,47,3,0,"n"],
-["Panna da cucina, sterilizzata, 23% di lipidi","latticini",233,2.7,4,23,0,"n"],
-["Panna da montare, 35% di lipidi","latticini",337,2.3,3.4,35,0,"p"],
-["Papaia, fresca","frutta",33,0.4,6.9,0.1,0,"n"],
+["Panino con hamburger piccolo fast food","daclassificare",254,15.6,29,8.9,0,"n"]
+["Panino fast food","daclassificare",248,10.1,47,3,0,"n"]
+["Panna da cucina sterilizzata 23% di lipidi","latticini",233,2.7,4,23,0,"p"]
+["Panna da montare 35% di lipidi","latticini",337,2.3,3.4,35,0,"p"]
+["Papaia","frutta",33,0.4,6.9,0.1,0,"fr"]
 ["Pappa reale","daclassificare",146,10,14,6,0,"n"],
 ["Pasta al ragù alla bolognese","cereali",168,8.4,16,8,0,"c"],
-["Patatine, fritte, confezionate in busta","verdura",512,5.4,58,29.6,0,"n"],
-["Patatine, fritte, fast food","verdura",283,3.3,37.6,13.7,0,"n"],
+["Patatine fritte confezionate in busta","verdura",512,5.4,58,29.6,0,"v"]
+["Patatine fritte fast food","verdura",283,3.3,37.6,13.7,0,"v"]
 ["Patè di fegato","bevande",341,12.7,1.3,31.7,0,"n"],
 ["Patè di pollo","carne",289,11.1,2.3,26.2,0,"p"],
 ["Patè di prosciutto","salumi",358,11.3,1.1,34.3,0,"p"],
 ["Pecorino siciliano","latticini",427,28.9,2.4,33.6,0,"p"],
 ["Pepe nero","daclassificare",311,11.4,49,3.3,0,"n"],
-["Peperoncini piccanti, freschi","verdura",30,1.8,3.8,0.5,[6,7,8,9,10],"v"],
-["Pere, candite","frutta",294,1,73.9,0.4,0,"fr"],
-["Pere, fresche, Abate Fetel","frutta",59,0.2,12.7,0.3,0,"n"],
-["Pere, fresche, Kaiser","frutta",48,0.3,9.2,0.5,0,"n"],
-["Pere, fresche, Max-Red Barlett","frutta",50,0.3,10,0.4,0,"n"],
-["Pere, fresche, William","frutta",52,0.3,10.2,0.5,0,"n"],
-["Pere, fresche, senza buccia","frutta",43,0.3,8.8,0.1,0,"n"],
+["Peperoncini piccanti","verdura",30,1.8,3.8,0.5,[6,7,8,9,10],"v"]
+["Pere candite","frutta",294,1,73.9,0.4,0,"fr"]
+["Pere senza buccia","frutta",43,0.3,8.8,0.1,0,"fr"]
 ["Pesce gatto","pesce",92,15.5,0.2,3.3,0,"p"],
-["Pesche, disidratate","frutta",364,4.8,88,0.9,[6,7,8,9],"fr"],
-["Pesche, fresche, con buccia","frutta",28,0.7,5.8,0,[6,7,8,9],"fr"],
-["Pesche, fresche, senza buccia","frutta",30,0.8,6.1,0.1,[6,7,8,9],"fr"],
-["Pesche, secche","frutta",280,3.1,68.3,0.7,[6,7,8,9],"fr"],
-["Peschenoci, fresche","frutta",36,1.4,7,0.1,[6,7,8,9],"fr"],
-["Pistacchio di Bronte DOP","fruttasecca",595,24.3,7.3,48.9,0,"s"],
+["Pesche disidratate","frutta",364,4.8,88,0.9,[6,7,8,9],"fr"]
+["Pesche con buccia","frutta",28,0.7,5.8,0,[6,7,8,9],"fr"]
+["Pesche senza buccia","frutta",30,0.8,6.1,0.1,[6,7,8,9],"fr"]
+["Pesche secche","frutta",280,3.1,68.3,0.7,[6,7,8,9],"fr"]
+["Peschenoci","frutta",36,1.4,7,0.1,[6,7,8,9],"fr"]
 ["Pizza bianca","daclassificare",306,7.9,57.9,5.9,0,"n"],
 ["Pizza con pomodoro","verdura",248,7.6,40.7,6.6,[6,7,8,9],"v"],
 ["Pomodori al riso","cereali",93,2,14.5,2.8,0,"c"],
-["Pomodori, Nerina, rossi, freschi","verdura",21,1.1,2.8,0.4,[6,7,8,9],"v"],
-["Pomodori, Nerina, verdi, freschi","verdura",21,0.9,2.8,0.4,[6,7,8,9],"v"],
-["Pomodori, conserva","verdura",100,3.9,20.4,0.4,[6,7,8,9],"v"],
-["Pomodori, da insalata, freschi","verdura",19,1.2,2.8,0.2,[6,7,8,9],"v"],
-["Pomodori, maturi, freschi","verdura",23,1,3.5,0.2,[6,7,8,9],"v"],
-["Pomodori, passata","condimenti",21,1.3,3,0.2,0,"g"],
-["Pomodori, succo","verdura",16,0.8,3,0,[6,7,8,9],"v"],
+["Pomodori rossi","verdura",21,1.1,2.8,0.4,[6,7,8,9],"v"]
+["Pomodori verdi","verdura",21,0.9,2.8,0.4,[6,7,8,9],"v"]
+["Pomodori conserva","verdura",100,3.9,20.4,0.4,[6,7,8,9],"v"]
+["Pomodori da insalata","verdura",19,1.2,2.8,0.2,[6,7,8,9],"v"]
+["Pomodori maturi","verdura",23,1,3.5,0.2,[6,7,8,9],"v"]
+["Pomodori succo","verdura",16,0.8,3,0,[6,7,8,9],"v"]
 ["Pop corn","daclassificare",408,12,77.9,4.2,0,"n"],
-["Porri, cotti, bolliti","daclassificare",35,2.1,5.3,0.1,0,"n"],
-["Porri, crudi","daclassificare",35,2.1,5.2,0.1,0,"n"],
-["Prezzemolo, fresco","verdura",30,3.7,0,0.6,0,"v"],
-["Prosciutto crudo DOP, di Parma","salumi",269,25.9,0.3,18.3,0,"p"],
-["Prosciutto crudo, Nazionale","salumi",235,27.8,0.1,13.7,0,"p"],
-["Prosciutto crudo, di Modena DOP","salumi",309,25.6,0.1,22.9,0,"p"],
-["Prugne, gialle","frutta",30,0.5,6.6,0.1,0,"fr"],
-["Prugne, rosse","frutta",45,0.5,10.5,0.1,0,"fr"],
+["Porri bolliti","daclassificare",35,2.1,5.3,0.1,0,"n"]
+["Prezzemolo","verdura",30,3.7,0,0.6,0,"v"]
+["Prosciutto crudo","salumi",269,25.9,0.3,18.3,0,"p"]
+["Prugne gialle","frutta",30,0.5,6.6,0.1,0,"fr"]
+["Prugne rosse","frutta",45,0.5,10.5,0.1,0,"fr"]
 ["Radicchio variegato di Castelfranco IGP","verdura",16,1.3,1.4,0.1,[10,11,12,1,2],"v"],
 ["Ragù alla bolognese","daclassificare",196,12,1.9,15.4,0,"n"],
 ["Ravioli al sugo di pomodoro","verdura",135,4.8,17.6,5.1,[6,7,8,9],"v"],
 ["Ravioli al vapore","daclassificare",270,7.2,21.4,17.5,0,"n"],
-["Ravioli, cotti","daclassificare",177,7.2,27.5,4.6,0,"n"],
-["Ravioli, crudi, freschi","daclassificare",265,10.6,40.7,7.3,0,"n"],
+["Ravioli","daclassificare",177,7.2,27.5,4.6,0,"n"]
 ["Razza","pesce",68,14.2,0.7,0.9,0,"p"],
 ["Rene di bovino","carne",118,18.4,0.8,4.6,0,"p"],
 ["Ricotta di bufala","latticini",212,10.5,3.7,17.3,0,"p"],
 ["Ricotta di vacca","latticini",146,8.8,3.5,10.9,0,"p"],
-["Riso Cantonese","cereali",207,5.5,29.8,7.8,0,"c"],
+["Riso","cereali",207,5.5,29.8,7.8,0,"c"],
 ["Riso al ragù alla bolognese","cereali",145,6.7,13.6,7.4,0,"c"],
 ["Riso al sugo di pomodoro","cereali",90,1.7,16.5,2.2,0,"c"],
-["Riso, brillato","cereali",334,6.7,80.4,0.4,0,"c"],
-["Riso, brillato, cotto, bollito","cereali",100,2,24.2,0.1,0,"n"],
-["Riso, soffiato, da prima colazione","cereali",354,6,85.1,1,0,"n"],
+["Riso brillato","cereali",334,6.7,80.4,0.4,0,"c"]
+["Riso brillato bollito","cereali",100,2,24.2,0.1,0,"c"]
+["Riso soffiato da prima colazione","cereali",354,6,85.1,1,0,"c"]
 ["Risotto alla parmigiana","cereali",181,4.1,25.4,7.5,0,"c"],
-["Salame Brianza","salumi",384,26.5,1,30.5,0,"p"],
-["Salame Fabriano","salumi",420,26.5,1.5,34.3,0,"p"],
+["Salame","salumi",384,26.5,1,30.5,0,"p"],
 ["Salame nostrano","salumi",370,27.3,1.1,28.5,0,"p"],
 ["Salame ungherese","salumi",420,23.6,1.1,35.7,0,"p"],
-["Salami italiani alla cacciatora DOP","daclassificare",411,28.4,0.7,32.7,0,"n"],
+["Salami italiani alla cacciatora","daclassificare",411,28.4,0.7,32.7,0,"n"],
 ["Salpa","daclassificare",104,18,2,2.7,0,"n"],
 ["Salsiccia di Calabria","salumi",366,33.6,1.3,25.2,0,"p"],
 ["Salsiccia di fegato","salumi",424,12.4,0.9,41.2,0,"n"],
 ["Sarmale","daclassificare",103,5.7,7.9,5.2,0,"n"],
-["Savoiardi, industriali","dolci",395,11.9,69.6,9.2,0,"d"],
-["Soia, isolato proteico","legumi",369,86.5,4.5,0.7,0,"p"],
-["Soia, yogurt","latticini",72,5,3.9,4.2,0,"p"],
+["Savoiardi industriali","dolci",395,11.9,69.6,9.2,0,"d"]
+["Soia isolato proteico","legumi",369,86.5,4.5,0.7,0,"p"]
+["Soia yogurt","latticini",72,5,3.9,4.2,0,"p"]
 ["Soppressata di Calabria","salumi",377,34.2,0.9,26.3,0,"p"],
 ["Spigola","pesce",82,16.5,0.6,1.5,0,"p"],
 ["Spigola al cartoccio","pesce",126,16.2,0.9,6.4,0,"p"],
-["Spigola d'allevamento, filetti","pesce",149,21.3,0.8,6.8,0,"p"],
+["Spigola d'allevamento filetti","pesce",149,21.3,0.8,6.8,0,"p"]
 ["Sugo di pomodoro","verdura",74,1.3,3.6,5.7,[6,7,8,9],"v"],
 ["Tabulè","daclassificare",95,3,14,2.4,0,"n"],
 ["Tinca","pesce",79,17.9,0.9,0.5,0,"p"],
 ["Torta di mele","frutta",300,5,46.3,11.5,0,"fr"],
-["Tè, foglie","bevande",108,19.6,3,2,0,"b"],
-["Uova di anatra, intero","carne",190,12.2,0.7,15.4,0,"p"],
-["Uova di gallina, albume","carne",43,10.7,0,0,0,"p"],
-["Uova di gallina, intero","carne",128,12.4,0,8.7,0,"p"],
-["Uova di gallina, intero , cotto, a frittata o strapazzato","carne",150,14.6,0,10.2,0,"n"],
-["Uova di gallina, intero , cotto, alla coque o sodo","carne",128,12.4,0,8.7,0,"n"],
-["Uova di gallina, intero, congelato","carne",128,12.4,0,8.7,0,"n"],
-["Uova di gallina, intero, in polvere","carne",537,51.9,0.4,36.4,0,"n"],
-["Uova di gallina, tuorlo","carne",325,15.8,0,29.1,0,"p"],
-["Uova di gallina, tuorlo , cotto, in camicia","carne",325,15.8,0,29.1,0,"n"],
-["Uova di gallina, tuorlo, congelato","carne",325,15.8,0,29.1,0,"n"],
-["Uova di gallina, tuorlo, in polvere","carne",642,31.2,0.02,57.5,0,"n"],
-["Uova di oca, intero","carne",189,13.8,1,14.4,0,"p"],
-["Uova di tacchina, intero","uova",147,12.8,1,10.2,0,"p"],
-["Uva, succo, in cartone","frutta",66,0.3,17.3,0,[8,9,10],"fr"],
-["Vegetali misti, surgelati","daclassificare",67,3.3,13.7,0.3,0,"n"],
-["Vongola","pesce",65,9.8,3.9,1.2,0,"p"],
+["Tè foglie","bevande",108,19.6,3,2,0,"b"]
+["Uova di anatra intero","carne",190,12.2,0.7,15.4,0,"p"]
+["Uova di gallina albume","carne",43,10.7,0,0,0,"p"]
+["Uova di gallina intero","carne",128,12.4,0,8.7,0,"p"]
+["Uova di gallina intero a frittata o strapazzato","carne",150,14.6,0,10.2,0,"p"]
+["Uova di gallina intero alla coque o sodo","carne",128,12.4,0,8.7,0,"p"]
+["Uova di gallina intero in polvere","carne",537,51.9,0.4,36.4,0,"p"]
+["Uova di gallina tuorlo","carne",325,15.8,0,29.1,0,"p"]
+["Uova di gallina tuorlo in camicia","carne",325,15.8,0,29.1,0,"p"]
+["Uova di gallina tuorlo in polvere","carne",642,31.2,0.02,57.5,0,"p"]
+["Uova di oca intero","carne",189,13.8,1,14.4,0,"p"]
+["Uova di tacchina intero","uova",147,12.8,1,10.2,0,"p"]
+["Uva succo in cartone","frutta",66,0.3,17.3,0,[8,9,10],"fr"]
+["Vegetali misti","daclassificare",67,3.3,13.7,0.3,0,"n"]
 ["Wafer ricoperto di cioccolato","condimenti",498,8.2,60.3,26.6,0,"g"],
-["Wurstel di puro suino, cotto","carne",259,14.6,0.3,22.2,0,"p"],
-["Wurstel di puro suino, crudo","carne",250,13.2,1.9,21.1,0,"p"],
-["Yogurt, 0% lipidi","latticini",42,4.7,6,0.1,0,"p"],
+["Wurstel di puro suino","carne",259,14.6,0.3,22.2,0,"p"]
+["Yogurt 0% lipidi","latticini",42,4.7,6,0.1,0,"p"]
 /* ---- LOTTO ITALIANO v1.9 (importato e verificato con importa-alimenti.js) ---- */
 ["Asiago","latticini",374,24.5,1.5,30,0,"p"],
 ["Fontina","latticini",371,25.5,0.8,29.5,0,"p"],
@@ -1775,7 +1765,6 @@ const RECIPES={
 "Insalata di polpo e sedano":{i:[["polpo lessato",65],["sedano croccante",20],["olio, limone, prezzemolo",10]],s:["Polpo a tocchi ancora tiepido","Sedano a fettine sottili","Condisci e riposa 30 min"]},
 "Vitello arrosto freddo":{i:[["arrosto di vitello",80],["olio e limone",10],["rucola o sottaceti",8]],s:["Arrosto del giorno prima","Fette sottilissime","Citronette e contorno acidulo"]}
 };
-
 /* ============================================================
    DATI · Esercizi con manubri (max ~16 kg) + corpo libero
    [nome, gruppo(full|upper|lower|core), carico(0=corpo libero, 1=leggero, 2=medio, 3=pesante), nota]
@@ -1832,7 +1821,6 @@ const PROT_EXPLAIN=[
 [1.5,1.7,"<b>1,5–1,7 g/kg</b> · Buon compromesso: sazietà elevata e buona protezione muscolare per chi si allena 3–4 volte a settimana."],
 [1.8,2.0,"<b>1,8–2,0 g/kg</b> · Fascia consigliata dalle evidenze per dimagrimento aggressivo: massima conservazione della massa magra e forte effetto saziante."],
 [2.1,2.4,"<b>2,1–2,4 g/kg</b> · Utile con deficit molto ampi o allenamento intenso. Nessun vantaggio ulteriore oltre 2,4; controindicato solo con patologie renali."]];
-
 /* ============================================================
    STORAGE ADAPTER — oggi localStorage, domani Supabase:
    basta reimplementare load()/save() mantenendo l'interfaccia.
@@ -1845,7 +1833,6 @@ const Storage={
     try{ localStorage.setItem(this.KEY,JSON.stringify(state)); }
     catch(e){ this.persistent=false; } }
 };
-
 /* ============================================================
    STATO
    ============================================================ */
@@ -1858,7 +1845,6 @@ let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
 let U=S.users.find(u=>u.id===S.active)||S.users[0];
 const save=()=>Storage.save(S);
-
 /* ============================================================
    MOTORE · date, rng deterministico, fabbisogno, ciclizzazione
    ============================================================ */
@@ -1879,7 +1865,6 @@ function kcalMedia(){
     const w=U.mantStart?Math.max(0,Math.floor((Date.now()-dateFromKey(U.mantStart))/(7*864e5))):0;
     return Math.min(tdee(),(U.mantBase||kcalMediaDeficit())+150*w); }
   return kcalMediaDeficit(); }
-
 /* Tipo giorno: pattern settimanale [2 bassi, 4 pieni, 1 ricarica] mescolato con seed della settimana.
    Media settimanale = kcalMedia. basso −15% · pieno base · ricarica +22% */
 function weekSeed(dateKey){ const d=dateFromKey(dateKey);
@@ -1920,7 +1905,6 @@ function schemaOfDay(dateKey){
 function stepsGoalToday(dateKey=todayKey()){
   const weeks=Math.max(0,Math.floor((dateFromKey(dateKey)-dateFromKey(U.startDate))/(7*864e5)));
   return Math.min(10000,(+U.passiBase||6000)+500*weeks); }
-
 /* ============================================================
    MOTORE · generatore menu
    ============================================================ */
@@ -1948,7 +1932,7 @@ function isVegFood(f){ const cat=f[1];
   if(cat==="carne"||cat==="pesce"||cat==="salumi") return false;
   if(f[7]==="x") return f[8]===1; return true; }
 function inSeason(f,month){ return f[6]===0 || f[6].includes(month); }
-const NON_MED_RE=/tofu|tempeh|edamame|azuki|soia|surimi|poke|guacamole|tortilla|mango|papaya|burro di arachidi|pecan|brasile|macadamia|cocco disidratato|pancake|halibut|sushi|corn flakes|ketchup|maionese|wurstel|bowl quinoa/i;
+const NON_MED_RE=/tofu|tempeh|edamame|azuki|soia|surimi|poke|guacamole|tortilla|mango|papaya|burro di arachidi|pecan|brasile|macadamia|cocco disidratato|pancake|halibut|sushi|corn flakes|ketchup|maionese|wurstel|bowl quinoa|anona|guava|litchi|carambola|passiflora/i;
 function pool(role,{veg=false,month,recent}){ 
   const ban=U.gusti?U.gusti.ban:[], fav=U.gusti?U.gusti.fav:[];
   const base=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>
@@ -2144,7 +2128,6 @@ function genMenu(dateKey,force){
   const keys=Object.keys(U.menuCache).sort(); while(keys.length>21) delete U.menuCache[keys.shift()];
   save(); return menu;
 }
-
 /* ============================================================
    MOTORE · allenamento
    ============================================================ */
@@ -2170,7 +2153,6 @@ function genWorkout(dateKey,force){
   save(); return wo;
 }
 function shuffle(a,r){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-
 /* ============================================================
    LOG giornaliero
    ============================================================ */
@@ -2186,13 +2168,11 @@ const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmt=n=>n.toLocaleString("it-IT");
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show");
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
-
 /* --- navigazione --- */
 $$("nav button").forEach(b=>b.onclick=()=>{
   $$("nav button").forEach(x=>x.classList.toggle("on",x===b));
   $$(".page").forEach(p=>p.classList.toggle("on",p.id==="pg-"+b.dataset.pg));
   render(); });
-
 /* --- OGGI --- */
 function renderToday(){
   const k=todayKey(); const menu=genMenu(k); const m=menu.target; const tot=totalsOf(k);
@@ -2326,7 +2306,6 @@ $$("#dlgFeel [data-feel]").forEach(b=>b.onclick=()=>{
   if(b.dataset.feel==="facile") U.prog[f].easy++; else U.prog[f].easy=0;
   save(); $("#dlgFeel").close(); render();
   toast(b.dataset.feel==="facile"&&U.prog[f].easy>=2?"Due volte facile: la prossima aumenta il carico!":"Registrato 💪"); });
-
 /* timer di circuito con segnali audio */
 let T=null;
 function beep(freq=880,dur=0.15){ try{
@@ -2397,7 +2376,6 @@ function renderFast(menu){
 $("#btnFastStart").onclick=()=>{ U.fastTs=Date.now(); save(); render(); };
 $("#btnFastStop").onclick=()=>{ U.fastTs=null; save(); render(); };
 setInterval(()=>{ const k=todayKey(); if(U.menuCache[k]&&document.getElementById("pg-oggi").classList.contains("on")) renderFast(U.menuCache[k]); },60000);
-
 /* ============ SCANNER CODICI A BARRE (Open Food Facts + archivio personale) ============ */
 let scanStream=null, scanLoop=null, zxReader=null;
 function coherent(kcal,p,c,f){ const calc=4*(p||0)+4*(c||0)+9*(f||0);
@@ -2477,6 +2455,12 @@ $("#scanAdd").onclick=()=>{
     kcal:Math.round(kcal*k),p:+(p*k).toFixed(1),c:+(c*k).toFixed(1),fat:+(f*k).toFixed(1),
     meal:$("#scanMeal").value,src:"scan"});
   save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); toast("Prodotto registrato 🛒"); };
+/* --- temi --- */
+function applyTheme(){ document.body.classList.remove("t-vivo","t-notte");
+  if(U.tema) document.body.classList.add("t-"+U.tema);
+  $$("[data-tema]").forEach(b=>b.style.opacity=(b.dataset.tema===(U.tema||""))?"1":"0.55"); }
+$$("[data-tema]").forEach(b=>b.onclick=()=>{ U.tema=b.dataset.tema||""; save(); applyTheme();
+  toast(b.dataset.tema==="notte"?"Buonanotte 🌙":b.dataset.tema==="vivo"?"Mediterraneo vivo 🍅":"Tema classico"); });
 
 /* --- ricerca alimenti --- */
 let dlgFood=null;
@@ -2514,7 +2498,6 @@ $("#dlgAdd").onclick=()=>{
   const it=scale(dlgFood,g); it.meal=$("#dlgMeal").value; it.src="free";
   dayLog().pasti.push(it); save(); $("#dlgQty").close();
   $("#foodSearch").value=""; $("#foodResults").hidden=true; render(); toast(it.name+" aggiunto"); };
-
 /* pasti preset */
 function openPreset(){
   U.preset=U.preset||[];
@@ -2554,7 +2537,6 @@ $("#outAdd").onclick=()=>{
   dayLog().pasti.push({id:null,name:"Fuori casa"+(desc?": "+desc:""),g:0,kcal,p,c,fat:f,
     meal:$("#outMeal").value,src:"out"});
   save(); $("#dlgOut").close(); render(); toast("Pasto fuori registrato"); };
-
 /* --- SETTIMANA --- */
 function renderWeek(){
   const days=[]; const now=dateFromKey(todayKey());
@@ -2620,7 +2602,6 @@ $("#btnSpesaCopy").onclick=()=>{
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(()=>toast("Lista copiata")); }
   else { const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
     document.execCommand("copy"); ta.remove(); toast("Lista copiata"); } };
-
 /* ============ INSIGHT ============ */
 function renderInsights(){
   const out=[]; const days=[];
@@ -2655,7 +2636,6 @@ function renderInsights(){
   const st=streak(); if(st>=3) out.push(`🔥 Serie attuale: <b>${st} giorni</b> in rotta. Non spezzarla stasera.`);
   $("#insightList").innerHTML=out.length?out.map(o=>`<div style="padding:5px 0;border-bottom:1px dashed var(--line)">${o}</div>`).join(""):"Ancora nessun pattern netto: continua a registrare, i dati parleranno.";
 }
-
 /* ============ MENU 7 GIORNI STAMPABILE ============ */
 $("#btnMenuPrint").onclick=()=>{
   const days=[]; for(let i=0;i<7;i++) days.push(todayKey(new Date(Date.now()+i*864e5)));
@@ -2675,7 +2655,6 @@ $("#btnMenuPrint").onclick=()=>{
     <div class="small">Le quantità dei cereali sono a crudo. Sostituzioni equivalenti: usa ⇄ nell'app.</div>`;
   $("#reportView").classList.add("on");
 };
-
 /* ============ EXPORT CSV ============ */
 function dlCsv(name,txt){ const b=new Blob(["\ufeff"+txt],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; a.click(); }
@@ -2690,7 +2669,6 @@ $("#btnCsvDiario").onclick=()=>{
     (l.pasti||[]).forEach(it=>rows.push([k,it.meal||"",'"'+it.name.replace(/"/g,"'")+'"',it.g,it.kcal,it.p,it.c,it.fat].join(";")));
     rows.push([k,"— totali giorno —","",_ = "",Math.round(totalsOf(k).kcal),Math.round(totalsOf(k).p),Math.round(totalsOf(k).c),Math.round(totalsOf(k).fat)].join(";")); });
   dlCsv("rotta80-diario.csv","data;pasto;alimento;grammi;kcal;proteine;carboidrati;grassi\n"+rows.join("\n")); };
-
 /* ============ MISURE CORPOREE ============ */
 function bodyFat(m){ const L=Math.log10;
   if(!m||!m.vita||!m.collo||m.vita<=m.collo) return null;
@@ -2720,7 +2698,6 @@ $("#btnMisure").onclick=()=>{
   U.misure.sort((a,b)=>a.d<b.d?-1:1);
   $("#mVita").value=$("#mFianchi").value=$("#mCollo").value="";
   save(); render(); toast("Misure registrate"); };
-
 /* ============ TRASFERIMENTO DATI (codice compatto) ============ */
 function lzwEnc(s){ s=unescape(encodeURIComponent(s));
   const d={}; for(let i=0;i<256;i++) d[String.fromCharCode(i)]=i;
@@ -2758,7 +2735,6 @@ $("#xferGo").onclick=()=>{
     U=S.users.find(u=>u.id===S.active)||S.users[0];
     save(); $("#dlgXfer").close(); render(); toast("Dati importati ✓"); }
   catch(e){ toast("Codice non valido"); } };
-
 /* ============ REPORT SETTIMANALE ============ */
 $("#btnReport").onclick=()=>{
   const days=[]; const now=dateFromKey(todayKey());
@@ -2907,7 +2883,6 @@ $("#btnWeight").onclick=()=>{
   U.pesi.sort((a,b)=>a.d<b.d?-1:1);
   $("#weightInput").value=""; save(); render(); toast("Peso registrato: "+v.toFixed(1)+" kg");
 };
-
 /* --- PROFILO --- */
 function renderProf(){
   const sel=$("#userSel");
@@ -2949,7 +2924,6 @@ $("#btnSaveProf").onclick=()=>{
   /* i menu futuri dipendono dalle impostazioni: rigenera tutto tranne oggi */
   const tk=todayKey(); const keep=U.menuCache[tk]; U.menuCache={}; if(keep) U.menuCache[tk]=keep;
   save(); render(); toast("Profilo salvato — piano ricalcolato"); };
-
 /* --- backup --- */
 $("#btnExport").onclick=()=>{
   const blob=new Blob([JSON.stringify(S,null,1)],{type:"application/json"});
@@ -2964,9 +2938,8 @@ $("#importFile").onchange=e=>{
       save(); render(); toast("Backup importato"); }
     catch(err){ toast("File non valido"); } };
   r.readAsText(f); };
-
 /* --- render generale --- */
-function render(){ renderToday(); renderWeek(); renderProg(); renderProf(); }
+function render(){ applyTheme(); renderToday(); renderWeek(); renderProg(); renderProf(); }
 /* passi in ingresso da Comando Rapido iOS: ...?passi=8543 */
 (function(){ try{
   const q=new URLSearchParams(location.search); const p=parseInt((q.get("passi")||"").replace(/\D/g,""));
