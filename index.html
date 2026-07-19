@@ -181,6 +181,7 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <h2>Registra liberamente</h2>
     <input type="search" id="foodSearch" placeholder="Cerca tra ~500 alimenti… (es. orata, farro)" autocomplete="off">
     <div class="btnrow" style="margin-top:8px">
+      <button class="btn ghost sm" id="btnScan">📷 Scansiona barcode</button>
       <button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button>
       <button class="btn ghost sm" id="btnPreset">★ Pasti preset</button>
     </div>
@@ -405,6 +406,37 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <button class="btn ghost" id="dlgFav">❤</button>
     <button class="btn ghost" id="dlgCancel">Annulla</button>
   </div>
+</dialog>
+<dialog id="dlgScan">
+  <h3 style="margin-bottom:6px">Scansiona un prodotto</h3>
+  <video id="scanVideo" playsinline muted style="width:100%;border-radius:12px;background:#000;min-height:180px"></video>
+  <div class="small" id="scanStatus" style="margin-top:6px">Inquadra il codice a barre…</div>
+  <label>Oppure inserisci l'EAN a mano</label>
+  <div class="grid2">
+    <input id="scanEan" inputmode="numeric" placeholder="es. 8001120000000">
+    <button class="btn" id="scanLookup">Cerca</button>
+  </div>
+  <div id="scanResult" hidden style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+    <b id="scanName" style="font-size:.95rem"></b>
+    <div class="small" id="scanCheck"></div>
+    <div class="grid3" style="margin-top:6px">
+      <div><label>kcal/100g</label><input type="number" id="scanKcal" inputmode="decimal"></div>
+      <div><label>Prot/100g</label><input type="number" id="scanP" inputmode="decimal" step="0.1"></div>
+      <div><label>Carb/100g</label><input type="number" id="scanC" inputmode="decimal" step="0.1"></div>
+    </div>
+    <div class="grid3" style="margin-top:6px">
+      <div><label>Grassi/100g</label><input type="number" id="scanF" inputmode="decimal" step="0.1"></div>
+      <div><label>Grammi mangiati</label><input type="number" id="scanG" inputmode="numeric" value="100"></div>
+      <div><label>Pasto</label><select id="scanMeal"><option>Colazione</option><option>Pranzo</option><option>Cena</option><option>Spuntino</option></select></div>
+    </div>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="btn" id="scanAdd">Registra nel diario</button>
+    </div>
+  </div>
+  <div class="btnrow" style="margin-top:12px">
+    <button class="btn ghost" id="scanClose">Chiudi</button>
+  </div>
+  <div class="small" style="margin-top:8px">Dati da Open Food Facts (serve internet alla prima scansione). I prodotti restano nel tuo archivio: la prossima volta niente rete. Verifica sempre l'etichetta.</div>
 </dialog>
 <dialog id="dlgRecipe">
   <h3 id="recTitle" style="margin-bottom:4px"></h3>
@@ -1684,16 +1716,103 @@ $("#btnFastStart").onclick=()=>{ U.fastTs=Date.now(); save(); render(); };
 $("#btnFastStop").onclick=()=>{ U.fastTs=null; save(); render(); };
 setInterval(()=>{ const k=todayKey(); if(U.menuCache[k]&&document.getElementById("pg-oggi").classList.contains("on")) renderFast(U.menuCache[k]); },60000);
 
+/* ============ SCANNER CODICI A BARRE (Open Food Facts + archivio personale) ============ */
+let scanStream=null, scanLoop=null, zxReader=null;
+function coherent(kcal,p,c,f){ const calc=4*(p||0)+4*(c||0)+9*(f||0);
+  if(!kcal) return {ok:false,calc};
+  return {ok:Math.abs(calc-kcal)/kcal<=0.12||Math.abs(calc-kcal)<=15,calc}; }
+function showScanned(prod,fromCache){
+  $("#scanResult").hidden=false;
+  $("#scanName").textContent=prod.name+(prod.brand?" · "+prod.brand:"")+(fromCache?" (archivio)":"");
+  $("#scanKcal").value=prod.kcal||""; $("#scanP").value=prod.p||""; $("#scanC").value=prod.c||""; $("#scanF").value=prod.f||"";
+  const ch=coherent(prod.kcal,prod.p,prod.c,prod.f);
+  $("#scanCheck").innerHTML=ch.ok
+    ? `✅ Dati coerenti (dai macro: ~${Math.round(ch.calc)} kcal)`
+    : `⚠️ <b>Dati da verificare</b>: dai macro risultano ~${Math.round(ch.calc)} kcal contro ${prod.kcal||"?"} dichiarate. Correggi dall'etichetta prima di registrare.`;
+  const h=new Date().getHours();
+  $("#scanMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
+  $("#scanStatus").textContent="Prodotto trovato. Controlla i valori e registra.";
+  $("#dlgScan")._ean=prod.ean;
+}
+async function lookupEan(ean){
+  ean=(ean||"").replace(/\D/g,""); if(ean.length<8){ $("#scanStatus").textContent="Codice non valido."; return; }
+  U.prodotti=U.prodotti||{};
+  if(U.prodotti[ean]){ showScanned({...U.prodotti[ean],ean},true); return; }
+  $("#scanStatus").textContent="Cerco su Open Food Facts…";
+  try{
+    const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments");
+    const j=await r.json();
+    if(j.status!==1||!j.product){ $("#scanStatus").textContent="Prodotto non trovato: inserisci i valori dall'etichetta."; 
+      showScanned({ean,name:"Prodotto "+ean,kcal:"",p:"",c:"",f:""}); return; }
+    const n=j.product.nutriments||{};
+    const prod={ean,
+      name:j.product.product_name_it||j.product.product_name||("Prodotto "+ean),
+      brand:(j.product.brands||"").split(",")[0],
+      kcal:Math.round(n["energy-kcal_100g"]||((n.energy_100g||0)/4.184))||"",
+      p:+(n.proteins_100g??"")||"", c:+(n.carbohydrates_100g??"")||"", f:+(n.fat_100g??"")||""};
+    showScanned(prod,false);
+  }catch(e){ $("#scanStatus").textContent="Rete non disponibile: inserisci i valori a mano dall'etichetta.";
+    showScanned({ean,name:"Prodotto "+ean,kcal:"",p:"",c:"",f:""}); }
+}
+async function startScan(){
+  $("#scanResult").hidden=true; $("#scanEan").value="";
+  $("#scanStatus").textContent="Inquadra il codice a barre…";
+  $("#dlgScan").showModal();
+  try{
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    const v=$("#scanVideo"); v.srcObject=scanStream; await v.play();
+    if("BarcodeDetector" in window){
+      const det=new BarcodeDetector({formats:["ean_13","ean_8","upc_a"]});
+      scanLoop=setInterval(async()=>{ try{
+        const codes=await det.detect(v);
+        if(codes.length){ stopScanVideoOnly(); lookupEan(codes[0].rawValue); } }catch(e){} },400);
+    } else {
+      $("#scanStatus").textContent="Carico il lettore…";
+      if(!window.ZXing){ await new Promise((res,rej)=>{ const s=document.createElement("script");
+        s.src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"; s.onload=res; s.onerror=rej;
+        document.head.appendChild(s); }); }
+      zxReader=new ZXing.BrowserMultiFormatReader();
+      $("#scanStatus").textContent="Inquadra il codice a barre…";
+      zxReader.decodeFromVideoElement(v,(result)=>{ if(result){ stopScanVideoOnly(); lookupEan(result.getText()); } });
+    }
+  }catch(e){ $("#scanStatus").textContent="Fotocamera non disponibile qui: usa l'inserimento manuale dell'EAN."; }
+}
+function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
+  if(zxReader){ try{zxReader.reset();}catch(e){} zxReader=null; }
+  if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; } }
+$("#btnScan").onclick=startScan;
+$("#scanClose").onclick=()=>{ stopScanVideoOnly(); $("#dlgScan").close(); };
+$("#scanLookup").onclick=()=>lookupEan($("#scanEan").value);
+$("#scanAdd").onclick=()=>{
+  const kcal=+$("#scanKcal").value||0, p=+$("#scanP").value||0, c=+$("#scanC").value||0, f=+$("#scanF").value||0;
+  const g=Math.max(1,+$("#scanG").value||100);
+  if(!kcal&&!p&&!c&&!f){ toast("Inserisci i valori dall'etichetta"); return; }
+  const name=$("#scanName").textContent.replace(" (archivio)","");
+  const ean=$("#dlgScan")._ean;
+  if(ean){ U.prodotti=U.prodotti||{}; U.prodotti[ean]={name:name.split(" · ")[0],brand:name.split(" · ")[1]||"",kcal,p,c,f}; }
+  const k=g/100;
+  dayLog().pasti.push({id:null,name:"🛒 "+name.split(" · ")[0],g,
+    kcal:Math.round(kcal*k),p:+(p*k).toFixed(1),c:+(c*k).toFixed(1),fat:+(f*k).toFixed(1),
+    meal:$("#scanMeal").value,src:"scan"});
+  save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); toast("Prodotto registrato 🛒"); };
+
 /* --- ricerca alimenti --- */
 let dlgFood=null;
 $("#foodSearch").oninput=e=>{
   const q=e.target.value.trim().toLowerCase(); const box=$("#foodResults");
   if(q.length<2){ box.hidden=true; return; }
   const res=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>f[0].toLowerCase().includes(q)).slice(0,25);
+  const prods=Object.entries(U.prodotti||{}).filter(([e,p])=>p.name.toLowerCase().includes(q)).slice(0,5);
   box.hidden=false;
-  box.innerHTML=res.length? res.map(({f,i})=>`<div class="fooditem" data-fid="${i}">
+  box.innerHTML=(prods.map(([e,p])=>`<div class="fooditem" data-ean="${e}">
+      <span>🛒 ${p.name}</span><span class="fk">${p.kcal} kcal /100g</span></div>`).join(""))
+    +(res.length? res.map(({f,i})=>`<div class="fooditem" data-fid="${i}">
       <span>${f[0]}</span><span class="fk">${f[2]} kcal · P${f[3]}/C${f[4]}/G${f[5]} per 100g</span></div>`).join("")
-    :`<div class="fooditem"><span class="small">Nessun risultato. Prova un sinonimo.</span></div>`;
+    :(prods.length?"":`<div class="fooditem"><span class="small">Nessun risultato. Prova un sinonimo.</span></div>`));
+  $$("#foodResults [data-ean]").forEach(el=>el.onclick=()=>{
+    $("#foodSearch").value=""; $("#foodResults").hidden=true;
+    $("#scanResult").hidden=true; $("#dlgScan").showModal();
+    lookupEan(el.dataset.ean); });
   $$("#foodResults [data-fid]").forEach(el=>el.onclick=()=>{
     dlgFood=FOOD_DB[+el.dataset.fid];
     $("#dlgFoodName").textContent=dlgFood[0];
