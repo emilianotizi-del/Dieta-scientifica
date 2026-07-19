@@ -64,7 +64,8 @@ function extract(row) {
     c: num(row["carboidrati"] ?? row["carb"] ?? row["carbo"]),
     f: num(row["grassi"] ?? row["lipidi"] ?? row["fat"]),
     categoria: (row["categoria"] || "").toLowerCase(),
-    stagione: row["stagione"] || "", ruolo: (row["ruolo"] || "").toLowerCase(), nota: "" };
+    stagione: row["stagione"] || "", ruolo: (row["ruolo"] || "").toLowerCase(),
+    veg: row["veg"] === "1" ? 1 : (row["veg"] === "0" ? 0 : null), nota: "" };
 }
 
 /* ---------- euristiche categoria/ruolo ---------- */
@@ -138,7 +139,8 @@ for (const [idx, row] of rows.entries()) {
     if (mm.length && mm.length < 12) stag = "[" + mm.join(",") + "]";
   }
 
-  ok.push({ line: `["${r.nome.replace(/"/g, "'")}","${cat}",${r.kcal},${r.p},${r.c},${r.f},${stag},"${ruolo}"],` +
+  const vegSuffix = (ruolo === "x" && r.veg != null) ? `,${r.veg}` : "";
+  ok.push({ line: `["${r.nome.replace(/"/g, "'")}","${cat}",${r.kcal},${r.p},${r.c},${r.f},${stag},"${ruolo}"${vegSuffix}],` +
     (flag.length ? ` /* ${flag.join(" · ")} */` : ""), flag: flag.length > 0 });
 }
 
