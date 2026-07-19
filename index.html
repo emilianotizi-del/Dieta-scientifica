@@ -2269,6 +2269,7 @@ function openItemActions(dateKey,mi,ii){
     swapItem(dateKey,mi,ii,true); toast("Non te lo riproporrò"); };
   $("#dlgAct").showModal();
 }
+$("#recClose").onclick=()=>$("#dlgRecipe").close();
 function openRecipe(nm,it){
   const rec=RECIPES[nm]; if(!rec) return;
   $("#recTitle").textContent=nm;
@@ -2457,8 +2458,9 @@ $("#scanAdd").onclick=()=>{
   save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); toast("Prodotto registrato 🛒"); };
 /* --- temi --- */
 function applyTheme(){ document.body.classList.remove("t-vivo","t-notte");
-  if(U.tema) document.body.classList.add("t-"+U.tema);
-  $$("[data-tema]").forEach(b=>b.style.opacity=(b.dataset.tema===(U.tema||""))?"1":"0.55"); }
+  const t=(U.tema==null)?"vivo":U.tema;   /* default: Mediterraneo vivo */
+  if(t) document.body.classList.add("t-"+t);
+  $$("[data-tema]").forEach(b=>b.style.opacity=(b.dataset.tema===t)?"1":"0.55"); }
 $$("[data-tema]").forEach(b=>b.onclick=()=>{ U.tema=b.dataset.tema||""; save(); applyTheme();
   toast(b.dataset.tema==="notte"?"Buonanotte 🌙":b.dataset.tema==="vivo"?"Mediterraneo vivo 🍅":"Tema classico"); });
 
