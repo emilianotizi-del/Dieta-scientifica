@@ -301,6 +301,8 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <label>Proteine: <b id="protVal"></b> g per kg di peso</label>
     <input type="range" id="pProt" min="1.2" max="2.4" step="0.1">
     <div class="explain" id="protExplain"></div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px"><input type="checkbox" id="pMed" style="width:auto"> Solo cucina mediterranea nei menu</label>
+    <div class="small">Esclude dai menu proposti tofu, tempeh, soia, poke, salse industriali ecc. Restano cercabili nel log libero.</div>
     <label>Giorni vegetariani a settimana (casuali)</label>
     <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
     <label>Schema pasti</label>
@@ -1038,7 +1040,7 @@ function defaultUser(id){return{
   passiBase:6000, esclusioni:["fegato","finocchio"],
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
-S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; });
+S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
 let U=S.users.find(u=>u.id===S.active)||S.users[0];
 const save=()=>Storage.save(S);
 
@@ -1126,10 +1128,12 @@ function isVegFood(f){ const cat=f[1];
   if(cat==="carne"||cat==="pesce"||cat==="salumi") return false;
   if(f[7]==="x") return f[8]===1; return true; }
 function inSeason(f,month){ return f[6]===0 || f[6].includes(month); }
+const NON_MED_RE=/tofu|tempeh|edamame|azuki|soia|surimi|poke|guacamole|tortilla|mango|papaya|burro di arachidi|pecan|brasile|macadamia|cocco disidratato|pancake|halibut|sushi|corn flakes|ketchup|maionese|wurstel|bowl quinoa/i;
 function pool(role,{veg=false,month,recent}){ 
   const ban=U.gusti?U.gusti.ban:[], fav=U.gusti?U.gusti.fav:[];
   const base=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>
-    f[7]===role && inSeason(f,month) && !excluded(f[0]) && !ban.includes(f[0]) && (!veg||isVegFood(f)));
+    f[7]===role && inSeason(f,month) && !excluded(f[0]) && !ban.includes(f[0])
+    && (U.soloMed===false||!NON_MED_RE.test(f[0])) && (!veg||isVegFood(f)));
   const fresh=base.filter(({i})=>!recent.has(i));
   const use=fresh.length>=3?fresh:base;
   const favd=use.filter(o=>fav.includes(o.f[0]));
@@ -1749,6 +1753,7 @@ function renderProf(){
   $("#pNome").value=U.nome; $("#pSesso").value=U.sesso; $("#pEta").value=U.eta;
   $("#pAlt").value=U.alt; $("#pGoal").value=U.goal; $("#pSteps").value=U.passiBase;
   $("#pRitmo").value=U.ritmo; $("#pRicarica").value=U.ricaricaDay??"auto";
+  $("#pMed").checked=U.soloMed!==false;
   $("#pProt").value=U.protKg; $("#pVeg").value=U.vegDays;
   $("#pSchema").value=U.schema; $("#pEscl").value=(U.esclusioni||[]).join(", ");
   updProtLabel();
@@ -1776,7 +1781,7 @@ $("#btnAddUser").onclick=()=>{
 $("#btnSaveProf").onclick=()=>{
   U.nome=$("#pNome").value||U.nome; U.sesso=$("#pSesso").value; U.eta=+$("#pEta").value||U.eta;
   U.alt=+$("#pAlt").value||U.alt; U.goal=+$("#pGoal").value||U.goal; U.passiBase=+$("#pSteps").value||U.passiBase;
-  U.ritmo=$("#pRitmo").value; U.ricaricaDay=$("#pRicarica").value;
+  U.ritmo=$("#pRitmo").value; U.ricaricaDay=$("#pRicarica").value; U.soloMed=$("#pMed").checked;
   U.protKg=+$("#pProt").value; U.vegDays=+$("#pVeg").value;
   U.schema=$("#pSchema").value; U.esclusioni=$("#pEscl").value.split(",").map(s=>s.trim()).filter(Boolean);
   /* i menu futuri dipendono dalle impostazioni: rigenera tutto tranne oggi */
