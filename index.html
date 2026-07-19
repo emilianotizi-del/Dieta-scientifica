@@ -1134,7 +1134,9 @@ function pool(role,{veg=false,month,recent}){
   const base=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>
     f[7]===role && inSeason(f,month) && !excluded(f[0]) && !ban.includes(f[0])
     && (U.soloMed===false||!NON_MED_RE.test(f[0])) && (!veg||isVegFood(f)));
-  const fresh=base.filter(({i})=>!recent.has(i));
+  /* le fonti proteiche quotidiane di base non ruotano: ripeterle è normale in una dieta */
+  const STAPLE_RE=/albume|yogurt greco|skyr|fiocchi di latte|^uovo|ricotta|olio extravergine|parmigiano|grana padano/i;
+  const fresh=base.filter(o=>!recent.has(o.i)||STAPLE_RE.test(o.f[0]));
   const use=fresh.length>=3?fresh:base;
   const favd=use.filter(o=>fav.includes(o.f[0]));
   return use.concat(favd,favd); /* i preferiti pesano x3 */ }
@@ -1182,7 +1184,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       addFit(fr.f,Math.max(kcalTarget*share,45),frMin(fr.f),300); ctx.fruitLeft--; } } };
   /* proteine magre per integrazioni (veg-compatibili se serve) */
   const Pbase=P.filter(o=>o.f[2]<=250&&!/secch|(secca)|cicerchie/i.test(o.f[0]));
-  const hiPmin=(mealCode==="p"||mealCode==="e")?15:9;
+  const hiPmin=(mealCode==="p"||mealCode==="e")?(ctx.veg?10:15):9;
   const hiP=Pbase.filter(o=>o.f[3]>=hiPmin&&o.f[2]<=210);
   const EGGS=byName(Pbase,/^uovo|uova strapazzate|frittata/i);
   const CHEESES=byName(P,/mozzarella light|mozzarella$|primo sale|feta|caprino fresco|stracchino|crescenza|ricotta vaccina|ricotta di pecora|fiocchi di latte/i);
@@ -1222,8 +1224,9 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.08,100,250);
     } else { /* secondo + contorno + pane + olio */
       const roll=r(); let p;
-      if(roll<0.18&&EGGS.length) p=pick(EGGS,r);
-      else if(roll<0.36&&CHEESES.length) p=pick(CHEESES,r);
+      const t1=ctx.veg?0.35:0.18, t2=ctx.veg?0.70:0.36;
+      if(roll<t1&&EGGS.length) p=pick(EGGS,r);
+      else if(roll<t2&&CHEESES.length) p=pick(CHEESES,r);
       else p=pick(Pmain,r);
       if(p) addFit(p.f,kcalTarget*0.40,90,280);
       const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.10,120,300);
