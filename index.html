@@ -126,8 +126,15 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 .toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
   padding:9px 16px;border-radius:999px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:60}
 .toast.show{opacity:1}
-.mini{background:none;padding:0 2px;font-size:.9rem;opacity:.7}
+.mini{background:none;padding:0 6px;font-size:1.05rem;opacity:.55}
 .mini:active{opacity:1}
+.ptag{display:inline-block;font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--mare);background:var(--mare-s);border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
+.meal li{min-height:34px;align-items:center;cursor:pointer}
+.meal li:active{background:var(--bg);border-radius:8px}
+.sheetbtn{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--line);
+  border-radius:12px;padding:13px 14px;margin-bottom:8px;font-size:.92rem;font-weight:600}
+.sheetbtn:active{background:var(--oliva-s)}
 #reportView{display:none;position:fixed;inset:0;background:#fff;z-index:100;overflow:auto;padding:20px}
 #reportView.on{display:block}
 #reportView h1{font-size:1.3rem;margin-bottom:2px}
@@ -438,6 +445,14 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
     <button class="btn ghost" id="scanClose">Chiudi</button>
   </div>
   <div class="small" style="margin-top:8px">Dati da Open Food Facts (serve internet alla prima scansione). I prodotti restano nel tuo archivio: la prossima volta niente rete. Verifica sempre l'etichetta.</div>
+</dialog>
+<dialog id="dlgAct">
+  <h3 id="actTitle" style="margin-bottom:2px"></h3>
+  <div class="small" id="actSub" style="margin-bottom:12px"></div>
+  <button class="sheetbtn" id="actRec">📖 Vedi la ricetta</button>
+  <button class="sheetbtn" id="actSwap">⇄ Sostituisci con un equivalente</button>
+  <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
+  <button class="sheetbtn" onclick="this.closest('dialog').close()">Annulla</button>
 </dialog>
 <dialog id="dlgRecipe">
   <h3 id="recTitle" style="margin-bottom:4px"></h3>
@@ -1633,7 +1648,118 @@ const RECIPES={
 "Gnocchi alla sorrentina":{i:[["gnocchi",55],["passata",28],["mozzarella",12],["parmigiano e basilico",5]],s:["Sugo di pomodoro e basilico","Gnocchi scolati nel sugo","Mozzarella, forno 5 min a gratinare"]},
 "Carciofi alla romana":{i:[["carciofi",80],["olio evo",8],["mentuccia e aglio",5]],s:["Carciofi puliti e aperti","Farciti con mentuccia e aglio","A testa in giù in tegame, acqua e olio, 30 min"]},
 "Cicoria ripassata":{i:[["cicoria",85],["olio evo",7],["aglio e peperoncino",3]],s:["Lessa la cicoria","Ripassa in padella con aglio e peperoncino"]},
-"Verdure al forno":{i:[["verdure miste di stagione",90],["olio evo",6],["erbe aromatiche",2]],s:["Tutto a pezzi regolari","Olio ed erbe","Forno 200°, 25-30 min"]}
+"Verdure al forno":{i:[["verdure miste di stagione",90],["olio evo",6],["erbe aromatiche",2]],s:["Tutto a pezzi regolari","Olio ed erbe","Forno 200°, 25-30 min"]},
+"Fagioli all'uccelletto (pronti)":{i:[["cannellini lessati",70],["passata",20],["olio evo, salvia, aglio",6]],s:["Aglio e salvia nell'olio","Fagioli e passata, 15 min a fuoco dolce"]},
+"Pasta e fagioli (piatto)":{i:[["pasta mista",20],["borlotti lessati",45],["soffritto e pomodoro",20],["olio evo",3]],s:["Soffritto, fagioli (metà frullati), pomodoro","Cuoci la pasta nella zuppa","Olio a crudo"]},
+"Lasagne alla bolognese":{i:[["sfoglia all'uovo",25],["ragù di carne",40],["besciamella",25],["parmigiano",6]],s:["Strati: sfoglia, ragù, besciamella, parmigiano","Forno 180° per 40 min","Riposo 10 min prima di tagliare"]},
+"Lasagne di verdure":{i:[["sfoglia",25],["verdure di stagione saltate",40],["besciamella leggera",25],["parmigiano",5]],s:["Verdure a dadini in padella","Strati come una lasagna classica","Forno 180°, 35 min"]},
+"Cannelloni ricotta e spinaci":{i:[["cannelloni",22],["ricotta",30],["spinaci",25],["passata e parmigiano",18]],s:["Ricotta e spinaci strizzati per il ripieno","Riempi i cannelloni, copri di sugo","Forno 180°, 30 min"]},
+"Risotto alla pescatora":{i:[["riso",26],["frutti di mare misti",40],["pomodoro",15],["olio, aglio, prezzemolo",6]],s:["Apri i molluschi, tieni il fondo","Risotta col fumetto","Frutti di mare alla fine, prezzemolo"]},
+"Crema di cavolfiore":{i:[["cavolfiore",75],["patata",15],["latte o brodo",10],["olio a crudo",3]],s:["Cavolfiore e patata nel brodo, 20 min","Frulla fino a crema liscia","Olio a crudo e pepe"]},
+"Zuppa di pesce (cacciucco)":{i:[["pesci misti da zuppa",55],["pomodoro",25],["olio, aglio, peperoncino",7],["pane tostato",10]],s:["Soffritto, pomodoro e vino","Pesci dal più duro al più tenero","Servi su pane agliato"]},
+"Pollo arrosto con patate":{i:[["pollo",55],["patate",35],["olio, rosmarino, aglio",7]],s:["Pollo e patate nella stessa teglia","Olio e aromi","Forno 200°, 60-70 min girando"]},
+"Saltimbocca alla romana":{i:[["fettine di vitello",65],["prosciutto crudo",12],["burro e salvia",6],["vino bianco",8]],s:["Salvia e crudo fermati con lo stecchino","2 min per lato nel burro","Sfuma col vino"]},
+"Bollito misto":{i:[["tagli misti di manzo",70],["sedano-carota-cipolla",20],["salsa verde a parte",5]],s:["Carne in acqua bollente con gli odori","2-3 ore a fuoco dolce","Servi con salsa verde"]},
+"Arrosto di vitello":{i:[["girello di vitello",70],["olio e aromi",6],["vino bianco",12]],s:["Rosola il pezzo intero","Sfuma, poi forno 180° (25 min per 500 g)","Riposo, affetta sottile col fondo"]},
+"Tagliata con rucola e grana":{i:[["controfiletto",70],["rucola",15],["grana a scaglie",8],["olio evo",4]],s:["Carne a temperatura ambiente, griglia rovente","3 min per lato, riposo 5 min","Affetta, rucola, scaglie, olio"]},
+"Pesce spada alla griglia":{i:[["trancio di spada",85],["olio, limone, origano",8]],s:["Griglia ben calda, 3 min per lato","Salmoriglio: olio, limone, origano sbattuti","Condisci fuori dal fuoco"]},
+"Baccalà alla vicentina":{i:[["baccalà ammollato",55],["cipolla",20],["latte",15],["olio e acciughe",8]],s:["Cipolla stufata con acciughe","Baccalà a strati, coperto di latte e olio","Fuoco minimo 3-4 ore senza mescolare"]},
+"Alici al forno con pangrattato":{i:[["alici pulite",70],["pangrattato",15],["olio, aglio, prezzemolo",9]],s:["Alici aperte a libro in teglia","Pangrattato aromatizzato sopra","Forno 200°, 10-12 min"]},
+"Insalata di mare":{i:[["polpo, calamari, gamberi",70],["sedano e carote",18],["olio, limone, prezzemolo",8]],s:["Cuoci i frutti di mare separatamente","Taglia e condisci ancora tiepidi","Riposo in frigo 1 ora"]},
+"Impepata di cozze":{i:[["cozze",90],["pepe nero abbondante",1],["olio, aglio, prezzemolo",5]],s:["Cozze in padella coperta a fuoco vivo","Si aprono in 4-5 min","Pepe, prezzemolo e il loro liquido"]},
+"Frittura di paranza":{i:[["pesciolini misti",75],["farina o semola",15],["olio per friggere (assorbito)",8]],s:["Infarina e scuoti l'eccesso","Olio a 180°, pochi pezzi alla volta","Scola su carta, sale alla fine"]},
+"Melanzane grigliate marinate":{i:[["melanzane",85],["olio evo",7],["aglio, menta, aceto",6]],s:["Fette grigliate senza olio","Marinatura: olio, aglio, menta, goccia d'aceto","Meglio dopo 2 ore"]},
+"Peperonata":{i:[["peperoni",65],["cipolla",15],["pomodoro",15],["olio evo",4]],s:["Cipolla nell'olio, poi peperoni a falde","Pomodoro, coperchio, 30 min dolci","Meglio tiepida"]},
+"Frittata di cipolle":{i:[["uova",50],["cipolle",35],["olio e parmigiano",8]],s:["Cipolle stufate lentamente finché dolci","Uova sbattute, fuoco basso coperto","Gira a metà cottura"]},
+"Uova al pomodoro (in purgatorio)":{i:[["uova",35],["passata",50],["olio, aglio, basilico",7]],s:["Sugo veloce in padella","Rompi le uova direttamente nel sugo","Coperchio 5 min: albume sodo, tuorlo morbido"]},
+"Insalata di riso":{i:[["riso",30],["verdure e sottaceti",35],["tonno e uova",25],["olio",4]],s:["Riso al dente, raffreddato sotto l'acqua","Tutto a dadini piccoli","Frigo almeno 1 ora"]},
+"Insalata di pollo":{i:[["petto di pollo lessato",50],["sedano e insalata",30],["olio, limone, senape",8]],s:["Pollo a straccetti","Verdure croccanti","Citronette con punta di senape"]},
+"Insalata di tonno, fagioli e cipolla":{i:[["tonno al naturale",30],["cannellini lessati",40],["cipolla rossa",12],["olio evo",5]],s:["Cipolla a velo in acqua 10 min","Unisci tutto","Olio, pepe, origano"]},
+"Pinzimonio con olio evo":{i:[["verdure crude miste",85],["olio evo",10],["sale e pepe",1]],s:["Verdure a bastoncini nel ghiaccio","Ciotolina di olio salato per intingere"]},
+"Pizza margherita":{i:[["impasto",55],["passata",25],["mozzarella",18],["basilico e olio",4]],s:["Stendi, pomodoro, forno al massimo","Mozzarella a metà cottura","Basilico e olio all'uscita"]},
+"Pizza marinara":{i:[["impasto",60],["passata",28],["aglio, origano, olio",6]],s:["Pomodoro, aglio a fettine, origano","Forno al massimo 8-10 min","Filo d'olio all'uscita"]},
+"Pizza con verdure grigliate":{i:[["impasto",55],["passata",20],["verdure grigliate",22],["olio",3]],s:["Base rossa in forno","Verdure già grigliate a fine cottura"]},
+"Pizza diavola":{i:[["impasto",55],["passata",22],["mozzarella",15],["salame piccante",8]],s:["Come la margherita","Salame piccante a metà cottura"]},
+"Cous cous di pesce alla trapanese":{i:[["couscous",28],["pesce misto",40],["brodo di pesce e pomodoro",25],["mandorle e aglio",6]],s:["Brodo di pesce ricco","Couscous idratato col brodo","Pesce sopra, pestata di mandorle"]},
+"Gateau di patate":{i:[["patate",60],["prosciutto e provola",22],["uova e parmigiano",15],["pangrattato",3]],s:["Purè sodo con uova e parmigiano","Farcia al centro","Forno 180°, 40 min a gratinare"]},
+"Tortino di alici e patate":{i:[["alici",45],["patate a fette sottili",40],["olio, aglio, origano",8]],s:["Strati alternati patate-alici","Olio e origano fra gli strati","Forno 180°, 35 min"]},
+"Vitello tonnato":{i:[["girello lessato",60],["salsa: tonno, capperi, uovo",28],["limone",5]],s:["Carne lessata con odori, raffreddata","Fette sottilissime","Copri con la salsa frullata"]},
+"Tonno scottato al sesamo":{i:[["trancio di tonno",80],["semi di sesamo",8],["salsa di soia o citronette",6]],s:["Trancio impanato nel sesamo","Padella rovente: 1 min per lato, cuore rosa","Fette spesse"]},
+"Poke bowl salmone e riso":{i:[["riso per sushi",35],["salmone a cubi",25],["edamame, avocado, verdure",30],["salse",5]],s:["Riso condito con aceto di riso","Componi a spicchi nella ciotola","Salsa alla fine"]},
+"Bowl quinoa, ceci e verdure":{i:[["quinoa",28],["ceci lessati",25],["verdure crude e cotte",38],["olio e limone",6]],s:["Quinoa sciacquata e lessata","Componi con ceci e verdure","Citronette"]},
+"Gnocchi al pomodoro":{i:[["gnocchi di patate",65],["passata",28],["olio, basilico, parmigiano",6]],s:["Sugo semplice 10 min","Gnocchi: pronti quando salgono a galla","Salta nel sugo"]},
+"Trippa alla romana":{i:[["trippa pulita",60],["pomodoro",28],["pecorino e menta",7],["olio e odori",5]],s:["Trippa lessata a listarelle","Nel sugo 40 min","Pecorino e mentuccia alla fine"]},
+"Coda alla vaccinara":{i:[["coda di bovino",60],["pomodoro",25],["sedano abbondante",10],["olio, vino, odori",5]],s:["Rosola i rocchi, sfuma","Pomodoro e cottura lunghissima (3-4 ore)","Sedano nell'ultima mezz'ora"]},
+"Abbacchio al forno":{i:[["agnello a pezzi",70],["patate",20],["olio, rosmarino, aglio, vino",10]],s:["Marinatura breve con aromi","Forno 190° per 60-70 min","Patate nella stessa teglia"]},
+"Carciofi alla giudia":{i:[["carciofi romaneschi",85],["olio per friggere (assorbito)",13],["sale",1]],s:["Carciofi torniti e aperti a fiore","Prima frittura dolce, riposo","Seconda frittura violenta: foglie croccanti"]},
+"Supplì al telefono":{i:[["riso al pomodoro",60],["mozzarella",15],["uovo e pangrattato",18],["olio (assorbito)",7]],s:["Riso al sugo freddo","Cuore di mozzarella, forma allungata","Panatura e frittura a 170°"]},
+"Fiori di zucca ripieni fritti":{i:[["fiori di zucca",40],["mozzarella e alici",25],["pastella",25],["olio (assorbito)",10]],s:["Farcisci con mozzarella e mezza alice","Pastella leggera fredda","Frittura veloce a 180°"]},
+"Verdure grigliate miste":{i:[["zucchine, melanzane, peperoni",90],["olio evo",7],["erbe e aceto",3]],s:["Fette regolari, griglia calda","Condisci dopo la cottura","Riposo 30 min"]},
+"Purè di patate":{i:[["patate",75],["latte",18],["burro e parmigiano",7]],s:["Patate lessate con la buccia","Schiaccia a caldo, latte caldo a filo","Burro e parmigiano fuori dal fuoco"]},
+"Spinaci saltati con olio":{i:[["spinaci",90],["olio evo",7],["aglio",3]],s:["Spinaci appena scottati","Ripassa 2 min con aglio e olio"]},
+"Broccoli ripassati aglio e olio":{i:[["broccoli",88],["olio evo",8],["aglio e peperoncino",4]],s:["Cimette lessate al dente","Padella con aglio, olio e peperoncino","Schiaccia leggermente"]},
+"Fagiolini in insalata":{i:[["fagiolini",90],["olio evo",6],["limone",4]],s:["Lessati verdi e croccanti","Olio e limone da tiepidi"]},
+"Tabbouleh":{i:[["bulgur",30],["prezzemolo abbondante",25],["pomodoro e cetriolo",35],["olio e limone",10]],s:["Bulgur idratato","Prezzemolo tritato è l'ingrediente principale","Molto limone, riposo in frigo"]},
+"Farinata di ceci":{i:[["farina di ceci",30],["acqua",60],["olio evo",9],["rosmarino",1]],s:["Pastella liquida, riposo 2 ore","Teglia con olio ben caldo","Forno al massimo: sottile e dorata"]},
+"Panino con bresaola e rucola":{i:[["pane",45],["bresaola",30],["rucola e grana",18],["olio e limone",7]],s:["Bresaola condita con olio e limone","Rucola e scaglie nel panino"]},
+"Panino caprese":{i:[["pane",45],["mozzarella",30],["pomodoro",20],["basilico e olio",5]],s:["Fette spesse di pomodoro salate","Mozzarella asciugata","Basilico e filo d'olio"]},
+"Tramezzino tonno e pomodoro":{i:[["pancarré",40],["tonno",28],["pomodoro",22],["maionese leggera",10]],s:["Tonno sgocciolato con poca maionese","Pomodoro a fette sottili","Taglia in diagonale"]},
+"Piadina crudo e stracchino":{i:[["piadina",45],["prosciutto crudo",25],["stracchino",22],["rucola",8]],s:["Scalda la piadina","Stracchino spalmato, crudo e rucola","Piega a metà"]},
+"Toast prosciutto e formaggio":{i:[["pancarré",50],["prosciutto cotto",25],["formaggio a fette",22]],s:["Componi e pressa","Tostiera o padella finché fila"]},
+"Pasta allo scoglio":{i:[["spaghetti",28],["frutti di mare misti",45],["pomodorini",18],["olio, aglio, vino",7]],s:["Apri i molluschi, tieni il fondo","Crostacei e pomodorini in padella","Pasta mantecata col fondo di mare"]},
+"Linguine all'astice":{i:[["linguine",28],["astice",40],["pomodorini",20],["olio, aglio, brandy",8]],s:["Astice a metà rosolato","Sfuma, pomodorini, poca acqua","Linguine finite nel sugo"]},
+"Spaghetti con colatura di alici":{i:[["spaghetti",34],["colatura di alici",6],["olio, aglio, prezzemolo",8]],s:["Emulsiona a freddo colatura, olio e aglio","Spaghetti al dente","Manteca fuori dal fuoco — niente sale"]},
+"Pasta zucca e salsiccia":{i:[["pasta corta",28],["zucca",35],["salsiccia",18],["olio e rosmarino",4]],s:["Zucca a dadini stufata","Salsiccia sbriciolata rosolata","Salta con la pasta e poca acqua"]},
+"Pasta radicchio e gorgonzola":{i:[["pasta",30],["radicchio",30],["gorgonzola",14],["noci (facolt.)",5]],s:["Radicchio appassito in padella","Gorgonzola sciolto con acqua di cottura","Manteca, noci sopra"]},
+"Pasta al forno":{i:[["pasta",30],["ragù o pomodoro",35],["mozzarella e besciamella",25],["parmigiano",6]],s:["Pasta molto al dente","Condisci e stratifica in teglia","Forno 180°, 25 min a gratinare"]},
+"Risotto al radicchio":{i:[["riso",28],["radicchio",30],["brodo",30],["parmigiano e vino",8]],s:["Radicchio nel soffritto","Riso, sfuma col rosso","Manteca: colore viola intenso"]},
+"Risotto al nero di seppia":{i:[["riso",28],["seppie col nero",35],["brodo di pesce",28],["olio, aglio, vino",6]],s:["Seppie a listarelle","Il nero a metà cottura","Manteca con olio, niente formaggio"]},
+"Risotto al limone":{i:[["riso",30],["brodo",50],["limone (succo e scorza)",8],["parmigiano e burro",9]],s:["Risotto in bianco","Scorza a metà, succo alla fine","Mantecatura ricca"]},
+"Orzotto alle verdure":{i:[["orzo perlato",28],["verdure di stagione",40],["brodo",25],["parmigiano",5]],s:["Come un risotto ma con l'orzo","Verdure a dadini nel soffritto","35 min, manteca"]},
+"Farrotto con funghi":{i:[["farro",28],["funghi",35],["brodo",28],["parmigiano e prezzemolo",6]],s:["Funghi trifolati","Farro tostato e portato a cottura col brodo","Manteca"]},
+"Polenta con funghi trifolati":{i:[["farina di mais",22],["acqua",55],["funghi trifolati",20],["olio",3]],s:["Polenta 40 min mescolando","Funghi con aglio e prezzemolo","Servi i funghi sopra"]},
+"Polenta concia":{i:[["farina di mais",22],["acqua",50],["fontina e toma",20],["burro",6]],s:["Polenta morbida","Formaggi a dadi mescolati dentro","Burro nocciola sopra"]},
+"Pizzoccheri della Valtellina":{i:[["pizzoccheri di grano saraceno",30],["verza e patate",35],["casera e burro",22],["aglio e salvia",4]],s:["Lessa pizzoccheri con verza e patate","Strati col formaggio","Burro fuso all'aglio sopra"]},
+"Canederli in brodo":{i:[["pane raffermo",30],["speck",12],["uova e latte",20],["brodo di carne",35]],s:["Impasto di pane, latte, uova e speck","Palle sode, riposo 15 min","15 min in brodo leggero"]},
+"Ravioli burro e salvia":{i:[["ravioli freschi",70],["burro",10],["salvia e parmigiano",8]],s:["Burro fuso con salvia croccante","Ravioli scolati e saltati","Parmigiano abbondante"]},
+"Tortellini in brodo":{i:[["tortellini",35],["brodo di carne",60]],s:["Brodo vero, di carne, sgrassato","Tortellini 3-4 min direttamente nel brodo","Servi bollente"]},
+"Passatelli in brodo":{i:[["pangrattato",18],["parmigiano",15],["uova",15],["brodo",50]],s:["Impasto pane-parmigiano-uova-noce moscata","Schiaccia nel ferro (o schiacciapatate)","2 min nel brodo bollente"]},
+"Stracciatella alla romana (brodo)":{i:[["brodo di carne",75],["uova",15],["parmigiano",8]],s:["Uova sbattute col parmigiano","Versa nel brodo bollente sbattendo","Straccetti pronti in 1 min"]},
+"Zuppa di ceci e rosmarino":{i:[["ceci lessati",50],["passata",15],["olio e rosmarino",6],["pane o pasta",15]],s:["Soffritto col rosmarino","Ceci (metà frullati) e pomodoro","Crostini o pasta piccola"]},
+"Zuppa di cipolle gratinata":{i:[["cipolle",50],["brodo",30],["pane e formaggio",16]],s:["Cipolle stufate 40 min dolcissime","Brodo, poi nelle cocotte","Pane e formaggio, gratina in forno"]},
+"Pappa al pomodoro":{i:[["pomodori maturi",50],["pane raffermo toscano",28],["olio, aglio, basilico",10]],s:["Pomodoro cotto con aglio","Pane a pezzi dentro, mescola","Riposo: deve 'pappare'. Olio a crudo"]},
+"Acquacotta maremmana":{i:[["cipolle e pomodoro",45],["sedano e verdure",20],["uova",15],["pane",15]],s:["Verdure stufate a lungo","Uovo in camicia nella zuppa","Su pane raffermo"]},
+"Minestra maritata":{i:[["verdure amare miste",50],["carni miste e brodo",40],["parmigiano",5]],s:["Brodo di carni miste","Verdure ('si maritano' con la carne)","Cottura lunga insieme"]},
+"Pollo alla diavola":{i:[["pollo aperto a libro",85],["olio, limone, peperoncino",10]],s:["Pollo schiacciato sotto un peso","Griglia o padella, 25 min per lato","Marinatura piccante spennellata"]},
+"Pollo agli agrumi":{i:[["pollo a pezzi",70],["succo di arancia e limone",18],["olio e rosmarino",6]],s:["Rosola il pollo","Sfuma con gli agrumi","Restringi il fondo a lucido"]},
+"Tacchino arrosto":{i:[["fesa di tacchino",75],["olio e aromi",7],["vino bianco",12]],s:["Lega e rosola il pezzo","Forno 180°, 20 min per 500 g","Riposo prima di affettare"]},
+"Arrosto di maiale al latte":{i:[["lonza di maiale",65],["latte",25],["olio, salvia, aglio",6]],s:["Rosola la lonza","Copri di latte, fuoco dolce 1 ora","Frulla il fondo: è la salsa"]},
+"Brasato al Barolo":{i:[["cappello del prete",65],["vino rosso",25],["verdure e odori",10]],s:["Marinatura nel vino 12 ore","Rosola, poi cuoci nel vino 3 ore","Frulla il fondo con le verdure"]},
+"Cotoletta alla milanese":{i:[["lombata di vitello con osso",65],["uovo e pangrattato",20],["burro chiarificato (assorbito)",12]],s:["Solo uovo e pangrattato","Burro chiarificato spumeggiante","Dorata, mai bruciata"]},
+"Involtini di manzo al sugo":{i:[["fettine di manzo",55],["ripieno: prezzemolo, aglio, formaggio",15],["passata",25],["olio",4]],s:["Farcisci e arrotola con stecchino","Rosola gli involtini","Nel sugo 40 min coperti"]},
+"Straccetti con rucola":{i:[["straccetti di manzo",70],["rucola",18],["olio e aceto balsamico",8]],s:["Padella rovente, 1 minuto, non di più","Rucola a crudo sopra","Goccia di balsamico"]},
+"Agnello a scottadito":{i:[["costolette d'agnello",88],["olio, rosmarino, aglio",10]],s:["Marinatura breve","Griglia fortissima, 2-3 min per lato","Si mangiano con le mani, scottandosi"]},
+"Sarde a beccafico":{i:[["sarde aperte a libro",60],["pangrattato, uvetta, pinoli",25],["olio e alloro",8],["succo d'arancia",5]],s:["Ripieno agrodolce sul pesce","Arrotola con la coda in su","Forno 180°, 15 min con alloro"]},
+"Pesce all'acqua pazza":{i:[["pesce bianco intero",70],["pomodorini",18],["acqua, olio, aglio, prezzemolo",10]],s:["Pesce in padella con aglio","Pomodorini e un bicchiere d'acqua","Coperchio, 15 min: il sugo è 'pazzo'"]},
+"Sogliola alla mugnaia":{i:[["sogliola",75],["farina (velo)",6],["burro e limone",13],["prezzemolo",2]],s:["Sogliola infarinata","Burro spumeggiante, 3 min per lato","Limone nel fondo di cottura"]},
+"Branzino al forno con olive":{i:[["branzino",70],["olive e pomodorini",18],["olio, vino, origano",9]],s:["Pesce in teglia con olive e pomodorini","Vino e olio sopra","Forno 190°, 25 min"]},
+"Seppie con piselli":{i:[["seppie",55],["piselli",25],["pomodoro",14],["olio, aglio, vino",6]],s:["Seppie a listarelle rosolate","Sfuma, pomodoro e 30 min dolci","Piselli negli ultimi 10"]},
+"Calamari ripieni":{i:[["calamari",60],["ripieno: pangrattato, tentacoli, prezzemolo",25],["pomodoro o vino",12]],s:["Farcisci i sacchi (non troppo)","Chiudi con stecchino","In umido 25 min"]},
+"Baccalà mantecato":{i:[["baccalà ammollato",60],["olio a filo",25],["latte, aglio, prezzemolo",12]],s:["Baccalà lessato nel latte","Monta con l'olio a filo come una maionese","Su crostini o polenta"]},
+"Moscardini in umido":{i:[["moscardini",65],["pomodoro",22],["olio, aglio, peperoncino, vino",10]],s:["Rosola con aglio e peperoncino","Sfuma, pomodoro","30-40 min a fuoco dolce: diventano teneri"]},
+"Melanzane a funghetto":{i:[["melanzane a cubetti",75],["pomodoro",15],["olio, aglio, basilico",9]],s:["Cubetti rosolati in padella","Pomodoro solo alla fine, 5 min","Basilico abbondante"]},
+"Zucchine alla scapece":{i:[["zucchine a rondelle",80],["olio (assorbito)",10],["aceto e menta",8]],s:["Rondelle fritte o ben rosolate","Aceto e menta da calde","Riposo: meglio il giorno dopo"]},
+"Insalata di rinforzo":{i:[["cavolfiore lessato",60],["olive, capperi, acciughe",22],["sottaceti",10],["olio e aceto",7]],s:["Cavolfiore al dente","Tutto insieme, condito generoso","Si 'rinforza' nei giorni: tipica di Natale"]},
+"Torta pasqualina":{i:[["pasta sfoglia o matta",30],["bietole e ricotta",50],["uova intere dentro",15],["parmigiano",5]],s:["Ripieno di bietole, ricotta, parmigiano","Uova crude in conche nel ripieno","Forno 180°, 50 min"]},
+"Erbazzone reggiano":{i:[["pasta matta",30],["bietole e spinaci",50],["lardo o olio, aglio",12],["parmigiano",8]],s:["Erbe saltate con il battuto","Doppio strato di pasta sottile","Forno 190°, 30 min: deve croccare"]},
+"Sformato di verdure":{i:[["verdure lessate",55],["besciamella",25],["uova e parmigiano",18]],s:["Verdure strizzate e tritate","Lega con besciamella e uova","Stampo, bagnomaria o forno 40 min"]},
+"Sartù di riso":{i:[["riso al ragù",55],["polpettine e piselli",25],["mozzarella e uova",15],["pangrattato",4]],s:["Riso cotto nel ragù","Stampo foderato di pangrattato, farcia al centro","Forno 180°, 40 min, sforma caldo"]},
+"Panzerotto fritto":{i:[["impasto",55],["pomodoro e mozzarella",35],["olio (assorbito)",9]],s:["Dischi farciti e chiusi a mezzaluna","Sigilla bene i bordi","Frittura a 170°: si gonfiano"]},
+"Calzone al forno":{i:[["impasto",55],["ricotta e salume",30],["pomodoro sopra",12]],s:["Farcisci metà disco e chiudi","Pomodoro sulla superficie","Forno al massimo, 15 min"]},
+"Insalata caprese con origano":{i:[["pomodori",50],["mozzarella",38],["olio, origano, basilico",8]],s:["Fette alternate","Sale sul pomodoro, origano su tutto","Olio a filo"]},
+"Uova alla contadina":{i:[["uova",40],["patate e cipolle",45],["olio",8]],s:["Patate e cipolle in padella finché dorate","Uova sopra, coperchio","5 min: tuorlo morbido"]},
+"Insalata di polpo e sedano":{i:[["polpo lessato",65],["sedano croccante",20],["olio, limone, prezzemolo",10]],s:["Polpo a tocchi ancora tiepido","Sedano a fettine sottili","Condisci e riposa 30 min"]},
+"Vitello arrosto freddo":{i:[["arrosto di vitello",80],["olio e limone",10],["rucola o sottaceti",8]],s:["Arrosto del giorno prima","Fette sottilissime","Citronette e contorno acidulo"]}
 };
 
 /* ============================================================
@@ -1861,7 +1987,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const olio=FOOD_DB.find(f=>f[0]==="Olio extravergine d'oliva");
   const addFruit=(share,prob)=>{ if(ctx.fruitLeft>0&&r()<prob){
     const fr=pick(FR,r); if(fr){
-      addFit(fr.f,Math.max(kcalTarget*share,45),frMin(fr.f),300); ctx.fruitLeft--; } } };
+      addFit(fr.f,Math.max(kcalTarget*share,45),frMin(fr.f),300,"Frutta"); ctx.fruitLeft--; } } };
   /* proteine magre per integrazioni (veg-compatibili se serve) */
   const Pbase=P.filter(o=>o.f[2]<=250&&!/secch|(secca)|cicerchie/i.test(o.f[0]));
   const hiPmin=(mealCode==="p"||mealCode==="e")?(ctx.veg?10:15):9;
@@ -1957,7 +2083,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     const breads=byName(C,/pane|gallette|friselle|grissini/i).filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
     const src2=gap>260&&breads.length?breads:(dense.length?dense:C);
     const fill=pick(src2,r); if(!fill) break;
-    addFit(fill.f,gap,10,150);
+    addFit(fill.f,gap,10,150,(mealCode==="p"||mealCode==="e")?"Extra":undefined);
   }
   for(let t=0;t<3;t++){
     let kT=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
@@ -1975,6 +2101,8 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     const rP=Math.min(1,Math.max(kcalTarget/kT, floorOk?(0.82*protTarget)/pT:0.78, 0.55));
     raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rP,Math.min(x.min,x.max),x.max,x.st));
   }
+  const ORD={Piatto:0,Primo:1,Secondo:2,Contorno:3,Pane:4,Condimento:5,Extra:6,Frutta:7};
+  raw.sort((a,b)=>(ORD[a.tag]??8)-(ORD[b.tag]??8));
   raw.forEach(x=>{ const it=scale(x.f,x.g); if(x.tag) it.tag=x.tag; items.push(it); });
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
@@ -2076,25 +2204,12 @@ function renderToday(){
     <div class="meal ${menu.eaten[i]?"done":""}">
       <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
         <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
-      <ul>${me.items.map((it,j)=>`<li><span>${it.tag?`<span class="small" style="opacity:.65">${it.tag} · </span>`:""}${it.name}${it.id!=null&&RECIPES[FOOD_DB[it.id][0]]?` <button class="mini" data-rec="${i}:${j}" aria-label="Ricetta">📖</button>`:""}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" data-swap="${i}:${j}" aria-label="Sostituisci">⇄</button><button class="mini" data-ban="${i}:${j}" aria-label="Non riproporre">🚫</button>`:""}</span></li>`).join("")}</ul>
+      <ul>${me.items.map((it,j)=>`<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag">${it.tag}</span>`:""}${it.name}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`).join("")}</ul>
     </div>`).join("");
-  $$("#menuList [data-rec]").forEach(b=>b.onclick=()=>{
-    const [mi,ii]=b.dataset.rec.split(":").map(Number);
-    const it=menu.meals[mi].items[ii]; const nm=FOOD_DB[it.id][0]; const rec=RECIPES[nm]; if(!rec) return;
-    $("#recTitle").textContent=nm;
-    $("#recPortion").textContent="Per la tua porzione di "+it.g+" g · "+it.kcal+" kcal";
-    $("#recIng").innerHTML=rec.i.map(([n,g100])=>{
-      const g=Math.round(g100*it.g/100/5)*5;
-      return `<li>${n}${g?` · <b>${g} g</b>`:""}</li>`; }).join("");
-    $("#recSteps").innerHTML=rec.s.map(s=>`<li>${s}</li>`).join("");
-    $("#dlgRecipe").showModal(); });
-  $$("#menuList [data-swap]").forEach(b=>b.onclick=()=>{
-    const [mi,ii]=b.dataset.swap.split(":").map(Number); swapItem(k,mi,ii); });
-  $$("#menuList [data-ban]").forEach(b=>b.onclick=()=>{
-    const [mi,ii]=b.dataset.ban.split(":").map(Number);
-    const it=menu.meals[mi].items[ii]; const f=it.id!=null?FOOD_DB[it.id]:null;
-    if(f&&!U.gusti.ban.includes(f[0])){ U.gusti.ban.push(f[0]); }
-    swapItem(k,mi,ii,true); toast("Non te lo riproporrò"); });
+  $$("#menuList [data-act]").forEach(row=>row.onclick=()=>{
+    const [mi,ii]=row.dataset.act.split(":").map(Number);
+    if(menu.eaten[mi]) return;
+    openItemActions(k,mi,ii); });
   $$("#menuList [data-eat]").forEach(b=>b.onclick=()=>{
     const i=+b.dataset.eat; if(menu.eaten[i]) return;
     menu.eaten[i]=true;
@@ -2145,6 +2260,30 @@ function renderLogList(){
      <span>${it.kcal} kcal <button class="del" data-del="${i}" aria-label="Elimina">✕</button></span></li>`).join("")
     :`<li class="small">Nessun alimento registrato oggi.</li>`;
   $$("#logList [data-del]").forEach(b=>b.onclick=()=>{ dayLog().pasti.splice(+b.dataset.del,1); save(); render(); });
+}
+function openItemActions(dateKey,mi,ii){
+  const menu=U.menuCache[dateKey]; const it=menu.meals[mi].items[ii];
+  const f=it.id!=null?FOOD_DB[it.id]:null;
+  const hasRec=f&&RECIPES[f[0]];
+  $("#actTitle").textContent=it.name;
+  $("#actSub").textContent=(it.g?it.g+" g · ":"")+it.kcal+" kcal";
+  $("#actRec").hidden=!hasRec;
+  $("#actRec").onclick=()=>{ $("#dlgAct").close(); openRecipe(f[0],it); };
+  $("#actSwap").onclick=()=>{ $("#dlgAct").close(); swapItem(dateKey,mi,ii); };
+  $("#actBan").onclick=()=>{ $("#dlgAct").close();
+    if(f&&!U.gusti.ban.includes(f[0])) U.gusti.ban.push(f[0]);
+    swapItem(dateKey,mi,ii,true); toast("Non te lo riproporrò"); };
+  $("#dlgAct").showModal();
+}
+function openRecipe(nm,it){
+  const rec=RECIPES[nm]; if(!rec) return;
+  $("#recTitle").textContent=nm;
+  $("#recPortion").textContent="Per la tua porzione di "+it.g+" g · "+it.kcal+" kcal";
+  $("#recIng").innerHTML=rec.i.map(([n,g100])=>{
+    const g=Math.round(g100*it.g/100/5)*5;
+    return `<li>${n}${g?` · <b>${g} g</b>`:""}</li>`; }).join("");
+  $("#recSteps").innerHTML=rec.s.map(s=>`<li>${s}</li>`).join("");
+  $("#dlgRecipe").showModal();
 }
 function swapItem(dateKey,mi,ii,silent){
   const menu=U.menuCache[dateKey]; if(!menu||menu.eaten[mi]) return;
@@ -2415,7 +2554,8 @@ function renderWeek(){
       <div class="tline" style="bottom:${Math.max(th-h,0)}%"></div></div>
       <div class="lbl">${GIORNI[dd.getDay()]}</div></div>`; }).join("");
   const sumT=data.reduce((a,d)=>a+d.tot.kcal,0), sumG=data.reduce((a,d)=>a+d.target.kcal,0);
-  $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> / ${fmt(sumG)} kcal
+  if(sumT===0){ $("#weekKcalSummary").innerHTML="Ancora nessun pasto registrato questa settimana: la linea nera su ogni barra è il tuo obiettivo del giorno. Registra da Oggi e questa pagina prende vita."; }
+  else $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> / ${fmt(sumG)} kcal
     (${sumT<=sumG?"nei limiti ✓":"sopra di "+fmt(Math.round(sumT-sumG))+" kcal"}). La linea nera indica l'obiettivo del giorno.`;
   renderMicro(days); renderInsights();
   const mac=data.reduce((a,d)=>({p:a.p+d.tot.p,c:a.c+d.tot.c,f:a.f+d.tot.fat}),{p:0,c:0,f:0});
