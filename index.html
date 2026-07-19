@@ -1848,10 +1848,10 @@ function fitGrams(f,targetKcal,min,max){
 function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const raw=[]; const items=[];
   const clamp=(g,mn,mx,st=5)=>Math.max(mn,Math.min(mx,Math.round(g/st)*st));
-  const add=(f,g,min,max)=>{ if(!f) return; const mx=Math.min(max??500,capOf(f));
+  const add=(f,g,min,max,tag)=>{ if(!f) return; const mx=Math.min(max??500,capOf(f));
     const mn=Math.min(min??10,mx); const st=stepOf(f);
-    raw.push({f,g:clamp(g,mn,mx,st),min:mn,max:mx,st}); };
-  const addFit=(f,target,min,max)=>{ if(f) add(f,fitGrams(f,target,min,max),min,max); };
+    raw.push({f,g:clamp(g,mn,mx,st),min:mn,max:mx,st,tag}); };
+  const addFit=(f,target,min,max,tag)=>{ if(f) add(f,fitGrams(f,target,min,max),min,max,tag); };
   const mealCode=MEAL_CODE[name]||"p";
   const inSlot=o=>slotsOf(o.f).includes(mealCode);
   const P=pool("p",ctx).filter(inSlot), C=pool("c",ctx).filter(inSlot), V=pool("v",ctx).filter(inSlot),
@@ -1889,31 +1889,31 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   } else { /* Pranzo o Cena */
     const style=r();
     if(style<0.30 && X.length){ /* piatto unico + eventuale rinforzo proteico */
-      const x=pick(X,r); addFit(x.f,kcalTarget*0.75,200,420);
+      const x=pick(X,r); addFit(x.f,kcalTarget*0.75,200,420,"Piatto");
       addFruit(0.10,0.35);
     } else if(style<0.60){ /* primo "proteico": pasta + sugo + fonte proteica + olio */
       const c=pick(byName(C,/pasta|spaghetti|riso|farro|orzo|couscous|bulgur|quinoa|gnocchi|orecchiette/i),r)||pick(C,r);
-      if(c) addFit(c.f,kcalTarget*0.42,50,120);
+      if(c) addFit(c.f,kcalTarget*0.42,50,120,"Primo");
       const sugo=pick(byName([...V,...G],/passata|pelati|sugo|pesto|rag\u00f9|pomodorini/i),r);
-      if(sugo) addFit(sugo.f,kcalTarget*0.08,80,200);
+      if(sugo) addFit(sugo.f,kcalTarget*0.08,80,200,"Primo");
       let prPool=byName(Pbase,/lenticchie|ceci|fagioli|tonno|gamber|macinato|pollo|tofu|vongole/i).filter(o=>o.f[3]>=7);
       if(needLean&&prPool.filter(lean).length) prPool=prPool.filter(lean);
       const pr=pick(prPool.length?prPool:hiP,r);
-      if(pr) addFit(pr.f,kcalTarget*0.30,60,220);
-      if(olio) addFit(olio,kcalTarget*0.12,5,25);
-      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.08,100,250);
+      if(pr) addFit(pr.f,kcalTarget*0.30,60,220,"Primo");
+      if(olio) addFit(olio,kcalTarget*0.12,5,25,"Condimento");
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.08,100,250,"Contorno");
     } else { /* secondo + contorno + pane + olio */
       const roll=r(); let p;
       const t1=ctx.veg?0.35:0.18, t2=ctx.veg?0.70:0.36;
       if(roll<t1&&EGGS.length) p=pick(EGGS,r);
       else if(roll<t2&&CHEESES.length) p=pick(CHEESES,r);
       else p=pick(Pmain,r);
-      if(p) addFit(p.f,kcalTarget*0.40,90,280);
-      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.10,120,300);
+      if(p) addFit(p.f,kcalTarget*0.40,90,280,"Secondo");
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.10,120,300,"Contorno");
       const b=pick(byName(C,/pane|friselle|carasau/i),r)||pick(C,r);
-      if(b) addFit(b.f,kcalTarget*0.28,30,110);
-      if(olio) addFit(olio,kcalTarget*0.15,5,25);
-      if(A.length&&r()<0.4){ const a=pick(A,r); add(a.f,10,5,15); }
+      if(b) addFit(b.f,kcalTarget*0.28,30,110,"Pane");
+      if(olio) addFit(olio,kcalTarget*0.15,5,25,"Condimento");
+      if(A.length&&r()<0.4){ const a=pick(A,r); add(a.f,10,5,15,"Condimento"); }
     }
   }
   /* ribilanciamento a due obiettivi: prima le proteine, poi le kcal sugli altri alimenti */
@@ -1931,17 +1931,29 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   for(let t=0;t<2;t++){
     const pNow=raw.reduce((s,x)=>s+x.f[3]*x.g/100,0);
     if(!protTarget||pNow>=protTarget*0.85||!hiP.length) break;
-    let cand=hiP.filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
-    if(!cand.length) cand=hiP;
+    /* prima prova ad allargare la porzione della fonte già nel piatto */
+    if(t===0&&(mealCode==="p"||mealCode==="e")){
+      raw.filter(isPitem).forEach(x=>{ x.max=Math.min(Math.max(x.max,320),capOf(x.f)); });
+      const rp2=Math.min(protTarget/Math.max(pNow,1),1.45);
+      raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rp2,x.min,x.max,x.st));
+      continue;
+    }
+    /* poi, se serve ancora, un SECONDO leggero e coerente (mai un ingrediente a caso) */
+    const SECONDI=/merluzzo|nasello|sogliola|platessa|orata|branzino|gallinella|tonno in scatola|sgombro in scatola|uovo sodo|frittata|bresaola|fesa|petto di pollo|tacchino|mozzarella light|primo sale|fiocchi di latte|ricotta/i;
+    let cand=hiP.filter(o=>SECONDI.test(o.f[0])&&!raw.some(x=>x.f[0]===o.f[0]));
+    if(!cand.length) cand=hiP.filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
+    if(!cand.length) break;
     cand=cand.slice().sort((a,b)=>eff(a)-eff(b)).slice(0,4);
     const p=pick(cand,r);
-    if(p){ const need=(protTarget-pNow)/(p.f[3]/100); add(p.f,need,40,220); }
+    if(p){ const need=(protTarget-pNow)/(p.f[3]/100);
+      add(p.f,need,60,200,(mealCode==="p"||mealCode==="e")?"Secondo":undefined); }
   }
   /* kcal ancora corte → integra con alimenti densi non proteici */
   for(let t=0;t<2;t++){
     const cur=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0);
     const gap=kcalTarget-cur; if(gap<kcalTarget*0.08) break;
-    const dense=[...G,...Sn].filter(o=>o.f[2]>=300&&o.f[3]<15&&!raw.some(x=>x.f[0]===o.f[0]));
+    const NEUTRI=/^pane|friselle|carasau|grissini|taralli|mandorle|^noci|nocciole|pistacchi|olio extravergine|parmigiano|grana/i;
+    const dense=[...G,...Sn,...C].filter(o=>o.f[2]>=250&&o.f[3]<35&&NEUTRI.test(o.f[0])&&!raw.some(x=>x.f[0]===o.f[0]));
     const breads=byName(C,/pane|gallette|friselle|grissini/i).filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
     const src2=gap>260&&breads.length?breads:(dense.length?dense:C);
     const fill=pick(src2,r); if(!fill) break;
@@ -1963,7 +1975,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     const rP=Math.min(1,Math.max(kcalTarget/kT, floorOk?(0.82*protTarget)/pT:0.78, 0.55));
     raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rP,Math.min(x.min,x.max),x.max,x.st));
   }
-  raw.forEach(x=>items.push(scale(x.f,x.g)));
+  raw.forEach(x=>{ const it=scale(x.f,x.g); if(x.tag) it.tag=x.tag; items.push(it); });
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
@@ -2064,7 +2076,7 @@ function renderToday(){
     <div class="meal ${menu.eaten[i]?"done":""}">
       <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
         <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
-      <ul>${me.items.map((it,j)=>`<li><span>${it.name}${it.id!=null&&RECIPES[FOOD_DB[it.id][0]]?` <button class="mini" data-rec="${i}:${j}" aria-label="Ricetta">📖</button>`:""}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" data-swap="${i}:${j}" aria-label="Sostituisci">⇄</button><button class="mini" data-ban="${i}:${j}" aria-label="Non riproporre">🚫</button>`:""}</span></li>`).join("")}</ul>
+      <ul>${me.items.map((it,j)=>`<li><span>${it.tag?`<span class="small" style="opacity:.65">${it.tag} · </span>`:""}${it.name}${it.id!=null&&RECIPES[FOOD_DB[it.id][0]]?` <button class="mini" data-rec="${i}:${j}" aria-label="Ricetta">📖</button>`:""}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" data-swap="${i}:${j}" aria-label="Sostituisci">⇄</button><button class="mini" data-ban="${i}:${j}" aria-label="Non riproporre">🚫</button>`:""}</span></li>`).join("")}</ul>
     </div>`).join("");
   $$("#menuList [data-rec]").forEach(b=>b.onclick=()=>{
     const [mi,ii]=b.dataset.rec.split(":").map(Number);
