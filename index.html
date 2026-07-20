@@ -653,8 +653,8 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <h2 class="ob-h">Il tuo piano è pronto</h2>
     <div class="card" style="margin-bottom:10px">
       <div class="grid2">
-        <div><div class="small">Calorie nei giorni pieni</div><b id="obKcal" style="font-size:1.2rem"></b></div>
-        <div><div class="small">Arrivo stimato a obiettivo</div><b id="obEta2" style="font-size:1.2rem"></b></div>
+        <div><div class="small" id="obKcalLbl">Calorie nei giorni pieni</div><b id="obKcal" style="font-size:1.2rem"></b></div>
+        <div><div class="small" id="obEtaLbl">Arrivo stimato a obiettivo</div><b id="obEta2" style="font-size:1.2rem"></b></div>
       </div>
       <div class="small" style="margin-top:6px">Con 2 giorni leggeri, una ricarica a settimana e la compensazione automatica degli sgarri.</div>
     </div>
@@ -2618,9 +2618,19 @@ function startOnboarding(){
     if(OB.step===2){ const p=+$("#obPeso").value, g=+$("#obGoal").value;
       const alt=+$("#obAlt").value; const minSano=Math.round(18.5*Math.pow(alt/100,2));
       if(!p||!g){ obWarn("Inserisci peso attuale e obiettivo"); return; }
-      if(p<=minSano){ obWarn("Per "+alt+" cm sei già al peso minimo salutare ("+minSano+" kg): un percorso di dimagrimento non fa per te ora 💚"); return; }
+      if(p<=minSano){ obWarn("Per "+alt+" cm sei già al peso ideale: qui non serve dimagrire 💚");
+        const s=document.querySelector('.ob-step:not([hidden]) .ob-err');
+        if(s&&!s.querySelector('button')) s.insertAdjacentHTML("beforeend",
+          '<button class="btn ob-cta" id="obTonica" style="margin-top:10px">💪 Tonifica e vivi sano — senza dimagrire</button>');
+        $("#obTonica").onclick=()=>{ OB.mode="tonifica"; obShow(3); };
+        return; }
       if(g<minSano){ obWarn("Per "+alt+" cm il minimo salutare è "+minSano+" kg: imposta un obiettivo da lì in su"); $("#obGoal").value=minSano; return; }
-      if(g>=p){ obWarn("L'obiettivo dev'essere sotto il peso attuale"); return; } }
+      if(g>=p){ obWarn("L'obiettivo dev'essere sotto il peso attuale — oppure scegli la tonificazione:");
+        const s=document.querySelector('.ob-step:not([hidden]) .ob-err');
+        if(s&&!s.querySelector('button')) s.insertAdjacentHTML("beforeend",
+          '<button class="btn ob-cta" id="obTonica" style="margin-top:10px">💪 Tonifica e vivi sano — peso stabile</button>');
+        $("#obTonica").onclick=()=>{ OB.mode="tonifica"; obShow(3); };
+        return; } }
     obShow(OB.step+1); });
   $$("[data-sesso]").forEach(b=>b.onclick=()=>{ OB.sesso=b.dataset.sesso;
     $$("[data-sesso]").forEach(x=>x.classList.toggle("on",x===b)); });
@@ -2646,7 +2656,10 @@ function startOnboarding(){
 }
 function obApply(){
   U.sesso=OB.sesso; U.eta=+$("#obEta").value; U.alt=+$("#obAlt").value;
-  U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo; U.passiBase=+$("#obPassi").value;
+  if(OB.mode==="tonifica"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento";
+    U.protKg=Math.max(U.protKg||1.8,2); }
+  else { U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo; }
+  U.passiBase=+$("#obPassi").value;
   U.vegDays=OB.veg; U.esclusioni=OB.escl; U.startDate=todayKey();
   U.mealsPref=OB.meals||"auto"; U.maxCarico=Math.max(0,+$("#obCarico").value||0);
   U.pesi=[{d:todayKey(),kg:+$("#obPeso").value}];
@@ -2656,10 +2669,16 @@ function obApply(){
 function obReveal(){
   const dom0=todayKey(new Date(Date.now()+864e5));
   $("#obKcal").textContent=kcalDay(dom0)+" kcal";
-  const perSett={moderato:0.45,sostenuto:0.68,aggressivo:0.9}[U.ritmo]||0.68;
-  const sett=Math.max(1,Math.ceil((pesoAttuale()-U.goal)/perSett));
-  const eta=new Date(Date.now()+sett*7*864e5);
-  $("#obEta2").textContent=eta.toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"});
+  if(U.ritmo==="mantenimento"){
+    $("#obKcalLbl").textContent="Le tue calorie di mantenimento";
+    $("#obEtaLbl").textContent="Obiettivo";
+    $("#obEta2").textContent="Tonificare 💪";
+  } else {
+    const perSett={moderato:0.45,sostenuto:0.68,aggressivo:0.9}[U.ritmo]||0.68;
+    const sett=Math.max(1,Math.ceil((pesoAttuale()-U.goal)/perSett));
+    const eta=new Date(Date.now()+sett*7*864e5);
+    $("#obEta2").textContent=eta.toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"});
+  }
   const dom=todayKey(new Date(Date.now()+864e5));
   const menu=genMenu(dom);
   $("#obMenu").innerHTML=menu.meals.map(me=>
