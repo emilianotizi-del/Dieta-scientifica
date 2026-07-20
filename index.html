@@ -152,10 +152,12 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 .ob-h{font-size:1.25rem;margin-bottom:14px}
 .ob-p{margin-bottom:12px;line-height:1.5}
 .ob-cta{width:100%;margin-top:18px;padding:14px;font-size:1rem}
-.ob-seg.on,.ob-veg.on{background:var(--oliva-s);border-color:var(--oliva);color:var(--oliva);font-weight:700}
+.ob-seg.on,.ob-veg.on,.ob-meals.on{background:var(--oliva)!important;border-color:var(--oliva)!important;color:#fff!important;font-weight:700}
+.ob-meals.on::before,.ob-seg.on::before{content:"✓ "}
 .ob-card{display:block;width:100%;text-align:left;margin-top:8px;padding:12px}
 .ob-card .small{display:block;margin-top:2px}
-.ob-card.on{background:var(--oliva-s);border-color:var(--oliva)}
+.ob-card.on{background:var(--oliva-s);border-color:var(--oliva);box-shadow:0 0 0 2px var(--oliva) inset}
+.ob-card.on>b::before{content:"✓ "}
 .ob-dots{display:flex;gap:6px;justify-content:center;padding-top:4px}
 .ob-dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
 .ob-dots i.on{background:var(--oliva)}
@@ -2651,7 +2653,8 @@ function startOnboarding(){
   $("#obImport").onclick=()=>{ $("#onboard").hidden=true; save();
     [...$$('nav button')].find(b=>b.dataset.pg==="prof")?.click();
     toast("Vai su Dati → Importa backup"); };
-  $("#obBuild").onclick=()=>{ obApply(); obReveal(); obShow(4); };
+  $("#obBuild").onclick=()=>{ try{ obApply(); obReveal(); obShow(4); }
+    catch(e){ obWarn("Ops, qualcosa è andato storto ("+e.message+"). Riprova o scrivici."); } };
   $("#obFinish").onclick=()=>{ const nm=$("#obNome").value.trim();
     if(nm) U.nome=nm; save(); $("#onboard").hidden=true; render();
     toast("Benvenuto a bordo, "+(U.nome!=="Io"?U.nome:"")+" 🍅"); };
