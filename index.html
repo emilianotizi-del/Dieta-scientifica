@@ -2073,7 +2073,7 @@ function recentFoodIds(dateKey){ const set=new Set();
   for(let i=1;i<=4;i++){ const k=todayKey(new Date(d-i*864e5));
     const m=U.menuCache[k]; if(m) m.meals.forEach(me=>me.items.forEach(it=>set.add(it.id))); }
   return set; }
-const CAPS=[[/cipolla|cipollotto/i,80],[/cipollin/i,150],[/piccant/i,30],[/pancetta|lardo|guanciale|'nduja/i,30],[/candit|disidratat|secch[ei]$/i,40],[/prezzemolo|basilico|salvia|rosmarino|menta|origano|timo/i,15],[/^aglio/i,10],[/porro/i,150],[/succo di limone|^limone$/i,30],
+const CAPS=[[/cipolla|cipollotto/i,80],[/cipollin/i,150],[/^peperoncin/i,30],[/pancetta|lardo|guanciale|'nduja/i,30],[/candit|disidratat|secch[ei]$/i,40],[/prezzemolo|basilico|salvia|rosmarino|menta|origano|timo/i,15],[/^aglio/i,10],[/porro/i,150],[/succo di limone|^limone$/i,30],
  [/capperi|aceto/i,15],[/concentrato/i,30],[/parmigiano|grana|pecorino|gorgonzola/i,30],[/^olio/i,25],
  [/^burro$|burro di|crema di mandorle|tahina/i,25],[/pesto|maionese|senape|ketchup|salsa/i,30],[/miele|marmellata|zucchero|cacao/i,30],
  [/gallette|fette biscottate|cracker|grissini|taralli|biscotti|frollini/i,60],
