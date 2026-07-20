@@ -396,6 +396,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="small">Esclude dai menu proposti tofu, tempeh, soia, poke, salse industriali ecc. Restano cercabili nel log libero.</div>
     <label>Giorni vegetariani a settimana (casuali)</label>
     <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
+    <label>Pasti al giorno</label>
+    <select id="pMeals"><option value="auto">Decide l'app</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+    <label>Manubri: peso massimo (kg, 0 = nessuno)</label>
+    <input type="number" id="pCarico" inputmode="numeric" min="0" max="60">
     <label>Schema pasti</label>
     <select id="pSchema">
       <option value="flex">Flessibile: decide l’app giorno per giorno</option>
@@ -627,7 +631,16 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn ghost" id="obAddEscl">Aggiungi</button>
     </div>
     <div id="obEsclList" style="margin:8px 0"></div>
-    <label>Giorni vegetariani a settimana: <b id="obVegVal">2</b></label>
+    <label>Quanti pasti al giorno preferisci?</label>
+    <div class="grid2">
+      <button class="btn ghost ob-meals on" data-meals="auto">🤖 Decide l'app</button>
+      <button class="btn ghost ob-meals" data-meals="3">3 pasti</button>
+      <button class="btn ghost ob-meals" data-meals="4">4 (con spuntino)</button>
+      <button class="btn ghost ob-meals" data-meals="5">5 (due spuntini)</button>
+    </div>
+    <label style="margin-top:10px">Hai dei manubri? Peso massimo (kg, 0 = nessuno)</label>
+    <input type="number" id="obCarico" inputmode="numeric" value="0" min="0" max="60">
+    <label style="margin-top:10px">Giorni vegetariani a settimana: <b id="obVegVal">2</b></label>
     <input type="range" id="obVeg" min="0" max="7" step="1" value="2">
     <div class="small" id="obVegHint">Due giorni verdi a settimana, il resto mediterraneo classico.</div>
     <button class="btn ob-cta" id="obBuild">Prepara il mio piano →</button>
@@ -1902,6 +1915,15 @@ const EX_DB=[
 ["Jumping jacks","full",0,"riscaldamento o finisher"],
 ["Squat + curl + press","full",2,"catena completa"]
 ];
+function caricoKg(level){
+  if(!level) return "corpo libero";
+  const max=U.maxCarico??16;
+  if(max<=0) return "corpo libero";
+  const p=pesoAttuale();
+  const fr={1:(U.sesso==="M"?0.055:0.04),2:(U.sesso==="M"?0.09:0.065),3:(U.sesso==="M"?0.13:0.09)}[level];
+  const kg=Math.max(1,Math.min(max,Math.round(p*fr)));
+  return "~"+kg+" kg";
+}
 const KG_MAP={0:"corpo libero",1:"4–6 kg",2:"8–12 kg",3:"12–16 kg"};
 const MESI=["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
 const GIORNI=["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
@@ -1928,7 +1950,7 @@ const Storage={
 function defaultUser(id){return{
   id, nome:"Io", sesso:"M", eta:46, alt:186, goal:80,
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
-  passiBase:6000, esclusioni:["fegato","finocchio"],
+  passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
@@ -2016,7 +2038,7 @@ const CAT_SLOTS={carne:"pe",pesce:"pe",salumi:"pe",piatti:"pe",verdura:"pe",legu
   condimenti:"pe",cereali:"pe",latticini:"cs",uova:"pe",fruttasecca:"cs",frutta:"cspe",
   colazione:"cs",bevande:"cs",dolci:"cs"};
 function slotsOf(f){ for(const [re,s] of SLOT_RULES) if(re.test(f[0])) return s; return CAT_SLOTS[f[1]]||"cspe"; }
-const MEAL_CODE={Colazione:"c",Spuntino:"s",Pranzo:"p",Cena:"e"};
+const MEAL_CODE={Colazione:"c",Spuntino:"s","Spuntino mattina":"s","Spuntino pomeriggio":"s",Pranzo:"p",Cena:"e"};
 function excluded(name){ return (U.esclusioni||[]).some(e=>e && name.toLowerCase().includes(e.trim().toLowerCase())); }
 function isVegFood(f){ const cat=f[1];
   if(cat==="carne"||cat==="pesce"||cat==="salumi") return false;
@@ -2067,7 +2089,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const raw=[]; const items=[];
   const clamp=(g,mn,mx,st=5)=>Math.max(mn,Math.min(mx,Math.round(g/st)*st));
   const add=(f,g,min,max,tag)=>{ if(!f) return; const mx=Math.min(max??500,capOf(f));
-    const mn=Math.min(min??10,mx); const st=stepOf(f);
+    const mn=Math.min(Math.max(min??10,minOf(f)),mx); const st=stepOf(f);
     raw.push({f,g:clamp(g,mn,mx,st),min:mn,max:mx,st,tag}); };
   const addFit=(f,target,min,max,tag)=>{ if(f) add(f,fitGrams(f,target,min,max),min,max,tag); };
   const mealCode=MEAL_CODE[name]||"p";
@@ -2216,7 +2238,11 @@ function genMenu(dateKey,force){
     if(yt>ytg*1.05) comp=Math.min(Math.round((yt-ytg)*0.5),Math.round(m.kcal*0.15)); }
   if(comp){ m.kcal-=comp; m.c=Math.max(m.c-Math.round(comp/4),40); }
   const ctx={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2};
-  const split=schema==="if168"
+  const SPLITS={"3":[["Colazione",0.20],["Pranzo",0.42],["Cena",0.38]],
+    "4":[["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]],
+    "5":[["Colazione",0.15],["Spuntino mattina",0.06],["Pranzo",0.37],["Spuntino pomeriggio",0.07],["Cena",0.35]]};
+  const split=(U.mealsPref&&U.mealsPref!=="auto")?SPLITS[U.mealsPref]
+    : schema==="if168"
     ? [["Pranzo",0.46],["Spuntino",0.10],["Cena",0.44]]
     : [["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]];
   const meals=split.map(([n,q])=>buildMeal(n,m.kcal*q,m.p*q,r,ctx));
@@ -2237,12 +2263,14 @@ function genWorkout(dateKey,force){
   const focus=rot[dow];
   let wo;
   if(focus==="long"){
-    const picks=[...shuffle(EX_DB.filter(e=>e[1]==="lower"),r).slice(0,2),
-                 ...shuffle(EX_DB.filter(e=>e[1]==="upper"),r).slice(0,3),
-                 ...shuffle(EX_DB.filter(e=>e[1]==="core"),r).slice(0,1)];
+    const SRC=(U.maxCarico??16)<=0?EX_DB.filter(e=>e[2]===0):EX_DB;
+    const picks=[...shuffle(SRC.filter(e=>e[1]==="lower"),r).slice(0,2),
+                 ...shuffle(SRC.filter(e=>e[1]==="upper"),r).slice(0,3),
+                 ...shuffle(SRC.filter(e=>e[1]==="core"),r).slice(0,1)];
     wo={label:"Sessione lunga · ~30 min",format:"3 serie × 10–12 ripetizioni · recupero 60″",ex:picks,focus:"long"};
   } else {
-    const poolEx=EX_DB.filter(e=>e[1]===focus||e[1]==="full");
+    let poolEx=EX_DB.filter(e=>e[1]===focus||e[1]==="full");
+    if((U.maxCarico??16)<=0){ const bw=poolEx.filter(e=>e[2]===0); if(bw.length>=3) poolEx=bw; }
     wo={label:"Micro-sessione · 12 min ("+({core:"core",upper:"parte alta",lower:"gambe e glutei",full:"total body"})[focus]+")",
         format:"3 giri di circuito · 40″ lavoro / 20″ recupero",ex:shuffle(poolEx,r).slice(0,4),focus};
   }
@@ -2335,9 +2363,9 @@ function renderToday(){
   const wo=genWorkout(k);
   $("#woBadge").textContent=log.wo?"✓ fatto":wo.label.split("·")[1];
   const yt=e=>"https://www.youtube.com/results?search_query="+encodeURIComponent("esecuzione corretta "+e[0]+" tutorial");
-  const progNote=(U.prog&&U.prog[wo.focus]&&U.prog[wo.focus].easy>=2)?`<div class="notice">💡 Le ultime sessioni "${({core:"core",upper:"parte alta",lower:"gambe",full:"total body",long:"lunga"})[wo.focus]||wo.focus}" ti sono sembrate facili: oggi prova ad aumentare di ~2 kg dove c'è il manubrio.</div>`:"";
+  const progNote=(U.prog&&U.prog[wo.focus]&&U.prog[wo.focus].easy>=2)?`<div class="notice">💡 Le ultime sessioni "${({core:"core",upper:"parte alta",lower:"gambe",full:"total body",long:"lunga"})[wo.focus]||wo.focus}" ti sono sembrate facili: oggi prova ad aumentare di ~${U.sesso==="M"?2:1} kg dove c'è il manubrio.</div>`:"";
   $("#woList").innerHTML=`<div class="small" style="margin-bottom:6px"><b>${wo.label}</b> — ${wo.format}</div>`+
-    wo.ex.map(e=>`<div class="ex"><span>${e[0]} <a href="${yt(e)}" target="_blank" rel="noopener" title="Guarda la tecnica su YouTube" style="text-decoration:none">▶️</a><br><span class="small">${e[3]}</span></span><span class="kg">${KG_MAP[e[2]]}</span></div>`).join("")+progNote;
+    wo.ex.map(e=>`<div class="ex"><span>${e[0]} <a href="${yt(e)}" target="_blank" rel="noopener" title="Guarda la tecnica su YouTube" style="text-decoration:none">▶️</a><br><span class="small">${e[3]}</span></span><span class="kg">${caricoKg(e[2])}</span></div>`).join("")+progNote;
   /* stagione */
   const month=d.getMonth()+1;
   const seas=FOOD_DB.filter(f=>(f[1]==="verdura"||f[1]==="frutta")&&f[6]!==0&&f[6].includes(month)&&!excluded(f[0]));
@@ -2381,6 +2409,13 @@ function openRecipe(nm,it){
   $("#recSteps").innerHTML=rec.s.map(s=>`<li>${s}</li>`).join("");
   $("#dlgRecipe").showModal();
 }
+function minOf(f){
+  if(f[7]==="x") return 150;                     /* un piatto è una porzione, non un assaggio */
+  if(FAM.pane.test(f[0])) return 30;
+  if(f[7]==="fr") return frMin(f);
+  if(f[1]==="latticini"&&f[7]==="p") return 40;
+  if((f[1]==="carne"||f[1]==="pesce")&&f[7]==="p") return 60;
+  return 10; }
 function swapItem(dateKey,mi,ii,silent){
   const menu=U.menuCache[dateKey]; if(!menu||menu.eaten[mi]) return;
   const it=menu.meals[mi].items[ii]; const f0=it.id!=null?FOOD_DB[it.id]:null; if(!f0) return;
@@ -2391,8 +2426,11 @@ function swapItem(dateKey,mi,ii,silent){
     .filter(o=>slotsOf(o.f).includes(code)&&o.f[0]!==f0[0]&&!inMeal.includes(FOOD_DB.indexOf(o.f)));
   if(f0[7]==="p") cand=cand.filter(o=>o.f[2]<=250&&!/secch|cicerchie/i.test(o.f[0]));
   if(!cand.length){ if(!silent) toast("Nessuna alternativa disponibile"); return; }
+  /* niente sostituti la cui porzione minima sensata stravolgerebbe il pasto */
+  cand=cand.filter(o=>minOf(o.f)*(o.f[2]||1)/100<=it.kcal*1.4+60)
+       .concat(cand).slice(0,cand.length);
   const nf=cand[Math.floor(Math.random()*cand.length)].f;
-  const st=stepOf(nf); const mn=nf[7]==="fr"?frMin(nf):10; const mx=Math.min(500,capOf(nf));
+  const st=stepOf(nf); const mn=minOf(nf); const mx=Math.min(500,capOf(nf));
   let g=Math.round((it.kcal/(nf[2]||1))*100/st)*st; g=Math.max(mn,Math.min(mx,g));
   menu.meals[mi].items[ii]=scale(nf,g);
   const me=menu.meals[mi];
@@ -2582,6 +2620,8 @@ function startOnboarding(){
     $$("[data-sesso]").forEach(x=>x.classList.toggle("on",x===b)); });
   $$("[data-ritmo]").forEach(b=>b.onclick=()=>{ OB.ritmo=b.dataset.ritmo;
     $$("[data-ritmo]").forEach(x=>x.classList.toggle("on",x===b)); });
+  $$(".ob-meals").forEach(b=>b.onclick=()=>{ OB.meals=b.dataset.meals;
+    $$(".ob-meals").forEach(x=>x.classList.toggle("on",x===b)); });
   $("#obVeg").oninput=()=>{ OB.veg=+$("#obVeg").value; $("#obVegVal").textContent=OB.veg;
     $("#obVegHint").textContent=OB.veg===7?"Vegetariano al 100%: tutti i menu senza carne né pesce 🌿"
       :OB.veg===0?"Nessun vincolo: il motore sceglie liberamente."
@@ -2602,6 +2642,7 @@ function obApply(){
   U.sesso=OB.sesso; U.eta=+$("#obEta").value; U.alt=+$("#obAlt").value;
   U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo; U.passiBase=+$("#obPassi").value;
   U.vegDays=OB.veg; U.esclusioni=OB.escl; U.startDate=todayKey();
+  U.mealsPref=OB.meals||"auto"; U.maxCarico=Math.max(0,+$("#obCarico").value||0);
   U.pesi=[{d:todayKey(),kg:+$("#obPeso").value}];
   U.menuCache={}; U.salt=hash(todayKey()+U.alt+U.goal)%1000;
   save();
@@ -3061,6 +3102,7 @@ function renderProf(){
   $("#pRitmo").value=U.ritmo; $("#pRicarica").value=U.ricaricaDay??"auto";
   $("#pMed").checked=U.soloMed!==false;
   $("#pProt").value=U.protKg; $("#pVeg").value=U.vegDays;
+  $("#pMeals").value=U.mealsPref||"auto"; $("#pCarico").value=U.maxCarico??16;
   $("#pSchema").value=U.schema; $("#pEscl").value=(U.esclusioni||[]).join(", ");
   updProtLabel();
   const gl=$("#gustiList"); const chips=[];
@@ -3090,6 +3132,7 @@ $("#btnSaveProf").onclick=()=>{
   U.alt=+$("#pAlt").value||U.alt; U.goal=+$("#pGoal").value||U.goal; U.passiBase=+$("#pSteps").value||U.passiBase;
   U.ritmo=$("#pRitmo").value; U.ricaricaDay=$("#pRicarica").value; U.soloMed=$("#pMed").checked;
   U.protKg=+$("#pProt").value; U.vegDays=Math.max(0,Math.min(7,+$("#pVeg").value));
+  U.mealsPref=$("#pMeals").value; U.maxCarico=Math.max(0,+$("#pCarico").value||0);
   { const minSano=Math.round(18.5*Math.pow(U.alt/100,2));
     if(+$("#pGoal")?.value<minSano){ $("#pGoal").value=minSano; toast("Obiettivo alzato al minimo salutare: "+minSano+" kg"); } }
   U.schema=$("#pSchema").value; U.esclusioni=$("#pEscl").value.split(",").map(s=>s.trim()).filter(Boolean);
