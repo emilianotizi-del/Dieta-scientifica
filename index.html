@@ -486,7 +486,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 <dialog id="dlgScan">
   <h3 style="margin-bottom:6px">Scansiona un prodotto</h3>
   <video id="scanVideo" playsinline muted style="width:100%;border-radius:12px;background:#000;min-height:180px"></video>
-  <div class="small" id="scanStatus" style="margin-top:6px">Inquadra il codice a barre…</div>
+  <div class="small" id="scanStatus" style="margin-top:6px">Inquadra il codice a barre a 15-20 cm, fermo e in buona luce…</div>
   <label>Oppure inserisci l'EAN a mano</label>
   <div class="grid2">
     <input id="scanEan" inputmode="numeric" placeholder="es. 8001120000000">
@@ -1966,7 +1966,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.13";
+const APP_VERSION="2.9.14";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2628,8 +2628,17 @@ async function startZX(v){
     let deviceId;
     try{
       const devs=await zxReader.listVideoInputDevices();
-      const back=devs.filter(d=>/back|rear|environment|posteriore/i.test(d.label));
-      deviceId=(back.length?back[back.length-1]:devs[devs.length-1])?.deviceId;
+      const backs=devs.filter(d=>/back|rear|environment|posteriore/i.test(d.label||""));
+      /* preferisci la lente principale (autofocus da vicino), mai ultra-wide/tele/desk */
+      const score=d=>{ const l=(d.label||"").toLowerCase();
+        if(/^back camera$|fotocamera posteriore$/.test(l)) return 0;
+        if(/ultra|tele|desk|virtual|continuity/.test(l)) return 9;
+        if(/dual wide/.test(l)) return 2;
+        if(/dual|triple/.test(l)) return 1;
+        if(/wide/.test(l)) return 3;
+        return 4; };
+      const cand=(backs.length?backs:devs).slice().sort((a,b)=>score(a)-score(b))[0];
+      deviceId=cand?.deviceId;
     }catch(e){}
     $("#scanStatus").textContent="Inquadra il codice a barre…";
     await zxReader.decodeFromVideoDevice(deviceId,v,(result,err)=>{
