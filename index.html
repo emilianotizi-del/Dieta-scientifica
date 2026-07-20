@@ -135,6 +135,7 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 .toast.show{opacity:1}
 .mini{background:none;padding:0 6px;font-size:1.05rem;opacity:.55}
 .mini:active{opacity:1}
+.ptag.cont{background:transparent;color:var(--ink2);min-width:14px;text-align:center}
 .ptag{display:inline-block;font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;
   color:var(--mare);background:var(--mare-s);border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 .meal li{min-height:34px;align-items:center;cursor:pointer}
@@ -2142,7 +2143,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       const c=pick(byName(C,/pasta|spaghetti|riso|farro|orzo|couscous|bulgur|quinoa|gnocchi|orecchiette/i),r)||pick(C,r);
       if(c) addFit(c.f,kcalTarget*0.42,50,120,"Primo");
       const sugo=pick(byName([...V,...G],/^(passata|pelati|sugo|pesto|salsa|rag\u00f9|pomodorini)/i),r);
-      if(sugo) addFit(sugo.f,kcalTarget*0.08,80,200,"Primo");
+      if(sugo) addFit(sugo.f,kcalTarget*0.08,80,200,"Condimento");
       let prPool=byName(Pbase,/lenticchie|ceci|fagioli|tonno|gamber|macinato|pollo|tofu|vongole/i).filter(o=>o.f[3]>=7);
       if(needLean&&prPool.filter(lean).length) prPool=prPool.filter(lean);
       const pr=pick(prPool.length?prPool:hiP,r);
@@ -2332,7 +2333,8 @@ function renderToday(){
     <div class="meal ${menu.eaten[i]?"done":""}">
       <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
         <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
-      <ul>${me.items.map((it,j)=>`<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag">${it.tag}</span>`:""}${it.name}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`).join("")}</ul>
+      <ul>${me.items.map((it,j)=>{const prev=me.items[j-1];const cont=it.tag&&prev&&prev.tag===it.tag;
+        return `<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag${cont?" cont":""}">${cont?"+":it.tag}</span>`:""}${it.name}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`}).join("")}</ul>
     </div>`).join("");
   $$("#menuList [data-act]").forEach(row=>row.onclick=()=>{
     const [mi,ii]=row.dataset.act.split(":").map(Number);
