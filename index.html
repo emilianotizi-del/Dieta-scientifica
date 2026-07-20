@@ -131,7 +131,7 @@ nav button.on .ico{transform:translateY(-1px);filter:drop-shadow(0 2px 6px rgba(
 dialog{border:none;border-radius:16px;padding:16px;width:min(92vw,420px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
 dialog::backdrop{background:rgba(34,51,59,.45)}
 .toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
-  padding:9px 16px;border-radius:999px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:60}
+  padding:9px 16px;border-radius:999px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
 .toast.show{opacity:1}
 .mini{background:none;padding:0 6px;font-size:1.05rem;opacity:.55}
 .mini:active{opacity:1}
@@ -606,6 +606,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <div><label>Età</label><input type="number" id="obEta" inputmode="numeric" value="40" min="18" max="90"></div>
       <div><label>Altezza (cm)</label><input type="number" id="obAlt" inputmode="numeric" value="175" min="120" max="220"></div>
     </div>
+    <div class="small ob-err" style="color:var(--pomodoro);margin-top:8px"></div>
     <button class="btn ob-cta" data-obnext>Avanti</button>
   </section>
 
@@ -621,6 +622,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <button class="btn ghost ob-card" data-ritmo="aggressivo">🔥 <b>Deciso</b><span class="small">−1 kg a settimana circa · richiede costanza</span></button>
     <label style="margin-top:10px">Passi al giorno, di solito: <b id="obPassiVal">6.000</b></label>
     <input type="range" id="obPassi" min="2000" max="15000" step="500" value="6000">
+    <div class="small ob-err" style="color:var(--pomodoro);margin-top:8px"></div>
     <button class="btn ob-cta" data-obnext>Avanti</button>
   </section>
 
@@ -2598,7 +2600,10 @@ $("#scanAdd").onclick=()=>{
   save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); toast("Prodotto registrato 🛒"); };
 /* --- onboarding --- */
 const OB={step:0,sesso:"M",ritmo:"sostenuto",veg:2,escl:[]};
+function obWarn(msg){ const s=document.querySelector('.ob-step:not([hidden]) .ob-err');
+  if(s) s.textContent=msg; toast(msg); }
 function obShow(n){ OB.step=n;
+  $$("#onboard .ob-err").forEach(e=>e.textContent="");
   $$("#onboard .ob-step").forEach(s=>s.hidden=+s.dataset.ob!==n);
   $$("#onboard .ob-dots i").forEach((d,i)=>d.classList.toggle("on",i<=n));
   $("#onboard").scrollTop=0; }
@@ -2609,13 +2614,13 @@ function startOnboarding(){
   $("#onboard").hidden=false; obShow(0); obEscRender();
   $$("#onboard [data-obnext]").forEach(b=>b.onclick=()=>{
     if(OB.step===1){ const e=+$("#obEta").value, a=+$("#obAlt").value;
-      if(e<18||e>90||a<120||a>220){ toast("Controlla età e altezza"); return; } }
+      if(e<18||e>90||a<120||a>220){ obWarn("Controlla età e altezza"); return; } }
     if(OB.step===2){ const p=+$("#obPeso").value, g=+$("#obGoal").value;
       const alt=+$("#obAlt").value; const minSano=Math.round(18.5*Math.pow(alt/100,2));
-      if(!p||!g){ toast("Inserisci peso attuale e obiettivo"); return; }
-      if(p<=minSano){ toast("Sei già al peso minimo salutare per la tua altezza ("+minSano+" kg): questa app serve a dimagrire, non fa per te ora 💚"); return; }
-      if(g<minSano){ toast("Per "+alt+" cm il minimo salutare è "+minSano+" kg: imposta un obiettivo da lì in su"); $("#obGoal").value=minSano; return; }
-      if(g>=p){ toast("L'obiettivo dev'essere sotto il peso attuale"); return; } }
+      if(!p||!g){ obWarn("Inserisci peso attuale e obiettivo"); return; }
+      if(p<=minSano){ obWarn("Per "+alt+" cm sei già al peso minimo salutare ("+minSano+" kg): un percorso di dimagrimento non fa per te ora 💚"); return; }
+      if(g<minSano){ obWarn("Per "+alt+" cm il minimo salutare è "+minSano+" kg: imposta un obiettivo da lì in su"); $("#obGoal").value=minSano; return; }
+      if(g>=p){ obWarn("L'obiettivo dev'essere sotto il peso attuale"); return; } }
     obShow(OB.step+1); });
   $$("[data-sesso]").forEach(b=>b.onclick=()=>{ OB.sesso=b.dataset.sesso;
     $$("[data-sesso]").forEach(x=>x.classList.toggle("on",x===b)); });
