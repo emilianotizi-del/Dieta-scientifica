@@ -627,12 +627,9 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn ghost" id="obAddEscl">Aggiungi</button>
     </div>
     <div id="obEsclList" style="margin:8px 0"></div>
-    <label>Giorni vegetariani a settimana</label>
-    <div class="grid3">
-      <button class="btn ghost ob-veg" data-veg="0">0</button>
-      <button class="btn ghost ob-veg on" data-veg="2">2</button>
-      <button class="btn ghost ob-veg" data-veg="3">3</button>
-    </div>
+    <label>Giorni vegetariani a settimana: <b id="obVegVal">2</b></label>
+    <input type="range" id="obVeg" min="0" max="7" step="1" value="2">
+    <div class="small" id="obVegHint">Due giorni verdi a settimana, il resto mediterraneo classico.</div>
     <button class="btn ob-cta" id="obBuild">Prepara il mio piano →</button>
   </section>
 
@@ -2023,16 +2020,20 @@ const MEAL_CODE={Colazione:"c",Spuntino:"s",Pranzo:"p",Cena:"e"};
 function excluded(name){ return (U.esclusioni||[]).some(e=>e && name.toLowerCase().includes(e.trim().toLowerCase())); }
 function isVegFood(f){ const cat=f[1];
   if(cat==="carne"||cat==="pesce"||cat==="salumi") return false;
-  if(f[7]==="x") return f[8]===1; return true; }
+  if(f[7]==="x") return f[8]===1;
+  return !/carn[ei]|rag[uù]|manzo|pollo|tacchin|prosciutt|speck|guancial|pancetta|lardo|salsicc|salame|'nduja|wurstel|bresaola|vitell|maiale|agnell|tonno|salmone|acciug|alic[ei]|sgombro|merluzz|pesce|cozze|vongol|gamber|polpo|colatura/i.test(f[0]); }
 function inSeason(f,month){ return f[6]===0 || f[6].includes(month); }
 const NON_MED_RE=/tofu|tempeh|edamame|azuki|soia|surimi|poke|guacamole|tortilla|mango|papaya|burro di arachidi|pecan|brasile|macadamia|cocco disidratato|pancake|halibut|sushi|corn flakes|ketchup|maionese|wurstel|bowl quinoa|anona|guava|litchi|carambola|passiflora/i;
+const FAM={pane:/\bpane\b|pancarr|ciabatta|rosetta|michetta|frisell|carasau|bauletto/i,
+  uova:/^uov|albume|frittata|omelette/i};
+function bannedByFam(name,ban){ return ban.some(b=>b.startsWith("fam:")&&FAM[b.slice(4)]&&FAM[b.slice(4)].test(name)); }
 function pool(role,{veg=false,month,recent}){ 
   const ban=U.gusti?U.gusti.ban:[], fav=U.gusti?U.gusti.fav:[];
   const base=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>
-    f[7]===role && inSeason(f,month) && !excluded(f[0]) && !ban.includes(f[0])
+    f[7]===role && inSeason(f,month) && !excluded(f[0]) && !ban.includes(f[0]) && !bannedByFam(f[0],ban)
     && (U.soloMed===false||!NON_MED_RE.test(f[0])) && (!veg||isVegFood(f)));
   /* le fonti proteiche quotidiane di base non ruotano: ripeterle è normale in una dieta */
-  const STAPLE_RE=/albume|yogurt greco|skyr|fiocchi di latte|^uovo|ricotta|olio extravergine|parmigiano|grana padano/i;
+  const STAPLE_RE=/albume|yogurt greco|skyr|fiocchi di latte|ricotta|olio extravergine|parmigiano|grana padano/i;
   const fresh=base.filter(o=>!recent.has(o.i)||STAPLE_RE.test(o.f[0]));
   const use=fresh.length>=3?fresh:base;
   const favd=use.filter(o=>fav.includes(o.f[0]));
@@ -2071,8 +2072,9 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const addFit=(f,target,min,max,tag)=>{ if(f) add(f,fitGrams(f,target,min,max),min,max,tag); };
   const mealCode=MEAL_CODE[name]||"p";
   const inSlot=o=>slotsOf(o.f).includes(mealCode);
-  const P=pool("p",ctx).filter(inSlot), C=pool("c",ctx).filter(inSlot), V=pool("v",ctx).filter(inSlot),
-        G=pool("g",ctx).filter(inSlot), X=pool("x",ctx).filter(inSlot), FR=pool("fr",ctx).filter(inSlot),
+  const noEgg=o=>!(ctx.eggUsed&&FAM.uova.test(o.f[0]));
+  const P=pool("p",ctx).filter(inSlot).filter(noEgg), C=pool("c",ctx).filter(inSlot), V=pool("v",ctx).filter(inSlot),
+        G=pool("g",ctx).filter(inSlot), X=pool("x",ctx).filter(inSlot).filter(noEgg), FR=pool("fr",ctx).filter(inSlot),
         Sn=pool("s",ctx).filter(inSlot), A=pool("a",ctx).filter(inSlot);
   const byName=(arr,re)=>arr.filter(o=>re.test(o.f[0]));
   const olio=FOOD_DB.find(f=>f[0]==="Olio extravergine d'oliva");
@@ -2118,7 +2120,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       const pr=pick(prPool.length?prPool:hiP,r);
       if(pr) addFit(pr.f,kcalTarget*0.30,60,220,"Primo");
       if(olio) addFit(olio,kcalTarget*0.12,5,25,"Condimento");
-      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.08,100,250,"Contorno");
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.12,150,320,"Contorno");
     } else { /* secondo + contorno + pane + olio */
       const roll=r(); let p;
       const t1=ctx.veg?0.35:0.18, t2=ctx.veg?0.70:0.36;
@@ -2126,9 +2128,9 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       else if(roll<t2&&CHEESES.length) p=pick(CHEESES,r);
       else p=pick(Pmain,r);
       if(p) addFit(p.f,kcalTarget*0.40,90,280,"Secondo");
-      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.10,120,300,"Contorno");
+      const v=pick(V,r); if(v) addFit(v.f,kcalTarget*0.16,150,350,"Contorno");
       const b=pick(byName(C,/pane|friselle|carasau/i),r)||pick(C,r);
-      if(b) addFit(b.f,kcalTarget*0.28,30,110,"Pane");
+      if(b) addFit(b.f,kcalTarget*0.20,30,90,"Pane");
       if(olio) addFit(olio,kcalTarget*0.15,5,25,"Condimento");
       if(A.length&&r()<0.4){ const a=pick(A,r); add(a.f,10,5,15,"Condimento"); }
     }
@@ -2157,8 +2159,10 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     }
     /* poi, se serve ancora, un SECONDO leggero e coerente (mai un ingrediente a caso) */
     const SECONDI=/merluzzo|nasello|sogliola|platessa|orata|branzino|gallinella|tonno in scatola|sgombro in scatola|uovo sodo|frittata|bresaola|fesa|petto di pollo|tacchino|mozzarella light|primo sale|fiocchi di latte|ricotta/i;
-    let cand=hiP.filter(o=>SECONDI.test(o.f[0])&&!raw.some(x=>x.f[0]===o.f[0]));
-    if(!cand.length) cand=hiP.filter(o=>!raw.some(x=>x.f[0]===o.f[0]));
+    const eggInMeal=raw.some(x=>FAM.uova.test(x.f[0]));
+    const okCand=o=>!raw.some(x=>x.f[0]===o.f[0])&&!(eggInMeal&&FAM.uova.test(o.f[0]));
+    let cand=hiP.filter(o=>SECONDI.test(o.f[0])&&okCand(o));
+    if(!cand.length) cand=hiP.filter(okCand);
     if(!cand.length) break;
     cand=cand.slice().sort((a,b)=>eff(a)-eff(b)).slice(0,4);
     const p=pick(cand,r);
@@ -2192,6 +2196,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     const rP=Math.min(1,Math.max(kcalTarget/kT, floorOk?(0.82*protTarget)/pT:0.78, 0.55));
     raw.filter(isPitem).forEach(x=>x.g=clamp(x.g*rP,Math.min(x.min,x.max),x.max,x.st));
   }
+  if(raw.some(x=>FAM.uova.test(x.f[0]))) ctx.eggUsed=true;
   const ORD={Piatto:0,Primo:1,Secondo:2,Contorno:3,Pane:4,Condimento:5,Extra:6,Frutta:7};
   raw.sort((a,b)=>(ORD[a.tag]??8)-(ORD[b.tag]??8));
   raw.forEach(x=>{ const it=scale(x.f,x.g); if(x.tag) it.tag=x.tag; items.push(it); });
@@ -2359,7 +2364,10 @@ function openItemActions(dateKey,mi,ii){
   $("#actSwap").onclick=()=>{ $("#dlgAct").close(); swapItem(dateKey,mi,ii); };
   $("#actBan").onclick=()=>{ $("#dlgAct").close();
     if(f&&!U.gusti.ban.includes(f[0])) U.gusti.ban.push(f[0]);
-    swapItem(dateKey,mi,ii,true); toast("Non te lo riproporrò"); };
+    let famMsg="";
+    if(f) for(const k in FAM) if(FAM[k].test(f[0])&&!U.gusti.ban.includes("fam:"+k)){
+      U.gusti.ban.push("fam:"+k); famMsg=" (e tutta la famiglia: niente più "+k+")"; }
+    swapItem(dateKey,mi,ii,true); toast("Non te lo riproporrò"+famMsg); };
   $("#dlgAct").showModal();
 }
 $("#recClose").onclick=()=>$("#dlgRecipe").close();
@@ -2564,15 +2572,20 @@ function startOnboarding(){
     if(OB.step===1){ const e=+$("#obEta").value, a=+$("#obAlt").value;
       if(e<18||e>90||a<120||a>220){ toast("Controlla età e altezza"); return; } }
     if(OB.step===2){ const p=+$("#obPeso").value, g=+$("#obGoal").value;
-      if(!p||!g||p<40||g<40){ toast("Inserisci peso attuale e obiettivo"); return; }
+      const alt=+$("#obAlt").value; const minSano=Math.round(18.5*Math.pow(alt/100,2));
+      if(!p||!g){ toast("Inserisci peso attuale e obiettivo"); return; }
+      if(p<=minSano){ toast("Sei già al peso minimo salutare per la tua altezza ("+minSano+" kg): questa app serve a dimagrire, non fa per te ora 💚"); return; }
+      if(g<minSano){ toast("Per "+alt+" cm il minimo salutare è "+minSano+" kg: imposta un obiettivo da lì in su"); $("#obGoal").value=minSano; return; }
       if(g>=p){ toast("L'obiettivo dev'essere sotto il peso attuale"); return; } }
     obShow(OB.step+1); });
   $$("[data-sesso]").forEach(b=>b.onclick=()=>{ OB.sesso=b.dataset.sesso;
     $$("[data-sesso]").forEach(x=>x.classList.toggle("on",x===b)); });
   $$("[data-ritmo]").forEach(b=>b.onclick=()=>{ OB.ritmo=b.dataset.ritmo;
     $$("[data-ritmo]").forEach(x=>x.classList.toggle("on",x===b)); });
-  $$(".ob-veg").forEach(b=>b.onclick=()=>{ OB.veg=+b.dataset.veg;
-    $$(".ob-veg").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#obVeg").oninput=()=>{ OB.veg=+$("#obVeg").value; $("#obVegVal").textContent=OB.veg;
+    $("#obVegHint").textContent=OB.veg===7?"Vegetariano al 100%: tutti i menu senza carne né pesce 🌿"
+      :OB.veg===0?"Nessun vincolo: il motore sceglie liberamente."
+      :OB.veg+" giorn"+(OB.veg===1?"o":"i")+" verd"+(OB.veg===1?"e":"i")+" a settimana."; };
   $("#obPassi").oninput=()=>$("#obPassiVal").textContent=(+$("#obPassi").value).toLocaleString("it-IT");
   $("#obAddEscl").onclick=()=>{ const v=$("#obEscl").value.trim().toLowerCase();
     if(v){ v.split(/[,;]+/).map(s=>s.trim()).filter(Boolean).forEach(x=>{ if(!OB.escl.includes(x)) OB.escl.push(x); });
@@ -2953,12 +2966,14 @@ function renderMicro(days,sel="#microList"){
     });
   });
   const nDays=days.filter(k=>U.log[k]&&U.log[k].pasti.length).length||1;
+  const calUp=U.sesso==="F"&&U.eta>=50, ironUp=U.sesso==="F"&&U.eta<50;
+  const dairyNeed=calUp?6:5, legNeed=ironUp?4:3;
   const rows=[
     ["Verdura",(acc.vegG/nDays).toFixed(0)+" g/die",acc.vegG/nDays>=300?2:acc.vegG/nDays>=150?1:0,"vit. C, folati, potassio, fibre"],
     ["Frutta",(acc.frP/nDays).toFixed(1)+" porz/die",acc.frP/nDays>=1&&acc.frP/nDays<=2.5?2:acc.frP/nDays>=0.5?1:0,"vit. C, polifenoli"],
     ["Pesce",acc.fishD.size+" volte/sett",acc.fishD.size>=2?2:acc.fishD.size>=1?1:0,"omega-3, vit. D, iodio, B12"],
-    ["Legumi",acc.legD.size+" volte/sett",acc.legD.size>=3?2:acc.legD.size>=1?1:0,"ferro, magnesio, fibre"],
-    ["Latticini",acc.dairyD.size+" giorni su 7",acc.dairyD.size>=5?2:acc.dairyD.size>=3?1:0,"calcio, B2, B12"],
+    ["Legumi",acc.legD.size+" volte/sett",acc.legD.size>=legNeed?2:acc.legD.size>=1?1:0,"ferro, magnesio, fibre"+(ironUp?" · fabbisogno di ferro più alto per te":"")],
+    ["Latticini",acc.dairyD.size+" giorni su 7",acc.dairyD.size>=dairyNeed?2:acc.dairyD.size>=dairyNeed-2?1:0,"calcio, B2, B12"+(calUp?" · calcio: punta a 1.200 mg/die dopo i 50":"")],
     ["Frutta secca e semi",acc.nutD.size+" volte/sett",acc.nutD.size>=3?2:acc.nutD.size>=1?1:0,"vit. E, magnesio, zinco"],
     ["Cereali integrali",acc.wholeD.size+" volte/sett",acc.wholeD.size>=4?2:acc.wholeD.size>=2?1:0,"fibre, vit. gruppo B"],
     ["Uova",acc.eggD.size+" volte/sett",acc.eggD.size>=2&&acc.eggD.size<=5?2:acc.eggD.size>=1?1:0,"colina, B12, vit. D"]];
@@ -3049,7 +3064,8 @@ function renderProf(){
   $("#pSchema").value=U.schema; $("#pEscl").value=(U.esclusioni||[]).join(", ");
   updProtLabel();
   const gl=$("#gustiList"); const chips=[];
-  (U.gusti.ban||[]).forEach(n=>chips.push(`<span class="chip no" style="margin:2px">🚫 ${n} <button class="mini" data-unban="${n.replace(/"/g,"&quot;")}">✕</button></span>`));
+  (U.gusti.ban||[]).forEach(n=>{ const lbl=n.startsWith("fam:")?"tutto il "+n.slice(4):n;
+    chips.push(`<span class="chip no" style="margin:2px">🚫 ${lbl} <button class="mini" data-unban="${n.replace(/"/g,"&quot;")}">✕</button></span>`); });
   (U.gusti.fav||[]).forEach(n=>chips.push(`<span class="chip pieno" style="margin:2px">❤ ${n} <button class="mini" data-unfav="${n.replace(/"/g,"&quot;")}">✕</button></span>`));
   gl.innerHTML=chips.length?chips.join(" "):"Ancora niente: usa 🚫 su un alimento del menu per non vederlo più, ❤ nel dettaglio di un alimento cercato per vederlo più spesso.";
   $$("#gustiList [data-unban]").forEach(b=>b.onclick=()=>{ U.gusti.ban=U.gusti.ban.filter(x=>x!==b.dataset.unban); save(); render(); });
@@ -3073,7 +3089,9 @@ $("#btnSaveProf").onclick=()=>{
   U.nome=$("#pNome").value||U.nome; U.sesso=$("#pSesso").value; U.eta=+$("#pEta").value||U.eta;
   U.alt=+$("#pAlt").value||U.alt; U.goal=+$("#pGoal").value||U.goal; U.passiBase=+$("#pSteps").value||U.passiBase;
   U.ritmo=$("#pRitmo").value; U.ricaricaDay=$("#pRicarica").value; U.soloMed=$("#pMed").checked;
-  U.protKg=+$("#pProt").value; U.vegDays=+$("#pVeg").value;
+  U.protKg=+$("#pProt").value; U.vegDays=Math.max(0,Math.min(7,+$("#pVeg").value));
+  { const minSano=Math.round(18.5*Math.pow(U.alt/100,2));
+    if(+$("#pGoal")?.value<minSano){ $("#pGoal").value=minSano; toast("Obiettivo alzato al minimo salutare: "+minSano+" kg"); } }
   U.schema=$("#pSchema").value; U.esclusioni=$("#pEscl").value.split(",").map(s=>s.trim()).filter(Boolean);
   /* i menu futuri dipendono dalle impostazioni: rigenera tutto tranne oggi */
   const tk=todayKey(); const keep=U.menuCache[tk]; U.menuCache={}; if(keep) U.menuCache[tk]=keep;
