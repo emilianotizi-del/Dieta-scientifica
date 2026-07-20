@@ -1966,7 +1966,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.10";
+const APP_VERSION="2.9.11";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2581,26 +2581,21 @@ async function startScan(){
   try{
     scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
     const v=$("#scanVideo"); v.srcObject=scanStream; await v.play();
+    let nativeOK=false;
     if("BarcodeDetector" in window){
+      try{ const fmts=await BarcodeDetector.getSupportedFormats();
+        nativeOK=fmts.includes("ean_13"); }catch(e){ nativeOK=false; }
+    }
+    if(nativeOK){
       const det=new BarcodeDetector({formats:["ean_13","ean_8","upc_a"]});
+      let hit=false;
       scanLoop=setInterval(async()=>{ try{
         const codes=await det.detect(v);
-        if(codes.length){ stopScanVideoOnly(); lookupEan(codes[0].rawValue); } }catch(e){} },400);
+        if(codes.length){ hit=true; stopScanVideoOnly(); lookupEan(codes[0].rawValue); } }catch(e){} },400);
+      /* watchdog: se il lettore nativo non becca nulla, passa alla libreria */
+      setTimeout(()=>{ if(!hit&&scanLoop){ clearInterval(scanLoop); scanLoop=null; startZX(v); } },6000);
     } else {
-      $("#scanStatus").textContent="Carico il lettore…";
-      if(!window.ZXing){
-        const CDN=["https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js",
-                   "https://unpkg.com/@zxing/library@0.23.0/umd/index.min.js"];
-        let ok=false;
-        for(const url of CDN){ try{
-          await new Promise((res,rej)=>{ const s=document.createElement("script");
-            s.src=url; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
-          ok=true; break; }catch(e){} }
-        if(!ok||!window.ZXing) throw new Error("lettore non scaricabile");
-      }
-      zxReader=new ZXing.BrowserMultiFormatReader();
-      $("#scanStatus").textContent="Inquadra il codice a barre…";
-      zxReader.decodeFromVideoElement(v,(result)=>{ if(result){ stopScanVideoOnly(); lookupEan(result.getText()); } });
+      await startZX(v);
     }
   }catch(e){
     stopScanVideoOnly();
@@ -2608,6 +2603,32 @@ async function startScan(){
       :/lettore/.test(e+"")?"Non riesco a scaricare il lettore (serve internet): inserisci l'EAN a mano."
       :"Fotocamera non disponibile: inserisci l'EAN a mano.";
     $("#scanStatus").textContent=msg; }
+}
+async function startZX(v){
+  try{
+    $("#scanStatus").textContent="Carico il lettore…";
+    if(!window.ZXing){
+      const CDN=["https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js",
+                 "https://unpkg.com/@zxing/library@0.23.0/umd/index.min.js"];
+      let ok=false;
+      for(const url of CDN){ try{
+        await new Promise((res,rej)=>{ const s=document.createElement("script");
+          s.src=url; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+        ok=true; break; }catch(e){} }
+      if(!ok||!window.ZXing) throw new Error("lettore non scaricabile");
+    }
+    const hints=new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,
+      [ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    zxReader=new ZXing.BrowserMultiFormatReader(hints);
+    $("#scanStatus").textContent="Inquadra il codice a barre…";
+    zxReader.decodeFromVideoElement(v,(result)=>{ if(result){ stopScanVideoOnly(); lookupEan(result.getText()); } });
+  }catch(e){
+    $("#scanStatus").textContent=/lettore/.test(e+"")
+      ?"Non riesco a scaricare il lettore (serve internet): inserisci l'EAN a mano."
+      :"Lettura automatica non riuscita: inserisci l'EAN a mano.";
+  }
 }
 function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
   if(zxReader){ try{zxReader.reset();}catch(e){} zxReader=null; }
