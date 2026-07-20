@@ -485,7 +485,11 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 </dialog>
 <dialog id="dlgScan">
   <h3 style="margin-bottom:6px">Scansiona un prodotto</h3>
-  <video id="scanVideo" playsinline muted style="width:100%;border-radius:12px;background:#000;min-height:180px"></video>
+  <div style="position:relative">
+    <video id="scanVideo" playsinline muted style="width:100%;border-radius:12px;background:#000;min-height:180px"></video>
+    <div id="scanOk" hidden style="position:absolute;inset:0;border-radius:12px;background:rgba(85,140,80,.85);
+      display:flex;align-items:center;justify-content:center;font-size:3.4rem;color:#fff">✓</div>
+  </div>
   <div class="small" id="scanStatus" style="margin-top:6px">Inquadra il codice a barre a 15-20 cm, fermo e in buona luce…</div>
   <label>Oppure inserisci l'EAN a mano</label>
   <div class="grid2">
@@ -1966,7 +1970,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.14";
+const APP_VERSION="2.9.15";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2578,6 +2582,7 @@ async function startScan(){
   $("#scanResult").hidden=true; $("#scanEan").value="";
   $("#scanStatus").textContent="Inquadra il codice a barre…";
   $("#dlgScan").showModal();
+  requestAnimationFrame(()=>{ try{ document.activeElement&&document.activeElement.blur(); }catch(e){} });
   try{
     scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
     const v=$("#scanVideo"); v.srcObject=scanStream; await v.play();
@@ -2592,7 +2597,7 @@ async function startScan(){
       let hit=false;
       scanLoop=setInterval(async()=>{ try{
         const codes=await det.detect(v);
-        if(codes.length){ hit=true; stopScanVideoOnly(); lookupEan(codes[0].rawValue); } }catch(e){} },400);
+        if(codes.length&&!hit){ hit=true; onScanHit(codes[0].rawValue); } }catch(e){} },400);
       /* watchdog: se il lettore nativo non becca nulla, passa alla libreria */
       setTimeout(()=>{ if(!hit&&scanLoop){ clearInterval(scanLoop); scanLoop=null; startZX(v); } },4000);
     } else {
@@ -2641,13 +2646,19 @@ async function startZX(v){
       deviceId=cand?.deviceId;
     }catch(e){}
     $("#scanStatus").textContent="Inquadra il codice a barre…";
+    let zxHit=false;
     await zxReader.decodeFromVideoDevice(deviceId,v,(result,err)=>{
-      if(result){ stopScanVideoOnly(); lookupEan(result.getText()); } });
+      if(result&&!zxHit){ zxHit=true; onScanHit(result.getText()); } });
   }catch(e){
     $("#scanStatus").textContent=/lettore/.test(e+"")
       ?"Non riesco a scaricare il lettore (serve internet): inserisci l'EAN a mano."
       :"Lettura automatica non riuscita: inserisci l'EAN a mano.";
   }
+}
+function onScanHit(code){
+  $("#scanOk").hidden=false;
+  if(navigator.vibrate) try{navigator.vibrate(80);}catch(e){}
+  setTimeout(()=>{ stopScanVideoOnly(); $("#scanOk").hidden=true; lookupEan(code); },700);
 }
 function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
   if(zxReader){ try{zxReader.reset();}catch(e){} zxReader=null; }
