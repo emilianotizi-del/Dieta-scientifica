@@ -446,6 +446,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn ghost sm" data-tema="vivo">🍅 Vivo</button>
       <button class="btn ghost sm" data-tema="notte">🌙 Notturno</button>
     </div>
+    <button class="btn ghost sm" id="btnWipe" style="margin-top:10px;color:var(--pomodoro);border-color:var(--pomodoro)">🗑 Azzera tutti i dati e ricomincia</button>
     <div class="small" style="margin-top:8px" id="storageInfo"></div>
     <div class="small" style="margin-top:6px">Valori nutrizionali: elaborazione propria e <b>CREA — Tabelle di composizione degli alimenti, agg. 2019</b> (alimentinutrizione.it). I prodotti confezionati provengono da Open Food Facts.</div>
   </div>
@@ -2661,6 +2662,14 @@ function obReveal(){
      <span class="small">${me.items.slice(0,3).map(i=>i.name).join(" · ")}${me.items.length>3?"…":""}</span></div>`).join("");
 }
 if(FIRST_RUN){ startOnboarding(); }
+
+/* --- azzera dati --- */
+$("#btnWipe").onclick=()=>{
+  if(!confirm("Vuoi davvero cancellare TUTTI i dati (profili, diario, pesate)? Non si può annullare."))return;
+  if(!confirm("Ultima conferma: l'app tornerà come appena installata."))return;
+  try{ localStorage.removeItem(Storage.KEY); }catch(e){}
+  location.reload();
+};
 
 /* --- temi --- */
 function applyTheme(){ document.body.classList.remove("t-vivo","t-notte");
