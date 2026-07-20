@@ -2335,7 +2335,7 @@ function renderToday(){
       <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
         <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
       <ul>${me.items.map((it,j)=>{const prev=me.items[j-1];const cont=it.tag&&prev&&prev.tag===it.tag;
-        return `<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag${cont?" cont":""}">${cont?"+":it.tag}</span>`:""}${it.name}</span><span class="q">${it.g?it.g+" g · ":""}${it.kcal} kcal${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`}).join("")}</ul>
+        return `<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag${cont?" cont":""}">${cont?"+":it.tag}</span>`:""}${it.name}</span><span class="q">${it.id!=null&&FOOD_DB[it.id][7]==="a"?"q.b.":(it.g?it.g+" g · ":"")+it.kcal+" kcal"}${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`}).join("")}</ul>
     </div>`).join("");
   $$("#menuList [data-act]").forEach(row=>row.onclick=()=>{
     const [mi,ii]=row.dataset.act.split(":").map(Number);
@@ -2397,7 +2397,8 @@ function openItemActions(dateKey,mi,ii){
   const f=it.id!=null?FOOD_DB[it.id]:null;
   const hasRec=f&&RECIPES[f[0]];
   $("#actTitle").textContent=it.name;
-  $("#actSub").textContent=(it.g?it.g+" g · ":"")+it.kcal+" kcal";
+  const isAroma=f&&f[7]==="a";
+  $("#actSub").textContent=(it.g?it.g+" g · ":"")+it.kcal+" kcal"+(isAroma?" · aroma: quanto basta":"");
   $("#actRec").hidden=!hasRec;
   $("#actRec").onclick=()=>{ $("#dlgAct").close(); openRecipe(f[0],it); };
   $("#actSwap").onclick=()=>{ $("#dlgAct").close(); swapItem(dateKey,mi,ii); };
