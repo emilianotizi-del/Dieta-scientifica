@@ -398,7 +398,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <label style="display:flex;align-items:center;gap:8px;margin-top:12px"><input type="checkbox" id="pMed" style="width:auto"> Solo cucina mediterranea nei menu</label>
     <div class="small">Esclude dai menu proposti tofu, tempeh, soia, poke, salse industriali ecc. Restano cercabili nel log libero.</div>
     <label>Giorni vegetariani a settimana (casuali)</label>
-    <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
+    <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option value="7">7 · vegetariano 🌿</option></select>
     <label>Pasti al giorno</label>
     <select id="pMeals"><option value="auto">Decide l'app</option><option value="2">2 (turni lunghi)</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
     <label>Manubri: peso massimo (kg, 0 = nessuno)</label>
@@ -1965,7 +1965,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.8";
+const APP_VERSION="2.9.9";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
