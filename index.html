@@ -451,6 +451,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
     <button class="btn ghost sm" id="btnWipe" style="margin-top:10px;color:var(--pomodoro);border-color:var(--pomodoro)">🗑 Azzera tutti i dati e ricomincia</button>
     <div class="small" style="margin-top:8px" id="storageInfo"></div>
+    <div class="small" id="appVer" style="margin-top:4px;opacity:.7"></div>
     <div class="small" style="margin-top:6px">Valori nutrizionali: elaborazione propria e <b>CREA — Tabelle di composizione degli alimenti, agg. 2019</b> (alimentinutrizione.it). I prodotti confezionati provengono da Open Food Facts.</div>
   </div>
 </section>
@@ -1959,6 +1960,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
+const APP_VERSION="2.9.7";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2580,14 +2582,26 @@ async function startScan(){
         if(codes.length){ stopScanVideoOnly(); lookupEan(codes[0].rawValue); } }catch(e){} },400);
     } else {
       $("#scanStatus").textContent="Carico il lettore…";
-      if(!window.ZXing){ await new Promise((res,rej)=>{ const s=document.createElement("script");
-        s.src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"; s.onload=res; s.onerror=rej;
-        document.head.appendChild(s); }); }
+      if(!window.ZXing){
+        const CDN=["https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js",
+                   "https://unpkg.com/@zxing/library@0.23.0/umd/index.min.js"];
+        let ok=false;
+        for(const url of CDN){ try{
+          await new Promise((res,rej)=>{ const s=document.createElement("script");
+            s.src=url; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+          ok=true; break; }catch(e){} }
+        if(!ok||!window.ZXing) throw new Error("lettore non scaricabile");
+      }
       zxReader=new ZXing.BrowserMultiFormatReader();
       $("#scanStatus").textContent="Inquadra il codice a barre…";
       zxReader.decodeFromVideoElement(v,(result)=>{ if(result){ stopScanVideoOnly(); lookupEan(result.getText()); } });
     }
-  }catch(e){ $("#scanStatus").textContent="Fotocamera non disponibile qui: usa l'inserimento manuale dell'EAN."; }
+  }catch(e){
+    stopScanVideoOnly();
+    const msg=/Permission|NotAllowed/i.test(e+"")?"Permesso fotocamera negato: consentilo da Impostazioni → Safari → Fotocamera."
+      :/lettore/.test(e+"")?"Non riesco a scaricare il lettore (serve internet): inserisci l'EAN a mano."
+      :"Fotocamera non disponibile: inserisci l'EAN a mano.";
+    $("#scanStatus").textContent=msg; }
 }
 function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
   if(zxReader){ try{zxReader.reset();}catch(e){} zxReader=null; }
@@ -2698,6 +2712,7 @@ function obReveal(){
 if(FIRST_RUN){ startOnboarding(); }
 
 /* --- azzera dati --- */
+$("#appVer").textContent="Rotta 80 · versione "+APP_VERSION;
 $("#btnWipe").onclick=()=>{
   if(!confirm("Vuoi davvero cancellare TUTTI i dati (profili, diario, pesate)? Non si può annullare."))return;
   if(!confirm("Ultima conferma: l'app tornerà come appena installata."))return;
