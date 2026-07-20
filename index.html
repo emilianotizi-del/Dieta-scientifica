@@ -1666,6 +1666,7 @@ const FOOD_DB=[
 ["Salsa tonnata","condimenti",332,8,3,32,0,"g"],
 ["Mostarda di frutta","condimenti",244,0.5,60,0.2,0,"d"],
 ["Battuto di lardo e rosmarino","condimenti",643,3,0.3,70,0,"g"],
+["Pancakes light (albume e avena)","colazione",187,12,28,3,0,"s"],
 ["Pane burro e marmellata","colazione",299,6.5,48,9,0,"s"],
 ["Granola artigianale","colazione",434,10,58,18,0,"s"],
 ["Yogurt intero con granola","colazione",140,5.5,16,6,0,"s"],
@@ -1736,7 +1737,6 @@ const FOOD_DB=[
 ["Sartù di riso","piatti",171,7,20,7,0,"x",0],
 ["Panzerotto fritto","piatti",259,7.5,28,13,0,"x",1],
 ["Calzone al forno","piatti",229,10,27,9,0,"x",1],
-["Insalata caprese con origano","piatti",164,10,3,12.5,[6,7,8,9],"x",1],
 ["Uova alla contadina","piatti",133,9,4,9,0,"x",1],
 ["Insalata di polpo e sedano","piatti",92,11,3,4,0,"x",0],
 ["Vitello arrosto freddo","piatti",142,21,1,6,0,"x",0]
@@ -1792,6 +1792,7 @@ const RECIPES={
 "Carciofi alla romana":{i:[["carciofi",80],["olio evo",8],["mentuccia e aglio",5]],s:["Carciofi puliti e aperti","Farciti con mentuccia e aglio","A testa in giù in tegame, acqua e olio, 30 min"]},
 "Cicoria ripassata":{i:[["cicoria",85],["olio evo",7],["aglio e peperoncino",3]],s:["Lessa la cicoria","Ripassa in padella con aglio e peperoncino"]},
 "Verdure al forno":{i:[["verdure miste di stagione",90],["olio evo",6],["erbe aromatiche",2]],s:["Tutto a pezzi regolari","Olio ed erbe","Forno 200°, 25-30 min"]},
+"Pancakes light (albume e avena)":{i:[["albume d'uovo",45],["fiocchi d'avena frullati",32],["yogurt greco 0%",15],["lievito per dolci",3],["dolcificante o miele",5]],s:["Frulla tutto fino a pastella liscia, riposo 5 min","Padella antiaderente calda SENZA grassi (o un velo di olio spray)","Cuoci 2 min per lato: pronti quando fanno le bollicine","Ottimi con frutta fresca o un velo di miele"]},
 "Fagioli all'uccelletto (pronti)":{i:[["cannellini lessati",70],["passata",20],["olio evo, salvia, aglio",6]],s:["Aglio e salvia nell'olio","Fagioli e passata, 15 min a fuoco dolce"]},
 "Pasta e fagioli (piatto)":{i:[["pasta mista",20],["borlotti lessati",45],["soffritto e pomodoro",20],["olio evo",3]],s:["Soffritto, fagioli (metà frullati), pomodoro","Cuoci la pasta nella zuppa","Olio a crudo"]},
 "Lasagne alla bolognese":{i:[["sfoglia all'uovo",25],["ragù di carne",40],["besciamella",25],["parmigiano",6]],s:["Strati: sfoglia, ragù, besciamella, parmigiano","Forno 180° per 40 min","Riposo 10 min prima di tagliare"]},
@@ -1989,7 +1990,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.17";
+const APP_VERSION="2.9.18";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
