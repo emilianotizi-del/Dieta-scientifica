@@ -181,6 +181,7 @@ body.t-notte{--bg:#11171B;--card:#1B2328;--ink:#EAE6DA;--ink2:#98A6AD;--line:#2A
 body.t-notte nav{background:#0B1013}
 body.t-notte dialog{background:var(--card);color:var(--ink)}
 body.t-notte input,body.t-notte select,body.t-notte textarea{background:#12191D;color:var(--ink);border-color:var(--line)}
+body.t-notte .btn:not(.ghost){color:#12181C}
 body.t-notte .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
 body.t-notte #dialSvg circle:first-of-type{stroke:#2A343B}
 body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
@@ -1965,7 +1966,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.9";
+const APP_VERSION="2.9.10";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
