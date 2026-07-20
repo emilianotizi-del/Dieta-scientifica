@@ -397,7 +397,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <label>Giorni vegetariani a settimana (casuali)</label>
     <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
     <label>Pasti al giorno</label>
-    <select id="pMeals"><option value="auto">Decide l'app</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+    <select id="pMeals"><option value="auto">Decide l'app</option><option value="2">2 (turni lunghi)</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
     <label>Manubri: peso massimo (kg, 0 = nessuno)</label>
     <input type="number" id="pCarico" inputmode="numeric" min="0" max="60">
     <label>Schema pasti</label>
@@ -637,6 +637,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <label>Quanti pasti al giorno preferisci?</label>
     <div class="grid2">
       <button class="btn ghost ob-meals on" data-meals="auto">🤖 Decide l'app</button>
+      <button class="btn ghost ob-meals" data-meals="2">2 (turni lunghi)</button>
       <button class="btn ghost ob-meals" data-meals="3">3 pasti</button>
       <button class="btn ghost ob-meals" data-meals="4">4 (con spuntino)</button>
       <button class="btn ghost ob-meals" data-meals="5">5 (due spuntini)</button>
@@ -2241,7 +2242,8 @@ function genMenu(dateKey,force){
     if(yt>ytg*1.05) comp=Math.min(Math.round((yt-ytg)*0.5),Math.round(m.kcal*0.15)); }
   if(comp){ m.kcal-=comp; m.c=Math.max(m.c-Math.round(comp/4),40); }
   const ctx={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2};
-  const SPLITS={"3":[["Colazione",0.20],["Pranzo",0.42],["Cena",0.38]],
+  const SPLITS={"2":[["Pranzo",0.52],["Cena",0.48]],
+    "3":[["Colazione",0.20],["Pranzo",0.42],["Cena",0.38]],
     "4":[["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]],
     "5":[["Colazione",0.15],["Spuntino mattina",0.06],["Pranzo",0.37],["Spuntino pomeriggio",0.07],["Cena",0.35]]};
   const split=(U.mealsPref&&U.mealsPref!=="auto")?SPLITS[U.mealsPref]
