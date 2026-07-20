@@ -1966,7 +1966,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.12";
+const APP_VERSION="2.9.13";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2623,8 +2623,17 @@ async function startZX(v){
       [ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A]);
     hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
     zxReader=new ZXing.BrowserMultiFormatReader(hints);
+    /* la libreria gestisce lei la fotocamera: rilascio la mia */
+    if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
+    let deviceId;
+    try{
+      const devs=await zxReader.listVideoInputDevices();
+      const back=devs.filter(d=>/back|rear|environment|posteriore/i.test(d.label));
+      deviceId=(back.length?back[back.length-1]:devs[devs.length-1])?.deviceId;
+    }catch(e){}
     $("#scanStatus").textContent="Inquadra il codice a barre…";
-    zxReader.decodeFromVideoElement(v,(result)=>{ if(result){ stopScanVideoOnly(); lookupEan(result.getText()); } });
+    await zxReader.decodeFromVideoDevice(deviceId,v,(result,err)=>{
+      if(result){ stopScanVideoOnly(); lookupEan(result.getText()); } });
   }catch(e){
     $("#scanStatus").textContent=/lettore/.test(e+"")
       ?"Non riesco a scaricare il lettore (serve internet): inserisci l'EAN a mano."
