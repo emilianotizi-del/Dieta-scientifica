@@ -2073,17 +2073,17 @@ function recentFoodIds(dateKey){ const set=new Set();
   for(let i=1;i<=4;i++){ const k=todayKey(new Date(d-i*864e5));
     const m=U.menuCache[k]; if(m) m.meals.forEach(me=>me.items.forEach(it=>set.add(it.id))); }
   return set; }
-const CAPS=[[/cipolla|cipollotto/i,80],[/cipollin/i,150],[/^peperoncin/i,30],[/pancetta|lardo|guanciale|'nduja/i,30],[/candit|disidratat|secch[ei]$/i,40],[/prezzemolo|basilico|salvia|rosmarino|menta|origano|timo/i,15],[/^aglio/i,10],[/porro/i,150],[/succo di limone|^limone$/i,30],
+const CAPS=[[/cipolla|cipollotto/i,80],[/cipollin/i,150],[/^peperoncin/i,3],[/pancetta|lardo|guanciale|'nduja/i,30],[/candit|disidratat|secch[ei]$/i,40],[/prezzemolo|basilico|salvia|rosmarino|menta|origano|timo/i,15],[/^aglio/i,10],[/porro/i,150],[/succo di limone|^limone$/i,30],
  [/capperi|aceto/i,15],[/concentrato/i,30],[/parmigiano|grana|pecorino|gorgonzola/i,30],[/^olio/i,25],
  [/^burro$|burro di|crema di mandorle|tahina/i,25],[/pesto|maionese|senape|ketchup|salsa/i,30],[/miele|marmellata|zucchero|cacao/i,30],
  [/gallette|fette biscottate|cracker|grissini|taralli|biscotti|frollini/i,60],
  [/mandorle|^noci|nocciole|pistacchi|anacardi|pinoli|arachidi|semi di|frutta secca|macadamia|pecan|cocco/i,40],
- [/cioccolat/i,30],[/guanciale|pancetta|lardo|speck|salame|mortadella|coppa/i,50],[/^peperoncino/i,15],[/cruschi/i,30],
+ [/cioccolat/i,30],[/guanciale|pancetta|lardo|speck|salame|mortadella|coppa/i,50],[/^peperoncino/i,3],[/cruschi/i,30],
  [/bottarga|acciughe sott/i,20],[/olive/i,50],
  [/mozzarella|feta|primo sale|caprino|stracchino|crescenza|ricotta/i,125],
  [/^uovo|uova strapazzate|frittata/i,180],[/yogurt|skyr/i,250]];
 function capOf(f){ for(const [re,g] of CAPS) if(re.test(f[0])) return g; return 500; }
-function stepOf(f){ return f[7]!=="fr"?5:(/anguria|melone|ananas|macedonia/i.test(f[0])?50:25); }
+function stepOf(f){ if(f[7]==="a") return 1; return f[7]!=="fr"?5:(/anguria|melone|ananas|macedonia/i.test(f[0])?50:25); }
 function frMin(f){ return /anguria|melone|ananas|macedonia/i.test(f[0])?200
   :/mirtilli|lamponi|ribes|more|fragole|ciliegie|uva|frutti di bosco/i.test(f[0])?100:125; }
 function scale(f,grams){ const k=grams/100;
