@@ -1966,7 +1966,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.11";
+const APP_VERSION="2.9.12";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2582,7 +2582,8 @@ async function startScan(){
     scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
     const v=$("#scanVideo"); v.srcObject=scanStream; await v.play();
     let nativeOK=false;
-    if("BarcodeDetector" in window){
+    const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+    if(!isIOS && "BarcodeDetector" in window){
       try{ const fmts=await BarcodeDetector.getSupportedFormats();
         nativeOK=fmts.includes("ean_13"); }catch(e){ nativeOK=false; }
     }
@@ -2593,7 +2594,7 @@ async function startScan(){
         const codes=await det.detect(v);
         if(codes.length){ hit=true; stopScanVideoOnly(); lookupEan(codes[0].rawValue); } }catch(e){} },400);
       /* watchdog: se il lettore nativo non becca nulla, passa alla libreria */
-      setTimeout(()=>{ if(!hit&&scanLoop){ clearInterval(scanLoop); scanLoop=null; startZX(v); } },6000);
+      setTimeout(()=>{ if(!hit&&scanLoop){ clearInterval(scanLoop); scanLoop=null; startZX(v); } },4000);
     } else {
       await startZX(v);
     }
