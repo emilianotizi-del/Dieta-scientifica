@@ -431,9 +431,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   </div>
   <div class="card">
     <h2>Passi automatici da Apple Salute</h2>
-    <div class="small">Crea un <b>Comando Rapido</b> su iPhone: 1) azione "Trova campioni salute" → Passi, Oggi · 2) azione "Apri URL" con<br>
-    <code style="font-size:.75rem;word-break:break-all">https://emilianotizi-del.github.io/Dieta-scientifica/?passi=[Campioni salute]</code><br>
-    Poi in Automazioni → "Ora del giorno, 21:00" → esegui il comando: i passi si registrano da soli.</div>
+    <div class="btnrow" style="margin-bottom:8px">
+      <button class="btn sm" id="btnPassiGuida">🚶 Collega i passi dell'iPhone</button>
+    </div>
+    <div class="small">Oppure inseriscili a mano ogni sera dal riquadro passi nella pagina Oggi.</div>
   </div>
   <div class="card">
     <h2>Dati</h2>
@@ -517,6 +518,24 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <button class="btn ghost" id="scanClose">Chiudi</button>
   </div>
   <div class="small" style="margin-top:8px">Dati da Open Food Facts (serve internet alla prima scansione). I prodotti restano nel tuo archivio: la prossima volta niente rete. Verifica sempre l'etichetta.</div>
+</dialog>
+<dialog id="dlgPassiGuida">
+  <h3 style="margin-bottom:8px">Passi automatici dall'iPhone</h3>
+  <div class="small" style="line-height:1.6">
+    Si fa una volta sola, in 2 minuti, con l'app <b>Comandi Rapidi</b> (è già sul telefono).
+  </div>
+  <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:12px;font-size:.85rem;line-height:1.7">
+    <b>1.</b> Tocca il pulsante qui sotto per <b>copiare il link magico</b> 🔗<br>
+    <b>2.</b> Apri <b>Comandi Rapidi</b> → <b>+</b> (nuovo comando)<br>
+    <b>3.</b> Aggiungi l'azione <b>"Trova campioni salute"</b> → tipo: <b>Passi</b>, periodo: <b>Oggi</b><br>
+    <b>4.</b> Aggiungi l'azione <b>"Apri URL"</b> → tieni premuto nel campo → <b>Incolla</b> → tocca la parola <span style="background:var(--grano-s);border-radius:4px;padding:0 4px">PASSI</span> incollata e sostituiscila con la variabile <b>Campioni salute</b><br>
+    <b>5.</b> (Facoltativo) In <b>Automazioni</b> → "Ora del giorno, 21:00" → esegui il comando: da lì in poi è tutto automatico
+  </div>
+  <button class="btn" id="btnPassiCopy" style="width:100%">🔗 1 · Copia il link magico</button>
+  <button class="btn ghost" id="btnPassiOpen" style="width:100%;margin-top:8px">⚡️ 2 · Apri Comandi Rapidi</button>
+  <div class="btnrow" style="margin-top:12px">
+    <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button>
+  </div>
 </dialog>
 <dialog id="dlgAct">
   <h3 id="actTitle" style="margin-bottom:2px"></h3>
@@ -1970,7 +1989,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.16";
+const APP_VERSION="2.9.17";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2508,6 +2527,12 @@ $("#btnWoTimer").onclick=startCircuit;
 $("#tPause").onclick=()=>{ if(!T) return; T.paused=!T.paused; $("#tPause").textContent=T.paused?"▶ Riprendi":"⏸ Pausa"; };
 $("#tStop").onclick=()=>stopCircuit(false);
 $$("[data-steps]").forEach(b=>b.onclick=()=>{ dayLog().passi+=+b.dataset.steps; save(); render(); });
+$("#btnPassiGuida").onclick=()=>$("#dlgPassiGuida").showModal();
+$("#btnPassiCopy").onclick=async()=>{
+  const url=location.origin+location.pathname+"?passi=PASSI";
+  try{ await navigator.clipboard.writeText(url); toast("Link copiato 🔗 Ora apri Comandi Rapidi"); }
+  catch(e){ prompt("Copia questo link:",url); } };
+$("#btnPassiOpen").onclick=()=>{ location.href="shortcuts://create-shortcut"; };
 $("#btnStepsManual").onclick=()=>{ const v=prompt("Passi totali di oggi:",dayLog().passi); if(v!==null){ dayLog().passi=Math.max(0,parseInt(v)||0); save(); render(); } };
 $$("[data-water]").forEach(b=>b.onclick=()=>{ dayLog().acqua+=+b.dataset.water; save(); render(); });
 $("#btnWaterManual").onclick=()=>{ const v=prompt("Acqua di oggi in ml:",dayLog().acqua); if(v!==null){ dayLog().acqua=Math.max(0,parseInt(v)||0); save(); render(); } };
