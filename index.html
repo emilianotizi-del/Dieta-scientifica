@@ -8,6 +8,8 @@
 <title>Rotta 80 · Coach dieta e allenamento</title>
 <style>
 :root{
+  --r-s:8px; --r-m:12px; --r-pill:999px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
   --bg:#F6F4EC; --card:#FFFFFF; --ink:#22333B; --ink2:#5C6B72; --line:#E4E0D3;
   --oliva:#55643B; --oliva-s:#EEF0E3; --pomodoro:#B23A2B; --pomodoro-s:#F7E6E1;
   --grano:#C9932A; --grano-s:#F8EFDA; --mare:#2E5E6E; --mare-s:#E2EDF0;
@@ -25,9 +27,9 @@ header.top .logo{font-size:1.15rem;font-weight:800;letter-spacing:.02em}
 header.top .logo em{font-style:normal;color:var(--pomodoro)}
 header.top .datebadge{font-size:.8rem;color:var(--ink2)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r14);
-  box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
-.card h2{font-size:.95rem;margin-bottom:8px;display:flex;align-items:center;justify-content:flex-start;gap:0}
-.card h2::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;
+  box-shadow:var(--shadow);padding:14px;margin-bottom:var(--sp-3)}
+.card h2{font-size:.95rem;margin-bottom:var(--sp-2);display:flex;align-items:center;justify-content:flex-start;gap:0}
+.card h2::before{content:"";display:inline-block;width:4px;height:14px;border-radius:var(--r-s);
   background:var(--oliva);margin-right:8px;opacity:.85}
 #pg-oggi .card h2::before{background:var(--grano)}
 #pg-sett .card h2::before{background:var(--mare)}
@@ -40,7 +42,7 @@ header.top .datebadge{font-size:.8rem;color:var(--ink2)}
 .dial svg{flex:0 0 auto}
 .dial .num{font-size:1.9rem;font-weight:800;line-height:1}
 .dial .num span{font-size:.85rem;font-weight:600;color:var(--ink2)}
-.chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700}
+.chip{display:inline-block;padding:3px 10px;border-radius:var(--r-pill);font-size:.72rem;font-weight:700}
 .chip.basso{background:var(--mare-s);color:var(--mare)}
 .chip.pieno{background:var(--oliva-s);color:var(--oliva)}
 .chip.ricarica{background:var(--grano-s);color:var(--grano)}
@@ -52,19 +54,19 @@ header.top .datebadge{font-size:.8rem;color:var(--ink2)}
 /* barre macro */
 .macro{margin-top:10px}
 .macro .row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:2px}
-.bar{height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin-bottom:8px}
-.bar i{display:block;height:100%;border-radius:6px;transition:width .4s}
+.bar{height:8px;border-radius:var(--r-s);background:var(--line);overflow:hidden;margin-bottom:var(--sp-2)}
+.bar i{display:block;height:100%;border-radius:var(--r-s);transition:width .4s}
 .bar .p{background:var(--pomodoro)} .bar .c{background:var(--grano)} .bar .f{background:var(--oliva)} .bar .k{background:var(--mare)}
 .over i{background:var(--pomodoro)!important}
 /* pasti */
-.meal{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
-.meal .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.meal{border:1px solid var(--line);border-radius:var(--r-m);padding:10px 12px;margin-bottom:var(--sp-2)}
+.meal .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-1)}
 .meal .mname{font-weight:700;font-size:.88rem}
 .meal ul{list-style:none}
 .meal li{display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;color:var(--ink)}
 .meal li .q{color:var(--ink2);font-variant-numeric:tabular-nums}
 .meal.done{background:var(--oliva-s);border-color:transparent}
-button{font:inherit;border:none;cursor:pointer;border-radius:10px}
+button{font:inherit;border:none;cursor:pointer;border-radius:var(--r-m)}
 .btn{background:var(--ink);color:#fff;padding:10px 16px;font-weight:600;font-size:.88rem}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.sm{padding:6px 10px;font-size:.78rem}
@@ -72,13 +74,13 @@ button{font:inherit;border:none;cursor:pointer;border-radius:10px}
 .btn:active{transform:scale(.97)}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 /* form */
-input,select{font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%;background:#fff;color:var(--ink)}
+input,select{font:inherit;border:1px solid var(--line);border-radius:var(--r-m);padding:9px 10px;width:100%;background:#fff;color:var(--ink)}
 input:focus,select:focus,button:focus-visible{outline:2px solid var(--mare);outline-offset:1px}
 label{font-size:.78rem;font-weight:600;color:var(--ink2);display:block;margin:8px 0 4px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 /* ricerca cibi */
-.foodresults{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:6px}
+.foodresults{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:var(--r-m);margin-top:6px}
 .fooditem{display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--line);font-size:.85rem;cursor:pointer}
 .fooditem:last-child{border-bottom:none}
 .fooditem:active{background:var(--oliva-s)}
@@ -89,6 +91,10 @@ label{font-size:.78rem;font-weight:600;color:var(--ink2);display:block;margin:8p
 /* WCAG 2.2 / EAA: checkbox più grandi e righe con area toccabile >=44px (la label intera è il target) */
 input[type="checkbox"]{width:22px!important;height:22px;min-width:22px;accent-color:var(--oliva);margin:0}
 #spesaList label,#femmBox label,#outVoci>div{min-height:44px}
+/* pattern estratti dagli stili inline duplicati (UX6) */
+.ckrow{display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0}
+.scorebadge{color:#fff;border-radius:var(--r-m);padding:8px 14px;text-align:center;line-height:1.1}
+.bsez{font-size:.82rem}
 /* allenamento */
 .ex{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.87rem}
 .ex:last-child{border-bottom:none}
@@ -98,7 +104,7 @@ input[type="checkbox"]{width:22px!important;height:22px;min-width:22px;accent-co
 /* settimana */
 .weekbars{display:flex;gap:6px;align-items:flex-end;height:110px;margin:10px 0 4px}
 .wb{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
-.wb .col{width:100%;max-width:34px;border-radius:6px 6px 0 0;background:var(--mare);min-height:3px;position:relative}
+.wb .col{width:100%;max-width:34px;border-radius:var(--r-s) 6px 0 0;background:var(--mare);min-height:3px;position:relative}
 .wb .col.overq{background:var(--pomodoro)}
 .wb .col .tline{position:absolute;left:-3px;right:-3px;height:2px;background:var(--ink)}
 .wb .lbl{font-size:.68rem;color:var(--ink2)}
@@ -110,16 +116,16 @@ th:first-child,td:first-child{text-align:left}
 th{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
 /* slider proteine */
 input[type=range]{padding:0;height:28px;accent-color:var(--pomodoro)}
-.explain{background:var(--mare-s);border-radius:10px;padding:10px 12px;font-size:.8rem;margin-top:8px}
+.explain{background:var(--mare-s);border-radius:var(--r-m);padding:10px 12px;font-size:.8rem;margin-top:var(--sp-2)}
 .explain b{color:var(--mare)}
 /* nav */
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--ink);display:flex;
   padding:6px max(8px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-bottom));z-index:50}
 nav button{flex:1;background:none;color:#8FA2AB;font-size:.68rem;font-weight:600;
-  display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;transition:color .2s}
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:var(--r-m);transition:color .2s}
 nav button .ico{width:22px;height:22px}
 nav button.on{color:var(--acc,#fff)}
-#navScan{flex:0 0 auto;width:56px;height:56px;min-width:56px;border-radius:999px;background:var(--grano);color:#fff;
+#navScan{flex:0 0 auto;width:56px;height:56px;min-width:56px;border-radius:var(--r-pill);background:var(--grano);color:#fff;
   margin:-18px 6px 0;display:flex;align-items:center;justify-content:center;padding:0;
   box-shadow:0 4px 12px rgba(0,0,0,.28);border:3px solid var(--card);transition:transform .15s}
 #navScan .ico{width:26px;height:26px}
@@ -130,16 +136,16 @@ nav button.on .ico{transform:translateY(-1px);filter:drop-shadow(0 2px 6px rgba(
 .season{display:flex;gap:6px;overflow-x:auto;padding:4px 0;scrollbar-width:none}
 .season::-webkit-scrollbar{display:none}
 .season span{flex:0 0 auto;background:var(--oliva-s);color:var(--oliva);font-size:.75rem;
-  font-weight:600;padding:5px 10px;border-radius:999px}
-.notice{background:var(--grano-s);border-radius:10px;padding:10px 12px;font-size:.8rem;margin-top:8px}
+  font-weight:600;padding:5px 10px;border-radius:var(--r-pill)}
+.notice{background:var(--grano-s);border-radius:var(--r-m);padding:10px 12px;font-size:.8rem;margin-top:var(--sp-2)}
 .hero-eta{display:flex;gap:10px;margin-top:10px}
-.hero-eta .box{flex:1;background:var(--bg);border-radius:10px;padding:8px 10px}
+.hero-eta .box{flex:1;background:var(--bg);border-radius:var(--r-m);padding:8px 10px}
 .hero-eta .box b{display:block;font-size:1.05rem}
 .hero-eta .box span{font-size:.7rem;color:var(--ink2)}
-dialog{border:none;border-radius:16px;padding:16px;width:min(92vw,420px);margin:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+dialog{border:none;border-radius:var(--r-m);padding:16px;width:min(92vw,420px);margin:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 dialog::backdrop{background:rgba(34,51,59,.45)}
 .toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
-  padding:9px 16px;border-radius:999px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
+  padding:9px 16px;border-radius:var(--r-pill);font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
 .toast.show{opacity:1}
 .toast.act{pointer-events:auto}
 .toast .undo{color:#FFD9A0;font-weight:700;text-decoration:underline;cursor:pointer;display:inline-block;padding:10px 8px;margin:-10px -4px -10px 2px}
@@ -147,11 +153,11 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 .mini:active{opacity:1}
 .ptag.cont{background:transparent;color:var(--ink2);min-width:14px;text-align:center}
 .ptag{display:inline-block;font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;
-  color:var(--mare);background:var(--mare-s);border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
+  color:var(--mare);background:var(--mare-s);border-radius:var(--r-s);padding:1px 5px;margin-right:6px;vertical-align:1px}
 .meal li{min-height:34px;align-items:center;cursor:pointer}
-.meal li:active{background:var(--bg);border-radius:8px}
+.meal li:active{background:var(--bg);border-radius:var(--r-s)}
 .sheetbtn{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--line);
-  border-radius:12px;padding:13px 14px;margin-bottom:8px;font-size:.92rem;font-weight:600}
+  border-radius:var(--r-m);padding:13px 14px;margin-bottom:var(--sp-2);font-size:.92rem;font-weight:600}
 .sheetbtn:active{background:var(--oliva-s)}
 .sheetbtn[hidden]{display:none!important}
 /* ---- onboarding ---- */
@@ -161,15 +167,15 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 @keyframes obIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .ob-hero{font-size:3.2rem;margin-bottom:10px}
 .ob-h{font-size:1.25rem;margin-bottom:14px}
-.ob-p{margin-bottom:12px;line-height:1.5}
+.ob-p{margin-bottom:var(--sp-3);line-height:1.5}
 .ob-cta{width:100%;margin-top:18px;padding:14px;font-size:1rem}
 .ob-seg.on,.ob-veg.on,.ob-meals.on{background:var(--oliva)!important;border-color:var(--oliva)!important;color:#fff!important;font-weight:700}
 .ob-meals.on::before,.ob-seg.on::before{content:"✓ "}
-.ob-card{display:block;width:100%;text-align:left;margin-top:8px;padding:12px}
+.ob-card{display:block;width:100%;text-align:left;margin-top:var(--sp-2);padding:12px}
 .ob-card .small{display:block;margin-top:2px}
 .ob-card.on{background:var(--oliva-s);border-color:var(--oliva);box-shadow:0 0 0 2px var(--oliva) inset}
 .ob-card.on>b::before{content:"✓ "}
-.ob-dots{display:flex;gap:6px;justify-content:center;padding-top:4px}
+.ob-dots{display:flex;gap:6px;justify-content:center;padding-top:var(--sp-1)}
 .ob-dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
 .ob-dots i.on{background:var(--oliva)}
 /* ---- tema: Mediterraneo vivo ---- */
@@ -211,7 +217,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 <section class="page on" id="pg-oggi">
   <div class="card" id="dialCard">
     <div class="eyebrow">Obiettivo di oggi</div>
-    <div class="dial" style="margin-top:8px">
+    <div class="dial" style="margin-top:var(--sp-2)">
       <svg id="dialSvg" width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
         <defs><linearGradient id="dialGrad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#2E5E6E"/><stop offset="1" stop-color="#55643B"/></linearGradient></defs>
@@ -229,7 +235,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       </div>
     </div>
     <div class="macro" id="macroBars"></div>
-    <div class="small" id="streakLine" style="margin-top:8px"></div>
+    <div class="small" id="streakLine" style="margin-top:var(--sp-2)"></div>
     <div class="notice" id="mantBanner" hidden></div>
     <div class="notice" id="pausaBanner" hidden></div>
   </div>
@@ -237,7 +243,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="card" id="fastCard" hidden>
     <h2>Finestra 16:8</h2>
     <div id="fastInfo" class="small"></div>
-    <div class="btnrow" style="margin-top:8px">
+    <div class="btnrow" style="margin-top:var(--sp-2)">
       <button class="btn ghost sm" id="btnFastStart">🌙 Inizio digiuno (dopo l'ultimo pasto)</button>
       <button class="btn ghost sm" id="btnFastStop" hidden>✕ Azzera</button>
     </div>
@@ -252,14 +258,14 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="card" id="regCard">
     <h2>Registra liberamente</h2>
     <input type="search" id="foodSearch" placeholder="Cerca tra ~1020 alimenti… (es. orata, farro)" autocomplete="off">
-    <div class="btnrow" style="margin-top:8px">
+    <div class="btnrow" style="margin-top:var(--sp-2)">
       <button class="btn ghost sm" id="btnScan">📷 Scansiona barcode</button>
       <button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button>
       <button class="btn ghost sm" id="btnPreset">★ Pasti preset</button>
       <button class="btn ghost sm" id="btnCucino">🍳 Cosa cucino?</button>
     </div>
     <div class="foodresults" id="foodResults" hidden></div>
-    <ul class="loglist" id="logList" style="margin-top:8px"></ul>
+    <ul class="loglist" id="logList" style="margin-top:var(--sp-2)"></ul>
   </div>
 
   <div class="card">
@@ -325,7 +331,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="card">
     <h2>Lista della spesa <button class="btn ghost sm" id="btnSpesa">Genera · 7 giorni</button></h2>
     <div id="spesaList" class="small">Genera i menu dei prossimi 7 giorni e aggrega gli ingredienti per reparto.</div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="btnScanSuper">📷 Scansiona al supermercato</button><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
+    <div class="btnrow" style="margin-top:var(--sp-2)"><button class="btn ghost sm" id="btnScanSuper">📷 Scansiona al supermercato</button><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
   </div>
   <div class="card">
     <h2>🛒 Qualità della tua spesa</h2>
@@ -362,8 +368,8 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <input type="number" step="0.1" inputmode="decimal" id="weightInput" placeholder="es. 94,0">
       <button class="btn" id="btnWeight">Registra peso</button>
     </div>
-    <div class="small" id="tdeeCal" style="margin-top:8px;padding:8px;background:var(--bg);border-radius:10px"></div>
-    <canvas id="weightChart" width="640" height="300" style="margin-top:12px" aria-label="Grafico del peso"></canvas>
+    <div class="small" id="tdeeCal" style="margin-top:var(--sp-2);padding:8px;background:var(--bg);border-radius:var(--r-m)"></div>
+    <canvas id="weightChart" width="640" height="300" style="margin-top:var(--sp-3)" aria-label="Grafico del peso"></canvas>
     <div class="hero-eta" id="etaBoxes"></div>
     <div class="notice" id="weightNotice" hidden></div>
   </div>
@@ -376,7 +382,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
     <button class="btn" style="margin-top:10px" id="btnMisure">Registra misure</button>
     <div class="hero-eta" id="bfBox"></div>
-    <ul class="loglist" id="misureList" style="margin-top:8px"></ul>
+    <ul class="loglist" id="misureList" style="margin-top:var(--sp-2)"></ul>
     <div class="small">Il girovita si misura all'ombelico, rilassato. Spesso scende anche nelle settimane in cui la bilancia si ferma.</div>
   </div>
   <div class="card">
@@ -415,7 +421,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <label>Proteine: <b id="protVal"></b> g per kg di peso</label>
     <input type="range" id="pProt" min="1.2" max="2.4" step="0.1">
     <div class="explain" id="protExplain"></div>
-    <label style="display:flex;align-items:center;gap:8px;margin-top:12px"><input type="checkbox" id="pMed" style="width:auto"> Solo cucina mediterranea nei menu</label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:var(--sp-3)"><input type="checkbox" id="pMed" style="width:auto"> Solo cucina mediterranea nei menu</label>
     <div class="small">Esclude dai menu proposti tofu, tempeh, soia, poke, salse industriali ecc. Restano cercabili nel log libero.</div>
     <label>Giorni vegetariani a settimana (casuali)</label>
     <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option value="7">7 · vegetariano 🌿</option></select>
@@ -431,7 +437,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </select>
     <label>Alimenti esclusi (separa con virgola)</label>
     <input id="pEscl" placeholder="fegato, finocchio">
-    <div class="btnrow" style="margin-top:12px">
+    <div class="btnrow" style="margin-top:var(--sp-3)">
       <button class="btn" id="btnSaveProf">Salva profilo</button>
       <button class="btn ghost" id="btnAddUser">+ Nuovo utente</button>
     </div>
@@ -454,11 +460,11 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn ghost sm" id="btnXferOut">📤 Genera codice</button>
       <button class="btn ghost sm" id="btnXferIn">📥 Incolla codice</button>
     </div>
-    <div id="xferBox" class="small" style="margin-top:8px"></div>
+    <div id="xferBox" class="small" style="margin-top:var(--sp-2)"></div>
   </div>
   <div class="card">
     <h2>Passi automatici da Apple Salute</h2>
-    <div class="btnrow" style="margin-bottom:8px">
+    <div class="btnrow" style="margin-bottom:var(--sp-2)">
       <button class="btn sm" id="btnPassiGuida">🚶 Collega i passi dell'iPhone</button>
     </div>
     <div class="small">Oppure inseriscili a mano ogni sera dal riquadro passi nella pagina Oggi.</div>
@@ -472,15 +478,15 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn ghost sm" id="btnCsvDiario">📋 CSV diario</button>
       <input type="file" id="importFile" accept=".json" hidden>
     </div>
-    <label style="margin-top:4px">Aspetto</label>
+    <label style="margin-top:var(--sp-1)">Aspetto</label>
     <div class="grid3">
       <button class="btn ghost sm" data-tema="">☀️ Classico</button>
       <button class="btn ghost sm" data-tema="vivo">🍅 Vivo</button>
       <button class="btn ghost sm" data-tema="notte">🌙 Notturno</button>
     </div>
     <button class="btn ghost sm" id="btnWipe" style="margin-top:10px;color:var(--pomodoro);border-color:var(--pomodoro)">🗑 Azzera tutti i dati e ricomincia</button>
-    <div class="small" style="margin-top:8px" id="storageInfo"></div>
-    <div class="small" id="appVer" style="margin-top:4px;opacity:.7"></div>
+    <div class="small" style="margin-top:var(--sp-2)" id="storageInfo"></div>
+    <div class="small" id="appVer" style="margin-top:var(--sp-1);opacity:.7"></div>
     <div class="small" style="margin-top:6px">Valori nutrizionali: elaborazione propria e <b>CREA — Tabelle di composizione degli alimenti, agg. 2019</b> (alimentinutrizione.it). I prodotti confezionati provengono da Open Food Facts.</div>
   </div>
 </section>
@@ -508,7 +514,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <input type="number" id="dlgGrams" inputmode="numeric" value="100">
   <label>Pasto</label>
   <select id="dlgMeal"><option>Colazione</option><option>Pranzo</option><option>Cena</option><option>Spuntino</option></select>
-  <div class="btnrow" style="margin-top:12px">
+  <div class="btnrow" style="margin-top:var(--sp-3)">
     <button class="btn" id="dlgAdd">Aggiungi</button>
     <button class="btn ghost" id="dlgFav">❤</button>
     <button class="btn ghost" id="dlgCancel">Annulla</button>
@@ -521,11 +527,11 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <button class="btn ghost sm" id="scanModeShop" type="button">🛒 Sto scegliendo</button>
   </div>
   <div style="position:relative">
-    <video id="scanVideo" playsinline muted style="width:100%;border-radius:12px;background:#000;min-height:180px"></video>
-    <div id="scanOk" hidden style="position:absolute;inset:0;border-radius:12px;background:rgba(85,140,80,.55);
+    <video id="scanVideo" playsinline muted style="width:100%;border-radius:var(--r-m);background:#000;min-height:180px"></video>
+    <div id="scanOk" hidden style="position:absolute;inset:0;border-radius:var(--r-m);background:rgba(85,140,80,.55);
       display:flex;align-items:center;justify-content:center;font-size:3.2rem;color:#fff">✓</div>
     <div id="scanPulse" style="position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;
-      border-radius:999px;padding:4px 12px;font-size:.75rem">🔎 In ascolto…</div>
+      border-radius:var(--r-pill);padding:4px 12px;font-size:.75rem">🔎 In ascolto…</div>
   </div>
   <div class="small" id="scanStatus" style="margin-top:6px">Inquadra il codice a barre a 15-20 cm, fermo e in buona luce…</div>
   <label>Oppure inserisci l'EAN a mano</label>
@@ -556,13 +562,13 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn" id="scanCart" hidden>➕ Aggiungi al carrello</button>
     </div>
   </div>
-  <div class="btnrow" style="margin-top:12px">
+  <div class="btnrow" style="margin-top:var(--sp-3)">
     <button class="btn ghost" id="scanClose">Chiudi</button>
   </div>
-  <div class="small" style="margin-top:8px">Dati da Open Food Facts (serve internet alla prima scansione). I prodotti restano nel tuo archivio: la prossima volta niente rete. Verifica sempre l'etichetta.</div>
+  <div class="small" style="margin-top:var(--sp-2)">Dati da Open Food Facts (serve internet alla prima scansione). I prodotti restano nel tuo archivio: la prossima volta niente rete. Verifica sempre l'etichetta.</div>
 </dialog>
 <dialog id="dlgDay">
-  <h3 id="dayEdTitle" style="margin-bottom:8px"></h3>
+  <h3 id="dayEdTitle" style="margin-bottom:var(--sp-2)"></h3>
   <div id="dayEdList" style="max-height:200px;overflow-y:auto;margin-bottom:10px"></div>
   <label>Aggiungi qualcosa a questo giorno</label>
   <input id="dayEdNome" placeholder="Cosa hai mangiato">
@@ -576,40 +582,40 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div><label>Carb (g)</label><input type="number" id="dayEdC" inputmode="decimal"></div>
     <div><label>Grassi (g)</label><input type="number" id="dayEdF" inputmode="decimal"></div>
   </div>
-  <button class="btn ghost sm" id="dayEdAdd" style="margin-top:8px">＋ Aggiungi</button>
+  <button class="btn ghost sm" id="dayEdAdd" style="margin-top:var(--sp-2)">＋ Aggiungi</button>
   <div class="grid2" style="margin-top:10px">
     <div><label>Passi del giorno</label><input type="number" id="dayEdPassi" inputmode="numeric"></div>
     <div><label>Acqua (ml)</label><input type="number" id="dayEdAcqua" inputmode="numeric"></div>
   </div>
-  <div class="btnrow" style="margin-top:12px">
+  <div class="btnrow" style="margin-top:var(--sp-3)">
     <button class="btn" id="dayEdSave">Salva</button>
     <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button>
   </div>
 </dialog>
 <dialog id="dlgPassiGuida">
-  <h3 style="margin-bottom:8px">Passi automatici dall'iPhone</h3>
+  <h3 style="margin-bottom:var(--sp-2)">Passi automatici dall'iPhone</h3>
   <div class="small" style="line-height:1.6">
     Si fa una volta sola, in 2 minuti, con l'app <b>Comandi Rapidi</b> (è già sul telefono).
   </div>
-  <div class="small" style="margin:8px 0;padding:8px;background:var(--grano-s);border-radius:10px">
+  <div class="small" style="margin:8px 0;padding:8px;background:var(--grano-s);border-radius:var(--r-m)">
     ⚠️ <b>Limite di iPhone</b>: l'automazione apre il link in <b>Safari</b>, non nell'app sulla schermata Home — quindi i passi arrivano solo se usi Rotta 80 da Safari. Se la usi dall'icona, per ora conviene l'<b>inserimento manuale</b> (10 secondi la sera dalla pagina Oggi). Con l'app da store, i passi arriveranno da soli da Apple Salute.
   </div>
-  <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:12px;font-size:.85rem;line-height:1.7">
+  <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:var(--r-m);font-size:.85rem;line-height:1.7">
     <b>1.</b> Tocca il pulsante qui sotto per <b>copiare il link magico</b> 🔗<br>
     <b>2.</b> Apri <b>Comandi Rapidi</b> → <b>+</b> (nuovo comando)<br>
     <b>3.</b> Aggiungi l'azione <b>"Trova campioni salute"</b> → tipo: <b>Passi</b>, periodo: <b>Oggi</b><br>
-    <b>4.</b> Aggiungi l'azione <b>"Apri URL"</b> → tieni premuto nel campo → <b>Incolla</b> → tocca la parola <span style="background:var(--grano-s);border-radius:4px;padding:0 4px">PASSI</span> incollata e sostituiscila con la variabile <b>Campioni salute</b><br>
+    <b>4.</b> Aggiungi l'azione <b>"Apri URL"</b> → tieni premuto nel campo → <b>Incolla</b> → tocca la parola <span style="background:var(--grano-s);border-radius:var(--r-s);padding:0 4px">PASSI</span> incollata e sostituiscila con la variabile <b>Campioni salute</b><br>
     <b>5.</b> (Facoltativo) In <b>Automazioni</b> → "Ora del giorno, 21:00" → esegui il comando: da lì in poi è tutto automatico
   </div>
   <button class="btn" id="btnPassiCopy" style="width:100%">🔗 1 · Copia il link magico</button>
-  <button class="btn ghost" id="btnPassiOpen" style="width:100%;margin-top:8px">⚡️ 2 · Apri Comandi Rapidi</button>
-  <div class="btnrow" style="margin-top:12px">
+  <button class="btn ghost" id="btnPassiOpen" style="width:100%;margin-top:var(--sp-2)">⚡️ 2 · Apri Comandi Rapidi</button>
+  <div class="btnrow" style="margin-top:var(--sp-3)">
     <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button>
   </div>
 </dialog>
 <dialog id="dlgAct">
   <h3 id="actTitle" style="margin-bottom:2px"></h3>
-  <div class="small" id="actSub" style="margin-bottom:12px"></div>
+  <div class="small" id="actSub" style="margin-bottom:var(--sp-3)"></div>
   <button class="sheetbtn" id="actRec">📖 Vedi la ricetta</button>
   <button class="sheetbtn" id="actDouble" hidden>🍲 Ne cucino il doppio</button>
   <button class="sheetbtn" id="actSwap">⇄ Sostituisci con un equivalente</button>
@@ -619,33 +625,33 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 </dialog>
 <dialog id="dlgCucina">
   <h3 style="margin-bottom:2px">🍳 Cosa cucino con quello che ho</h3>
-  <div class="small" style="margin-bottom:8px">Scegli da 2 a 7 ingredienti che hai in casa: ti propongo le ricette del ricettario.</div>
+  <div class="small" style="margin-bottom:var(--sp-2)">Scegli da 2 a 7 ingredienti che hai in casa: ti propongo le ricette del ricettario.</div>
   <input id="cucSearch" type="search" placeholder="Cerca un ingrediente… (es. tonno)" autocomplete="off">
   <div class="foodresults" id="cucRes" hidden></div>
   <div id="cucSel" style="margin:8px 0"></div>
   <div class="btnrow"><button class="btn" id="cucFind">Trova ricette</button>
     <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button></div>
-  <div id="cucOut" style="margin-top:8px"></div>
+  <div id="cucOut" style="margin-top:var(--sp-2)"></div>
 </dialog>
 <dialog id="dlgRecipe">
-  <h3 id="recTitle" style="margin-bottom:4px"></h3>
+  <h3 id="recTitle" style="margin-bottom:var(--sp-1)"></h3>
   <div class="small" id="recPortion"></div>
   <b style="font-size:.85rem;display:block;margin-top:10px">Ingredienti</b>
   <ul id="recIng" style="font-size:.85rem;padding-left:18px"></ul>
   <b style="font-size:.85rem;display:block;margin-top:10px">Preparazione</b>
   <ol id="recSteps" style="font-size:.85rem;padding-left:18px"></ol>
-  <div class="small" id="recTot" style="margin-top:8px;font-weight:700"></div>
+  <div class="small" id="recTot" style="margin-top:var(--sp-2);font-weight:700"></div>
   <div class="btnrow" style="margin-top:10px">
     <button class="btn" id="recSave">✔ L'ho fatta così: registra</button>
     <button class="btn ghost" id="recClose">Chiudi</button>
   </div>
 </dialog>
 <dialog id="dlgPreset">
-  <h3 style="margin-bottom:8px">Pasti preset</h3>
+  <h3 style="margin-bottom:var(--sp-2)">Pasti preset</h3>
   <div id="presetList" class="small"></div>
   <label>Salva un pasto registrato oggi</label>
   <select id="presetMealSel"></select>
-  <div class="btnrow" style="margin-top:12px">
+  <div class="btnrow" style="margin-top:var(--sp-3)">
     <button class="btn" id="presetSave">★ Salva come preset</button>
     <button class="btn ghost" id="presetClose">Chiudi</button>
   </div>
@@ -653,7 +659,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 <dialog id="dlgXfer">
   <h3 style="margin-bottom:6px">Importa dati</h3>
   <div class="small">Incolla qui il codice generato sull'altro dispositivo. Sostituirà i dati attuali.</div>
-  <textarea id="xferTa" style="width:100%;height:110px;font:12px monospace;margin-top:8px;border:1px solid var(--line);border-radius:10px;padding:8px"></textarea>
+  <textarea id="xferTa" style="width:100%;height:110px;font:12px monospace;margin-top:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-m);padding:8px"></textarea>
   <div class="btnrow" style="margin-top:10px">
     <button class="btn" id="xferGo">Importa</button>
     <button class="btn ghost" id="xferCancel">Annulla</button>
@@ -687,20 +693,20 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <option value="aperitivo">🥂 Aperitivo</option>
     </select>
     <div id="outVoci" style="margin-top:6px"></div>
-    <div id="outTot" class="small" style="margin-top:8px"><b>Totale: 0 kcal</b></div>
+    <div id="outTot" class="small" style="margin-top:var(--sp-2)"><b>Totale: 0 kcal</b></div>
   </div>
-  <div class="btnrow" style="margin-top:12px">
+  <div class="btnrow" style="margin-top:var(--sp-3)">
     <button class="btn" id="outAdd">Registra</button>
     <button class="btn ghost" id="outCancel">Annulla</button>
   </div>
-  <div class="small" style="margin-top:8px">Domani il menu compenserà automaticamente metà dell'eventuale sforamento (mai oltre il 15% del giorno).</div>
+  <div class="small" style="margin-top:var(--sp-2)">Domani il menu compenserà automaticamente metà dell'eventuale sforamento (mai oltre il 15% del giorno).</div>
 </dialog>
 <dialog id="dlgTimer">
   <div style="text-align:center">
     <div class="eyebrow" id="tGiro">giro 1 di 3</div>
-    <div id="tPhase" style="font-size:1.2rem;font-weight:800;margin-top:4px">PRONTI</div>
+    <div id="tPhase" style="font-size:1.2rem;font-weight:800;margin-top:var(--sp-1)">PRONTI</div>
     <div id="tCount" style="font-size:3.4rem;font-weight:800;font-variant-numeric:tabular-nums">–</div>
-    <div id="tEx" style="font-size:.95rem;margin-bottom:12px"></div>
+    <div id="tEx" style="font-size:.95rem;margin-bottom:var(--sp-3)"></div>
     <div class="btnrow" style="justify-content:center">
       <button class="btn" id="tPause">⏸ Pausa</button>
       <button class="btn ghost" id="tStop">■ Stop</button>
@@ -708,7 +714,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   </div>
 </dialog>
 <dialog id="dlgFeel">
-  <h3 style="margin-bottom:8px">Com'è andata?</h3>
+  <h3 style="margin-bottom:var(--sp-2)">Com'è andata?</h3>
   <div class="btnrow">
     <button class="btn ghost" data-feel="facile">😀 Facile</button>
     <button class="btn ghost" data-feel="giusto">💪 Giusta</button>
@@ -720,7 +726,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 
   <section class="ob-step" data-ob="0">
     <div class="ob-hero">🍅</div>
-    <h1 style="font-size:1.5rem;margin-bottom:8px">Rotta 80</h1>
+    <h1 style="font-size:1.5rem;margin-bottom:var(--sp-2)">Rotta 80</h1>
     <p class="ob-p">Le altre app contano quello che hai mangiato.<br><b>Questa ti dice cosa mangiare — all'italiana.</b></p>
     <p class="ob-p small">Menu veri di cucina mediterranea, calibrati su di te, con la pizza del sabato già nel piano. Nessun account, nessuna pubblicità: i tuoi dati restano sul telefono.</p>
     <button class="btn ob-cta" data-obnext>Iniziamo</button>
@@ -756,7 +762,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <div><label>Età</label><input type="number" id="obEta" inputmode="numeric" value="40" min="18" max="90"></div>
       <div><label>Altezza (cm)</label><input type="number" id="obAlt" inputmode="numeric" value="175" min="120" max="220"></div>
     </div>
-    <div class="small ob-err" style="color:var(--pomodoro);margin-top:8px"></div>
+    <div class="small ob-err" style="color:var(--pomodoro);margin-top:var(--sp-2)"></div>
     <button class="btn ob-cta" data-obnext>Avanti</button>
   </section>
 
@@ -774,7 +780,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
     <label style="margin-top:10px">Passi al giorno, di solito: <b id="obPassiVal">6.000</b></label>
     <input type="range" id="obPassi" min="2000" max="15000" step="500" value="6000">
-    <div class="small ob-err" style="color:var(--pomodoro);margin-top:8px"></div>
+    <div class="small ob-err" style="color:var(--pomodoro);margin-top:var(--sp-2)"></div>
     <button class="btn ob-cta" data-obnext>Avanti</button>
   </section>
 
@@ -2114,7 +2120,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.35.0";
+const APP_VERSION="2.36.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2819,7 +2825,7 @@ function openRecipe(nm,it,dateKey,mi,ii){
   const dishFood=it.id!=null?FOOD_DB[it.id]:null;
   $("#recIng").innerHTML=rec.i.map(([n,g100],idx)=>{
     const g=Math.round(g100*it.g/100/5)*5;
-    return `<li style="margin-bottom:4px">${n}
+    return `<li style="margin-bottom:var(--sp-1)">${n}
       <input type="number" inputmode="numeric" data-ring="${idx}" data-ing="${n.replace(/"/g,"&quot;")}" value="${g||""}"
         style="width:64px;padding:3px 6px;margin-left:6px;font-size:.85rem"> g</li>`; }).join("");
   $("#recSteps").innerHTML=rec.s.map(s=>`<li>${s}</li>`).join("");
@@ -2888,7 +2894,7 @@ let cucSel=[];
 function drawCucSel(){
   $("#cucSel").innerHTML=cucSel.length
     ? cucSel.map((f,i)=>`<span class="chip" data-crm="${i}" style="cursor:pointer;margin:2px">${f[0]} ✕</span>`).join(" ")
-      +`<div class="small" style="margin-top:4px">${cucSel.length}/7 ingredienti</div>`
+      +`<div class="small" style="margin-top:var(--sp-1)">${cucSel.length}/7 ingredienti</div>`
     : `<div class="small">Nessun ingrediente scelto.</div>`;
   $$("#cucSel [data-crm]").forEach(el=>el.onclick=()=>{ cucSel.splice(+el.dataset.crm,1); drawCucSel(); }); }
 function drawCucRisultati(){
@@ -2896,9 +2902,9 @@ function drawCucRisultati(){
   const riga=r=>`<div class="fooditem" data-crec="${r.nm.replace(/"/g,"&quot;")}" data-cg="${r.g}">
       <span>🍲 ${r.nm}<div class="small">porzione ≈ ${r.g} g · ${r.kcal} kcal${r.mancano.length?` · ti mancano: <b>${[...new Set(r.mancano)].slice(0,2).join(", ")}</b>`:""}</div></span></div>`;
   if(R.piene.length)
-    box.innerHTML=`<div class="small" style="margin-bottom:4px">Con quello che hai, per ${R.target.meal.toLowerCase()} (~${R.target.kcal} kcal):</div>`+R.piene.map(riga).join("");
+    box.innerHTML=`<div class="small" style="margin-bottom:var(--sp-1)">Con quello che hai, per ${R.target.meal.toLowerCase()} (~${R.target.kcal} kcal):</div>`+R.piene.map(riga).join("");
   else if(R.vicine.length)
-    box.innerHTML=`<div class="small" style="margin-bottom:4px">Nessuna ricetta combacia in pieno: le 3 più vicine (con cosa manca):</div>`+R.vicine.map(riga).join("");
+    box.innerHTML=`<div class="small" style="margin-bottom:var(--sp-1)">Nessuna ricetta combacia in pieno: le 3 più vicine (con cosa manca):</div>`+R.vicine.map(riga).join("");
   else box.innerHTML=`<div class="small">Nessuna ricetta del ricettario usa questi ingredienti: prova a cambiarne uno.</div>`;
   $$("#cucOut [data-crec]").forEach(el=>el.onclick=()=>{
     const nm=el.dataset.crec; const f=FOOD_DB.find(x=>x[0]===nm); if(!f) return;
@@ -3096,10 +3102,10 @@ function renderCompare(a,b){
     ["Fibre",p=>cdot(p.fibre||null,3,6,true)],
     ["Proteine",p=>cdot(p.p||null,4,8,true)],
     ["Additivi",p=>Array.isArray(p.adds)?(p.adds.length+(p.adds.some(x=>addRisk(x)===2)?" ⚠️":p.adds.some(x=>addRisk(x)===1)?" ·":"")):"–"]];
-  const head=(p,s,bd,cl,w)=>`<div style="border:2px solid ${w?cl:"var(--line)"};border-radius:10px;padding:6px;text-align:center">
-    ${p.img?`<img src="${p.img}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;display:block;margin:0 auto 4px">`:""}
+  const head=(p,s,bd,cl,w)=>`<div style="border:2px solid ${w?cl:"var(--line)"};border-radius:var(--r-m);padding:6px;text-align:center">
+    ${p.img?`<img src="${p.img}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:var(--r-s);display:block;margin:0 auto 4px">`:""}
     ${w?"🏆 ":""}<b style="font-size:.78rem">${p.name}</b>
-    <div style="margin-top:3px"><span style="background:${cl};color:#fff;border-radius:8px;padding:2px 8px;font-weight:800">${s}</span> <span class="small">${bd}</span></div></div>`;
+    <div style="margin-top:3px"><span style="background:${cl};color:#fff;border-radius:var(--r-s);padding:2px 8px;font-weight:800">${s}</span> <span class="small">${bd}</span></div></div>`;
   let h=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${head(a,sa,bda,cla,win==="a")}${head(b,sb,bdb,clb,win==="b")}</div>`;
   h+=`<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 8px;font-size:.78rem;margin-top:6px">`
     +M.map(([lab,fn])=>`<div class="small">${lab}</div><div style="text-align:center">${fn(a)}</div><div style="text-align:center">${fn(b)}</div>`).join("")+`</div>`;
@@ -3117,14 +3123,14 @@ function showScanned(prod,fromCache){
   const NS_COL={A:"#3E8E41",B:"#8DB600",C:"#E8A13C",D:"#E06A2B",E:"#C63F2E"};
   const NS_TXT={A:"ottima qualità nutrizionale",B:"buona qualità",C:"qualità media: ogni tanto",D:"qualità scarsa: di rado",E:"da limitare il più possibile"};
   let scoreHtml=hasDati?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-    ${prod.img?`<img src="${prod.img}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--line)">`:""}
-    <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
+    ${prod.img?`<img src="${prod.img}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r-m);background:var(--line)">`:""}
+    <div class="scorebadge" style="background:${col}">
       <div style="font-size:1.3rem;font-weight:800">${score}</div><div style="font-size:.6rem">/100</div></div>
     <div><b>${band}</b><div class="small">55% nutrizione · 20% additivi · 15% lavorazione (NOVA) · 10% bio${prod.bio?" 🌱":""}</div></div></div>`
     :(prod.ns&&!NS_OK(prod.ns)
       ?`<div class="small">ℹ️ Il Nutri-Score <b>non si applica</b> a questo prodotto (es. bevande alcoliche): punteggio non disponibile. Puoi comunque registrarlo nel diario.</div>`
       :`<div class="small">ℹ️ Prodotto non in archivio: <b>punteggio non disponibile</b>. Se hai l'etichetta puoi comunque inserire i valori e registrarlo nel diario.</div>`);
-  if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:#fff;font-weight:800;border-radius:8px;padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
+  if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:#fff;font-weight:800;border-radius:var(--r-s);padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
   /* semafori nutrizionali per 100 g */
   const dot=(v,lo,hi,inv)=>{ const good=inv?v>=hi:v<lo, bad=inv?v<lo:v>hi;
     return bad?"🔴":good?"🟢":"🟡"; };
@@ -3138,7 +3144,7 @@ function showScanned(prod,fromCache){
   /* additivi con livello di rischio */
   if(prod.adds&&prod.adds.length){
     const chips=prod.adds.slice(0,8).map(a=>{ const r=addRisk(a);
-      return `<span style="border-radius:6px;padding:1px 6px;margin:1px;display:inline-block;font-size:.72rem;background:${r===2?"#F8DCD3":r===1?"#FAEBC4":"#E8EDD2"}">${a}${r===2?" ⚠️":r===1?" ·":""}</span>`; }).join("");
+      return `<span style="border-radius:var(--r-s);padding:1px 6px;margin:1px;display:inline-block;font-size:.72rem;background:${r===2?"#F8DCD3":r===1?"#FAEBC4":"#E8EDD2"}">${a}${r===2?" ⚠️":r===1?" ·":""}</span>`; }).join("");
     const worst=Math.max(...prod.adds.map(addRisk));
     scoreHtml+=`<div class="small" style="margin-top:6px"><b>${prod.adds.length} additiv${prod.adds.length===1?"o":"i"}</b>${worst===2?" — almeno uno da evitare":worst===1?" — qualcuno controverso":" — nessuno preoccupante"}<br>${chips}</div>`;
   } else if(prod.adds) scoreHtml+=`<div class="small" style="margin-top:6px">🟢 Senza additivi segnalati</div>`;
@@ -3151,9 +3157,9 @@ function showScanned(prod,fromCache){
   if(hasDati&&score<50){ let alt="cerca nella barra di Rotta un equivalente fresco e semplice";
     const nm=(prod.name||"").toLowerCase();
     for(const[re,a]of ALT_MAP){ if(re.test(nm)){ alt=a; break; } }
-    scoreHtml+=`<div style="margin-top:8px;padding:8px;background:var(--oliva-s);border-radius:10px;font-size:.83rem">💡 <b>Meglio:</b> ${alt}</div>`; }
-  if(prod.nova>=4) scoreHtml+=`<div class="small" style="margin-top:4px">⚠️ <b>Ultra-processato</b> (NOVA 4): tanti additivi e lavorazione industriale spinta.</div>`;
-  else if(prod.nova===3) scoreHtml+=`<div class="small" style="margin-top:4px">Alimento processato (NOVA 3).</div>`;
+    scoreHtml+=`<div style="margin-top:var(--sp-2);padding:8px;background:var(--oliva-s);border-radius:var(--r-m);font-size:.83rem">💡 <b>Meglio:</b> ${alt}</div>`; }
+  if(prod.nova>=4) scoreHtml+=`<div class="small" style="margin-top:var(--sp-1)">⚠️ <b>Ultra-processato</b> (NOVA 4): tanti additivi e lavorazione industriale spinta.</div>`;
+  else if(prod.nova===3) scoreHtml+=`<div class="small" style="margin-top:var(--sp-1)">Alimento processato (NOVA 3).</div>`;
   $("#scanScore").innerHTML=scoreHtml; $("#scanScore").hidden=!scoreHtml;
   const ch=coherent(prod.kcal,prod.p,prod.c,prod.f);
   $("#scanCheck").innerHTML=ch.ok
@@ -3460,7 +3466,7 @@ function obReveal(){
     $("#obMenu").innerHTML=menu.meals.map(me=>
       `<div style="margin-bottom:6px"><b>${me.name} · ${me.items.reduce((s,i)=>s+i.kcal,0)} kcal</b><br>
        <span class="small">${me.items.slice(0,3).map(i=>i.name).join(" · ")}${me.items.length>3?"…":""}</span></div>`).join("")
-      +`<div class="small" style="margin-top:4px;font-style:italic">Cambia ogni giorno, resta nei tuoi numeri ogni settimana.</div>`;
+      +`<div class="small" style="margin-top:var(--sp-1);font-style:italic">Cambia ogni giorno, resta nei tuoi numeri ogni settimana.</div>`;
   }
 }
 if(FIRST_RUN){ startOnboarding(); }
@@ -3761,20 +3767,20 @@ function buildSpesa(){
         if(pz) q=pz+(pz===1?" pezzo":" pezzi")+" (≈"+(Math.round(v.g/50)*50)+" g)";
         else if(["verdura","frutta"].includes(v.cat)) q="≈ "+Math.max(100,Math.ceil(v.g/100)*100)+" g";
         else q=v.g>=1000?(v.g/1000).toFixed(1).replace(".",",")+" kg":Math.max(50,Math.round(v.g/50)*50)+" g";
-        return `<li style="list-style:none"><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
+        return `<li style="list-style:none"><label class="ckrow">
           <input type="checkbox" style="width:auto" data-spesa="${n.replace(/"/g,"&quot;")}" ${ck}>
           <span style="flex:1;${ck?"text-decoration:line-through;opacity:.55":""}">${n}</span><span class="small">${q}</span></label></li>`; }).join("");
-    return rows?`<div style="margin-top:8px"><b style="font-size:.82rem">${lab}</b><ul>${rows}</ul></div>`:""; }).join("");
-  const basHtml=basici.size?`<div style="margin-top:10px"><b style="font-size:.82rem">🧂 Basici di casa (spunta quelli che ti mancano)</b><ul>${
+    return rows?`<div style="margin-top:var(--sp-2)"><b class="bsez">${lab}</b><ul>${rows}</ul></div>`:""; }).join("");
+  const basHtml=basici.size?`<div style="margin-top:10px"><b class="bsez">🧂 Basici di casa (spunta quelli che ti mancano)</b><ul>${
     [...basici].sort().map(n=>{ const key="🧂 "+n, ck=U.spesaCk[key]?"checked":"";
-      return `<li style="list-style:none"><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
+      return `<li style="list-style:none"><label class="ckrow">
         <input type="checkbox" style="width:auto" data-spesa="${key.replace(/"/g,"&quot;")}" ${ck}>
         <span style="flex:1;${ck?"font-weight:600":"opacity:.65"}">${n}</span></label></li>`; }).join("")
   }</ul></div>`:"";
   U.carrello=(U.carrello||[]).filter(x=>+dateFromKey(x.d)>Date.now()-14*864e5); /* il carrello scade dopo 14 giorni */
-  const carHtml=U.carrello.length?`<div style="margin-top:10px"><b style="font-size:.82rem">🛍 Aggiunti da scanner al supermercato</b><ul>${
+  const carHtml=U.carrello.length?`<div style="margin-top:10px"><b class="bsez">🛍 Aggiunti da scanner al supermercato</b><ul>${
     U.carrello.map(x=>{ const key="🛍 "+x.name, ckc=U.spesaCk[key]?"checked":"";
-      return `<li style="list-style:none"><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
+      return `<li style="list-style:none"><label class="ckrow">
         <input type="checkbox" style="width:auto" data-spesa="${key.replace(/"/g,"&quot;")}" ${ckc}>
         <span style="flex:1;${ckc?"text-decoration:line-through;opacity:.55":""}">${x.name}${x.s!=null?` <span class="small">(${x.s}/100)</span>`:""}</span>
         <button type="button" class="mini" data-carrm="${x.ean}">✕</button></label></li>`; }).join("")}</ul></div>`:"";
@@ -3853,19 +3859,19 @@ function renderSpesaPagella(){
       :`<span class="small">≈ stabile vs mese precedente</span>`; }
   else trend=`<span class="small">primo mese di dati</span>`;
   let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-    <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
+    <div class="scorebadge" style="background:${col}">
       <div style="font-size:1.3rem;font-weight:800">${mCur}</div><div style="font-size:.6rem">/100</div></div>
     <div><b>${band}</b> · media di ${cur.length} acquisti<br>${trend}</div></div>`;
   /* i 3 peggiori (unici per prodotto) con alternativa */
   const worstMap={}; cur.forEach(x=>{ if(!(x.ean in worstMap)||x.s<worstMap[x.ean].s) worstMap[x.ean]=x; });
   const worst=Object.values(worstMap).sort((a,b)=>a.s-b.s).slice(0,3).filter(x=>x.s<75);
   if(worst.length){
-    h+=`<div style="margin-top:4px"><b style="font-size:.82rem">Da ripensare</b>`+worst.map(x=>{
+    h+=`<div style="margin-top:var(--sp-1)"><b class="bsez">Da ripensare</b>`+worst.map(x=>{
       let alt="cerca un equivalente fresco e semplice"; const nm=(x.name||"").toLowerCase();
       for(const[re,a]of ALT_MAP){ if(re.test(nm)){ alt=a; break; } }
       const [,c2]=scoreBand(x.s);
       return `<div style="padding:4px 0;border-bottom:1px dashed var(--line)">
-        <span style="background:${c2};color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;font-size:.75rem">${x.s}</span>
+        <span style="background:${c2};color:#fff;border-radius:var(--r-s);padding:1px 7px;font-weight:700;font-size:.75rem">${x.s}</span>
         ${x.name}<div class="small">💡 Meglio: ${alt}</div></div>`; }).join("")+`</div>`; }
   box.innerHTML=h;
 }
@@ -3884,7 +3890,7 @@ $("#btnMenuPrint").onclick=()=>{
       <button class="btn ghost" onclick="document.getElementById('reportView').classList.remove('on')">✕ Chiudi</button>
     </div>
     <h1>Rotta 80 · menu della settimana</h1>
-    <div class="small" style="margin-bottom:12px">${U.nome} · generato il ${new Date().toLocaleDateString("it-IT")}</div>${html}
+    <div class="small" style="margin-bottom:var(--sp-3)">${U.nome} · generato il ${new Date().toLocaleDateString("it-IT")}</div>${html}
     <div class="small">Le quantità dei cereali sono a crudo. Sostituzioni equivalenti: usa ⇄ nell'app.</div>`;
   $("#reportView").classList.add("on");
 };
@@ -3953,7 +3959,7 @@ $("#btnXferOut").onclick=()=>{
   const code=lzwEnc(JSON.stringify(slim));
   const box=$("#xferBox");
   box.innerHTML=`<b>${(code.length/1024).toFixed(1)} KB</b> · copia questo codice e incollalo sull'altro dispositivo (📥):<br>
-    <textarea readonly style="width:100%;height:90px;font:11px monospace;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:6px">${code}</textarea>
+    <textarea readonly style="width:100%;height:90px;font:11px monospace;margin-top:6px;border:1px solid var(--line);border-radius:var(--r-m);padding:6px">${code}</textarea>
     <button class="btn ghost sm" id="xferCopy" style="margin-top:6px">⎘ Copia</button>`;
   $("#xferCopy").onclick=()=>{ const ta=box.querySelector("textarea"); ta.select();
     if(navigator.clipboard) navigator.clipboard.writeText(code).then(()=>toast("Codice copiato"));
@@ -4006,7 +4012,7 @@ $("#btnReport").onclick=()=>{
     </div>
     <h3>Copertura micronutrienti</h3>
     <div id="repMicro"></div>
-    <div class="small" style="margin-top:16px">Generato da Rotta 80 · dati auto-registrati, stime caloriche indicative.</div>`;
+    <div class="small" style="margin-top:var(--sp-4)">Generato da Rotta 80 · dati auto-registrati, stime caloriche indicative.</div>`;
   renderMicro(days,"#repMicro");
   $("#reportView").classList.add("on");
 };
@@ -4203,15 +4209,15 @@ function renderPausa(){
   const pz=pausaAttiva();
   if(pz){ const d=new Date(+dateFromKey(pz.until)-864e5);
     box.innerHTML=`Il piano è <b>in pausa fino al ${d.getDate()} ${MESI[d.getMonth()]}</b> compreso. Diario, scanner, passi e acqua restano attivi; menu e compensazioni sospesi, serie congelata.
-      <div class="btnrow" style="margin-top:8px"><button class="btn sm" id="btnPausaStop">▶ Riprendi ora</button></div>`;
+      <div class="btnrow" style="margin-top:var(--sp-2)"><button class="btn sm" id="btnPausaStop">▶ Riprendi ora</button></div>`;
     $("#btnPausaStop").onclick=()=>endPausa();
   } else {
     box.innerHTML=`Vacanza, malattia, un periodo pieno: metti tutto in pausa senza perdere nulla. Diario e scanner restano attivi, la serie si congela e alla ripresa non ci sono compensazioni arretrate.
-      <div class="grid2" style="margin-top:8px"><div><label>Durata</label><select id="pausaDur">
+      <div class="grid2" style="margin-top:var(--sp-2)"><div><label>Durata</label><select id="pausaDur">
         <option value="3">3 giorni</option><option value="7" selected>7 giorni</option>
         <option value="14">14 giorni</option><option value="21">21 giorni (massimo)</option></select></div>
       <div style="display:flex;align-items:flex-end"><button class="btn" id="btnPausaGo">✈️ Metti in pausa</button></div></div>
-      <div class="small" style="margin-top:4px">Puoi riprendere in anticipo quando vuoi, dalla Home o da qui.</div>`;
+      <div class="small" style="margin-top:var(--sp-1)">Puoi riprendere in anticipo quando vuoi, dalla Home o da qui.</div>`;
     $("#btnPausaGo").onclick=()=>{ const n=Math.min(21,Math.max(1,+$("#pausaDur").value||7));
       U.pause=U.pause||[]; U.pause.push({from:todayKey(),until:todayKey(new Date(Date.now()+n*864e5))});
       svuotaMenuFuturi(); save(); render(); toast("Piano in pausa ✈️"); };
@@ -4225,14 +4231,14 @@ function renderFemm(){
   /* CLINICO-DA-VALIDARE: tutti i testi di questa sezione sono da rivedere col comitato scientifico */
   let h=`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="fmOn" style="width:auto" ${ck(F.on)}><span>Attiva le opzioni femminili — tutte facoltative, restano solo sul tuo dispositivo</span></label>`;
   if(F.on){
-    h+=`<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">
+    h+=`<div style="margin-top:var(--sp-2);padding-top:var(--sp-2);border-top:1px dashed var(--line)">
       <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="fmCiclo" style="width:auto" ${ck(F.cicloOn)}><span><b>Ciclo</b>: nota sulla ritenzione, pesate di quei giorni contate meno nella taratura, tolleranza dichiarata in fase luteale, più ferro (con vitamina C) nei giorni del ciclo</span></label>`;
     if(F.cicloOn) h+=`<div class="grid2" style="margin-top:6px">
       <div><label>Data ultimo ciclo</label><input type="date" id="fmUltimo" value="${F.ultimo||""}"></div>
       <div><label>Durata media (giorni)</label><input type="number" id="fmDurata" inputmode="numeric" min="21" max="40" value="${F.durata||28}"></div></div>`;
-    h+=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:8px"><input type="checkbox" id="fmMeno" style="width:auto" ${ck(F.menopausa)}><span><b>Sono in menopausa</b></span></label>`;
+    h+=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:var(--sp-2)"><input type="checkbox" id="fmMeno" style="width:auto" ${ck(F.menopausa)}><span><b>Sono in menopausa</b></span></label>`;
     if(calcioBoostOn()) h+=`<div class="notice" style="margin-top:6px">🦴 Dopo i 50 anni o in menopausa il fabbisogno di calcio aumenta e servono più proteine per preservare la massa magra: il paniere darà più spazio a latticini, mandorle e broccoli e il tuo target proteico sale del 10%. Per la salute delle tue ossa, parla col tuo medico.</div>`;
-    h+=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:8px"><input type="checkbox" id="fmGrav" style="width:auto" ${ck(U.gravidanza)}><span><b>Sono in gravidanza o allatto</b></span></label>`;
+    h+=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:var(--sp-2)"><input type="checkbox" id="fmGrav" style="width:auto" ${ck(U.gravidanza)}><span><b>Sono in gravidanza o allatto</b></span></label>`;
     if(U.gravidanza) h+=`<div class="notice" style="margin-top:6px">💛 In gravidanza e allattamento niente percorso di dimagrimento: sei sul diario alimentare, con calorie di riferimento al mantenimento. Per l'alimentazione di questa fase affidati al tuo medico o a un nutrizionista.</div>`;
     h+=`</div>`;
   }
