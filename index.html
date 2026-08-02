@@ -271,6 +271,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button>
       <button class="btn ghost sm" id="btnPreset">★ Pasti preset</button>
       <button class="btn ghost sm" id="btnCucino">🍳 Cosa cucino?</button>
+      <button class="btn ghost sm" id="btnDetta">🎤 Detta</button>
     </div>
     <div class="foodresults" id="foodResults" hidden></div>
     <ul class="loglist" id="logList" style="margin-top:var(--sp-2)"></ul>
@@ -630,6 +631,21 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <button class="sheetbtn" id="actSkip">🙅 Oggi non l'ho mangiato (togli dal pasto)</button>
   <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
   <button class="sheetbtn" onclick="this.closest('dialog').close()">Annulla</button>
+</dialog>
+<dialog id="dlgDetta">
+  <h3 style="margin-bottom:2px">🎤 Detta il tuo pasto</h3>
+  <div class="small" style="margin-bottom:var(--sp-2)">Es. «80 grammi di pasta al pomodoro e una mela». Nessuna voce viene registrata senza la tua conferma.</div>
+  <textarea id="dettaTxt" rows="2" style="width:100%" placeholder="Parla col microfono o scrivi qui…"></textarea>
+  <div class="btnrow" style="margin-top:var(--sp-2)">
+    <button class="btn ghost sm" id="dettaMic" type="button">🎤 Parla</button>
+    <button class="btn sm" id="dettaGo" type="button">Interpreta</button>
+  </div>
+  <div class="small" id="dettaStato" style="margin-top:var(--sp-1)"></div>
+  <div id="dettaPrev" style="margin-top:var(--sp-2)"></div>
+  <div class="btnrow" style="margin-top:var(--sp-2)">
+    <button class="btn" id="dettaReg" hidden>Registra nel diario</button>
+    <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button>
+  </div>
 </dialog>
 <dialog id="dlgCucina">
   <h3 style="margin-bottom:2px">🍳 Cosa cucino con quello che ho</h3>
@@ -2128,7 +2144,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.37.0";
+const APP_VERSION="2.38.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2801,24 +2817,30 @@ function openItemActions(dateKey,mi,ii){
   $("#dlgAct").showModal();
 }
 $("#recClose").onclick=()=>$("#dlgRecipe").close();
-function matchIng(ing){
+function foodCands(ing,k=4,multi=false){
+  /* stessa metrica di matchIng, ma restituisce i migliori k candidati con punteggio:
+     "inizia con" batte "contiene", parola intera batte prefisso.
+     multi=true (solo parser dettatura): bonus per ogni parola in più coperta dallo stesso alimento,
+     così "pizza margherita" batte "pizza bianca" e "petto di tacchino" trova il tacchino. */
   const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const toks=norm(ing).replace(/[()]/g," ").split(/[^a-zà-ù']+/).filter(t=>t.length>3);
-  /* miglior match GLOBALE tra tutti i token: "inizia con" batte "contiene",
-     così in "tonno al naturale" vince tonno→Tonno e non naturale→Tofu al naturale */
-  let best=null,bestScore=99;
+  const best={}, ntok={}; /* per alimento: miglior punteggio e token distinti coperti */
   for(const t0 of toks){
     for(const t of [t0, t0.length>4?t0.slice(0,-1):null].filter(Boolean)){
-      for(const f of FOOD_DB){
+      FOOD_DB.forEach((f,i)=>{
         const n=norm(f[0]);
-        if(!n.includes(t)) continue;
-        const sc=(n.startsWith(t)?0:2)+n.length/100-t.length/1000-((n===t||n.startsWith(t+" "))?0.5:0); /* parola intera batte prefisso */
-        if(sc<bestScore){ bestScore=sc; best=f; }
-      }
+        if(!n.includes(t)) return;
+        const sc=(n.startsWith(t)?0:2)+n.length/100-t.length/1000-((n===t||n.startsWith(t+" "))?0.5:0);
+        if(!(i in best)||sc<best[i]) best[i]=sc;
+        (ntok[i]=ntok[i]||new Set()).add(t0);
+      });
     }
   }
-  return best;
+  return Object.entries(best).map(([i,sc])=>({f:FOOD_DB[+i],fid:+i,
+      sc:sc-(multi?0.7*(ntok[i].size-1):0)}))
+    .sort((a,b)=>a.sc-b.sc).slice(0,k);
 }
+function matchIng(ing){ const c=foodCands(ing,1); return c.length?c[0].f:null; }
 function recipeTotal(pairs,dishFood){
   /* pairs: [{ing,g}] → totale kcal/macro: ingredienti mappati sul DB, il resto stimato dal piatto */
   let t={g:0,kcal:0,p:0,c:0,f:0};
@@ -2934,6 +2956,119 @@ $("#cucSearch").oninput=e=>{
 $("#cucFind").onclick=()=>{
   if(cucSel.length<2){ toast("Scegli almeno 2 ingredienti"); return; }
   drawCucRisultati(); };
+/* ---- 🎤 Dettatura del diario: parser di frasi libere ---- */
+const DETTA_NUM={"un":1,"uno":1,"una":1,"due":2,"tre":3,"quattro":4,"cinque":5,"sei":6,"sette":7,"otto":8,"nove":9,"dieci":10,"mezzo":0.5,"mezza":0.5,"paio":2,"½":0.5};
+const DETTA_UNIT={grammi:1,grammo:1,gr:1,g:1,etti:100,etto:100,hg:100,chilo:1000,chili:1000,kg:1000,
+  cucchiai:10,cucchiaio:10,cucchiaini:5,cucchiaino:5,bicchieri:200,bicchiere:200,tazza:250,tazze:250,
+  vasetto:125,vasetti:125,lattina:330,lattine:330,scatoletta:80,scatolette:80,manciata:30,manciate:30,
+  fetta:-1,fette:-1}; /* -1: la fetta dipende dall'alimento */
+const DETTA_STOP=new Set(["ho","hai","ha","oggi","ieri","stamattina","stasera","stanotte","pranzo","cena",
+  "colazione","spuntino","merenda","mangiato","mangiata","mangiati","mangiate","mangio","bevuto","bevuta",
+  "bevo","preso","presa","fatto","fatta","poi","dopo","circa","tipo","forse","anche","solo","pure",
+  "ora","ore","mezz","minuti","minuto","corso","corsa","palestra","allenamento","chilometri","km"]);
+function fettaDi(f){ const n=f[0].toLowerCase();
+  if(/pane|pancarr|toast/.test(n)) return 30;
+  if(/prosciutt|bresaola|speck|salame|mortadella|crudo|cotto/.test(n)) return 15;
+  if(/formagg|emmental|fontina|asiago/.test(n)) return 25;
+  if(/torta|crostata|dolce|panettone|pandoro/.test(n)) return 80;
+  if(/anguria|melone|ananas/.test(n)) return 100;
+  return 30; }
+function parseFreeMeal(testo){
+  let t=(testo||"").toLowerCase()
+    .replace(/\be mezz[oa]\b/g,"½")            /* "due etti e mezzo": proteggo dal taglio su "e" */
+    .replace(/\bun p[oò]'? di\b/g," QMIN ")    /* "un po' di" = porzione minima */
+    .replace(/\bcol\b/g,"con").replace(/\bcoi\b/g,"con");
+  const segmenti=t.split(/,| e | più |;|\n/).map(s=>s.trim()).filter(Boolean);
+  const items=[], scarti=[];
+  for(const seg of segmenti){
+    let num=null, unit=null, qmin=false;
+    const parole=[];
+    for(const w0 of seg.split(/[^a-zà-ù0-9'½.,]+/)){
+      const w=w0.replace(/^'+|'+$/g,""); if(!w) continue;
+      if(w==="QMIN"||w==="qmin"){ qmin=true; continue; }
+      if(/^\d+[.,]?\d*$/.test(w)){ num=(num||0)+parseFloat(w.replace(",",".")); continue; }
+      if(w in DETTA_NUM){ num=(num||0)+DETTA_NUM[w]; continue; }
+      if(w in DETTA_UNIT){ unit=w; continue; }
+      if(w==="di"||w==="d"||w==="al"||w==="alla"||w==="ai"||w==="agli") { parole.push(w); continue; }
+      if(DETTA_STOP.has(w)) continue;
+      parole.push(w);
+    }
+    const frase=parole.join(" ").replace(/^(di|al|alla)\s+/,"").trim();
+    if(!frase){ if(seg.replace(/QMIN/g,"").trim()) scarti.push(seg); continue; }
+    const cands=foodCands(frase,4,true);
+    if(!cands.length){ scarti.push(seg); continue; }
+    const f=cands[0].f;
+    const amb=cands.length>1&&(cands[1].sc-cands[0].sc)<0.6
+      &&cands[0].f[0].toLowerCase()!==frase; /* nome esatto = non ambiguo */
+    let g;
+    if(unit&&DETTA_UNIT[unit]>0) g=(num||1)*DETTA_UNIT[unit];
+    else if(unit) g=(num||1)*fettaDi(f);                       /* fette */
+    else if(num!=null){ const pz=pezzoDi(f[0]);
+      g=num*(pz|| (/yogurt|skyr|budino/i.test(f[0])?125:minOf(f))); }
+    else g=minOf(f);                                            /* niente quantità (o "un po' di") */
+    g=Math.max(5,Math.min(2000,Math.round(g/5)*5));
+    items.push({fid:cands[0].fid,g,amb,cands:cands.map(c=>c.fid),testo:seg});
+  }
+  return {items,scarti};
+}
+let _dettaRes=null, _dettaRec=null;
+function dettaPreview(){
+  const box=$("#dettaPrev"), R=_dettaRes;
+  if(!R){ box.innerHTML=""; $("#dettaReg").hidden=true; return; }
+  let h="";
+  if(R.items.length){
+    h+=R.items.map((it,i)=>`<div class="ckrow">
+      <span style="width:18px;text-align:center">${it.amb?"❓":"✓"}</span>
+      <select data-dvf="${i}" style="flex:1;font-size:.85rem;padding:6px">${
+        it.cands.map(fid=>`<option value="${fid}" ${fid===it.fid?"selected":""}>${FOOD_DB[fid][0]}</option>`).join("")
+      }</select>
+      <input type="number" data-dvg="${i}" value="${it.g}" inputmode="numeric" style="width:64px;padding:6px;font-size:.85rem"> g
+      <button type="button" class="mini" data-dvx="${i}" aria-label="Togli">✕</button></div>`).join("");
+    h+=`<div class="grid2" style="margin-top:var(--sp-2)"><div><label>Pasto</label><select id="dettaMeal">
+      <option>Colazione</option><option>Pranzo</option><option>Spuntino</option><option>Cena</option></select></div></div>`;
+  }
+  if(R.scarti.length)
+    h+=`<div class="small" style="margin-top:var(--sp-1)">🤔 Non ho riconosciuto cibi in: ${R.scarti.map(s=>"«"+s+"»").join(", ")} — puoi riprovare con altre parole.</div>`;
+  if(!R.items.length&&!R.scarti.length) h=`<div class="small">Non ho trovato niente da registrare.</div>`;
+  if(!R.items.length&&R.scarti.length&&!h.includes("«")) h+="";
+  box.innerHTML=h;
+  $("#dettaReg").hidden=!R.items.length;
+  if(R.items.length){ const hh=new Date().getHours();
+    $("#dettaMeal").value=hh<11?"Colazione":hh<15?"Pranzo":hh<18?"Spuntino":"Cena"; }
+  $$("#dettaPrev [data-dvf]").forEach(s=>s.onchange=()=>{ const it=R.items[+s.dataset.dvf];
+    it.fid=+s.value; it.amb=false; }); /* scelta fatta: non più ambiguo */
+  $$("#dettaPrev [data-dvg]").forEach(inp=>inp.oninput=()=>{ R.items[+inp.dataset.dvg].g=Math.max(5,+inp.value||5); });
+  $$("#dettaPrev [data-dvx]").forEach(b=>b.onclick=()=>{ R.items.splice(+b.dataset.dvx,1); dettaPreview(); });
+}
+$("#btnDetta").onclick=()=>{ _dettaRes=null; $("#dettaTxt").value=""; $("#dettaStato").textContent="";
+  dettaPreview(); $("#dlgDetta").showModal();
+  const SR=window.webkitSpeechRecognition||window.SpeechRecognition;
+  if(!SR) $("#dettaStato").textContent="💡 Suggerimento: usa il microfono 🎤 della tastiera per dettare nel campo."; };
+$("#dettaMic").onclick=()=>{
+  const SR=window.webkitSpeechRecognition||window.SpeechRecognition;
+  if(!SR){ $("#dettaStato").textContent="La dettatura in-app non è disponibile qui: usa il microfono della tastiera."; return; }
+  if(_dettaRec){ _dettaRec.stop(); return; }
+  const r=new SR(); _dettaRec=r; r.lang="it-IT"; r.interimResults=true; r.continuous=false;
+  $("#dettaStato").textContent="🔴 Sto ascoltando… parla pure (tocca di nuovo per fermare)";
+  $("#dettaMic").textContent="⏹ Ferma";
+  r.onresult=e=>{ $("#dettaTxt").value=[...e.results].map(x=>x[0].transcript).join(" "); };
+  r.onerror=()=>{ $("#dettaStato").textContent="Non ho sentito bene: riprova o scrivi nel campo."; };
+  r.onend=()=>{ _dettaRec=null; $("#dettaMic").textContent="🎤 Parla";
+    if($("#dettaStato").textContent.startsWith("🔴")) $("#dettaStato").textContent="Fatto: controlla il testo e tocca Interpreta."; };
+  try{ r.start(); }catch(e){ _dettaRec=null; $("#dettaStato").textContent="Microfono non disponibile: scrivi nel campo."; } };
+$("#dettaGo").onclick=()=>{
+  const t=$("#dettaTxt").value.trim();
+  if(!t){ toast("Detta o scrivi cosa hai mangiato"); return; }
+  _dettaRes=parseFreeMeal(t); dettaPreview();
+  if(_dettaRes.items.some(x=>x.amb)) $("#dettaStato").textContent="❓ Su qualche voce non sono sicuro: scegli dall'elenco.";
+  else if(_dettaRes.items.length) $("#dettaStato").textContent="Controlla l'anteprima e registra.";
+  else $("#dettaStato").textContent=""; };
+$("#dettaReg").onclick=()=>{
+  const R=_dettaRes; if(!R||!R.items.length) return;
+  const meal=$("#dettaMeal")?$("#dettaMeal").value:"Pranzo";
+  R.items.forEach(it=>{ const e=scale(FOOD_DB[it.fid],it.g); e.meal=meal; e.src="detta"; dayLog().pasti.push(e); });
+  save(); render(); vib(15); $("#dlgDetta").close();
+  toast(R.items.length+(R.items.length===1?" voce registrata":" voci registrate")+" ✓"); _dettaRes=null; };
 function minOf(f){
   if(f[7]==="x"){
     const n=f[0].toLowerCase();
