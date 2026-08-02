@@ -649,6 +649,15 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
   <button class="sheetbtn" onclick="this.closest('dialog').close()">Annulla</button>
 </dialog>
+<dialog id="dlgFoto" style="max-width:96vw">
+  <img id="fotoBig" alt="" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--r-s);display:block;margin:0 auto">
+  <div class="small" id="fotoBigData" style="text-align:center;margin-top:var(--sp-1)"></div>
+  <div class="btnrow" style="margin-top:var(--sp-2);justify-content:center">
+    <button class="btn ghost sm" id="fotoBigCmp">⚖️ Usa nel confronto</button>
+    <button class="btn ghost sm" id="fotoBigDel" style="color:var(--pomodoro)">🗑 Elimina</button>
+    <button class="btn sm" onclick="this.closest('dialog').close()">Chiudi</button>
+  </div>
+</dialog>
 <dialog id="dlgPrep">
   <h3 style="margin-bottom:2px">🍱 Cucina per la settimana</h3>
   <div id="prepBody"></div>
@@ -2174,7 +2183,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.43.0";
+const APP_VERSION="2.43.1";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -4034,7 +4043,24 @@ async function ridimensionaFoto(file){
   const cx=cv.getContext("2d"); if(cx) cx.drawImage(img,0,0,w,h);
   return new Promise(res=>cv.toBlob(b=>res(b),"image/jpeg",0.8));
 }
-let _fotoSel=[];
+let _fotoSel=[], _fotoRows=[];
+function apriFoto(id){
+  const r=_fotoRows.find(x=>x.id===id); if(!r) return;
+  let url=""; try{ url=URL.createObjectURL(r.blob); }catch(e){}
+  const dd=dateFromKey(r.d);
+  $("#fotoBig").src=url;
+  $("#fotoBigData").textContent=dd.getDate()+" "+MESI[dd.getMonth()]+" "+dd.getFullYear();
+  $("#fotoBigCmp").textContent=_fotoSel.includes(id)?"✕ Togli dal confronto":"⚖️ Usa nel confronto";
+  $("#fotoBigCmp").onclick=()=>{
+    _fotoSel=_fotoSel.includes(id)?_fotoSel.filter(x=>x!==id):[..._fotoSel.slice(-1),id];
+    $("#dlgFoto").close(); renderFoto();
+    if(_fotoSel.length===1) toast("Ora tocca la seconda foto e scegli «Usa nel confronto»"); };
+  $("#fotoBigDel").onclick=async()=>{
+    if(!confirm("Eliminare questa foto? Non si può annullare.")) return;
+    await fotoDel(id); _fotoSel=_fotoSel.filter(x=>x!==id);
+    $("#dlgFoto").close(); renderFoto(); };
+  $("#dlgFoto").showModal();
+}
 async function renderFoto(){
   const gal=$("#fotoGal"); if(!gal) return;
   if(!window.indexedDB){ gal.innerHTML='<span class="small">Le foto non sono disponibili su questo browser.</span>'; return; }
@@ -4058,10 +4084,8 @@ async function renderFoto(){
   $$("#fotoGal [data-fdel]").forEach(b=>b.onclick=async e=>{ e.stopPropagation();
     if(!confirm("Eliminare questa foto? Non si può annullare.")) return;
     await fotoDel(+b.dataset.fdel); _fotoSel=_fotoSel.filter(x=>x!==+b.dataset.fdel); renderFoto(); });
-  $$("#fotoGal [data-fsel]").forEach(im=>im.onclick=()=>{
-    const id=+im.dataset.fsel;
-    _fotoSel=_fotoSel.includes(id)?_fotoSel.filter(x=>x!==id):[..._fotoSel.slice(-1),id];
-    renderFoto(); });
+  _fotoRows=rows;
+  $$("#fotoGal [data-fsel]").forEach(im=>im.onclick=()=>apriFoto(+im.dataset.fsel));
   /* confronto prima/dopo */
   const cmp=$("#fotoCmp");
   if(_fotoSel.length===2){
