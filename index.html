@@ -314,6 +314,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
   </div>
   <div class="card">
+    <h2>🛒 Qualità della tua spesa</h2>
+    <div id="spesaPagella" class="small">Scansiona i prodotti che compri: qui vedrai la pagella della tua spesa.</div>
+  </div>
+  <div class="card">
     <h2>Insight sui tuoi dati</h2>
     <div id="insightList" class="small">Registra qualche giorno di pasti e attività: qui compariranno pattern e suggerimenti personali.</div>
   </div>
@@ -2040,7 +2044,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.18.0";
+const APP_VERSION="2.19.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2860,6 +2864,11 @@ function showScanned(prod,fromCache){
   $("#scanMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
   $("#scanStatus").textContent="Prodotto trovato. Controlla i valori e registra.";
   $("#dlgScan")._prod=prod;
+  /* registro datato per la pagella della spesa (dedup: stesso prodotto, stesso giorno) */
+  if(prod.ean&&(prod.ns||prod.kcal)){ U.scanLog=U.scanLog||[];
+    const dk=todayKey();
+    if(!U.scanLog.some(x=>x.ean===prod.ean&&x.d===dk)){
+      U.scanLog.push({d:dk,ean:prod.ean,name:prod.name,s:score}); save(); } }
   if(cmpProd&&cmpProd.ean!==prod.ean){ renderCompare(cmpProd,prod); cmpProd=null; }
   else if(cmpProd){ $("#scanStatus").textContent="È lo stesso prodotto: scansiona o cerca un prodotto diverso per confrontare."; }
   else $("#scanCmpBox").hidden=true;
@@ -3227,7 +3236,7 @@ function renderWeek(){
   if(sumT===0){ $("#weekKcalSummary").innerHTML="Ancora nessun pasto registrato questa settimana: la linea nera su ogni barra è il tuo obiettivo del giorno. Registra da Oggi e questa pagina prende vita."; }
   else $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> / ${fmt(sumG)} kcal
     (${sumT<=sumG?"nei limiti ✓":"sopra di "+fmt(Math.round(sumT-sumG))+" kcal"}). La linea nera indica l'obiettivo del giorno.`;
-  renderMicro(days); renderInsights();
+  renderMicro(days); renderInsights(); renderSpesaPagella();
   const mac=data.reduce((a,d)=>({p:a.p+d.tot.p,c:a.c+d.tot.c,f:a.f+d.tot.fat}),{p:0,c:0,f:0});
   const macT=data.reduce((a,d)=>({p:a.p+d.target.p,c:a.c+d.target.c,f:a.f+d.target.f}),{p:0,c:0,f:0});
   $("#weekMacro").innerHTML=[["Proteine",mac.p,macT.p,"p"],["Carboidrati",mac.c,macT.c,"c"],["Grassi",mac.f,macT.f,"f"]]
@@ -3392,6 +3401,39 @@ function renderInsights(){
   /* 5) streak record */
   const st=streak(); if(st>=3) out.push(`🔥 Serie attuale: <b>${st} giorni</b> in rotta. Non spezzarla stasera.`);
   $("#insightList").innerHTML=out.length?out.map(o=>`<div style="padding:5px 0;border-bottom:1px dashed var(--line)">${o}</div>`).join(""):"Ancora nessun pattern netto: continua a registrare, i dati parleranno.";
+}
+function renderSpesaPagella(){
+  const box=$("#spesaPagella"); if(!box) return;
+  const L=U.scanLog||[]; const now=Date.now();
+  const inWin=(x,da,a)=>{ const t=+dateFromKey(x.d); return t>now-da*864e5&&t<=now-a*864e5; };
+  const cur=L.filter(x=>inWin(x,30,0)), prev=L.filter(x=>inWin(x,60,30));
+  if(cur.length<5){
+    box.innerHTML=`Hai scansionato <b>${cur.length}</b> prodott${cur.length===1?"o":"i"} negli ultimi 30 giorni.
+      Scansionane almeno 5 per avere la pagella: usa lo scanner 📷 quando fai la spesa.`; return; }
+  const avg=a=>a.reduce((s,x)=>s+x.s,0)/a.length;
+  const mCur=Math.round(avg(cur)); const [band,col]=scoreBand(mCur);
+  let trend="";
+  if(prev.length>=5){ const d=mCur-Math.round(avg(prev));
+    trend=d>2?`<span style="color:#3E8E41">▲ +${d}</span> <span class="small">vs mese precedente</span>`
+      :d<-2?`<span style="color:#C63F2E">▼ ${d}</span> <span class="small">vs mese precedente</span>`
+      :`<span class="small">≈ stabile vs mese precedente</span>`; }
+  else trend=`<span class="small">primo mese di dati</span>`;
+  let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
+      <div style="font-size:1.3rem;font-weight:800">${mCur}</div><div style="font-size:.6rem">/100</div></div>
+    <div><b>${band}</b> · media di ${cur.length} scansioni<br>${trend}</div></div>`;
+  /* i 3 peggiori (unici per prodotto) con alternativa */
+  const worstMap={}; cur.forEach(x=>{ if(!(x.ean in worstMap)||x.s<worstMap[x.ean].s) worstMap[x.ean]=x; });
+  const worst=Object.values(worstMap).sort((a,b)=>a.s-b.s).slice(0,3).filter(x=>x.s<75);
+  if(worst.length){
+    h+=`<div style="margin-top:4px"><b style="font-size:.82rem">Da ripensare</b>`+worst.map(x=>{
+      let alt="cerca un equivalente fresco e semplice"; const nm=(x.name||"").toLowerCase();
+      for(const[re,a]of ALT_MAP){ if(re.test(nm)){ alt=a; break; } }
+      const [,c2]=scoreBand(x.s);
+      return `<div style="padding:4px 0;border-bottom:1px dashed var(--line)">
+        <span style="background:${c2};color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;font-size:.75rem">${x.s}</span>
+        ${x.name}<div class="small">💡 Meglio: ${alt}</div></div>`; }).join("")+`</div>`; }
+  box.innerHTML=h;
 }
 /* ============ MENU 7 GIORNI STAMPABILE ============ */
 $("#btnMenuPrint").onclick=()=>{
