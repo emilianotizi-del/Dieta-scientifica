@@ -532,6 +532,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
     <div class="btnrow" style="margin-top:10px">
       <button class="btn" id="scanAdd">Registra nel diario</button>
+      <button class="btn ghost" id="scanBuy">🛒 Comprato</button>
     </div>
   </div>
   <div class="btnrow" style="margin-top:12px">
@@ -2092,7 +2093,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.26.0";
+const APP_VERSION="2.27.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3002,11 +3003,17 @@ function addRisk(code){ const c=code.replace(/[A-Z]$/,"").toUpperCase();
   if(ADDITIVI.moderato.includes(code)||ADDITIVI.moderato.includes(c)) return 1; return 0; }
 function rottaScore(p){
   const NS={A:95,B:80,C:60,D:40,E:20};
-  const nutri=NS[p.ns]??55;
+  const nutri=NS[p.ns]??50;
   let addPen=0; (p.adds||[]).forEach(a=>{ const r=addRisk(a); addPen+=r===2?30:r===1?15:2; });
   const addScore=Math.max(0,100-addPen);
+  const NOVA_S={1:100,2:75,3:45,4:5}; /* il grado di lavorazione ora pesa: un ultra-processato senza additivi non è "pulito" */
+  const novaScore=NOVA_S[p.nova]??60;
   const bio=p.bio?100:0;
-  return Math.round(0.6*nutri+0.3*addScore+0.1*bio);
+  let s=Math.round(0.55*nutri+0.20*addScore+0.15*novaScore+0.10*bio);
+  /* paletti: Nutri-Score D non può uscire sopra "Mediocre", E non sopra "Scarso" */
+  if(p.ns==="D") s=Math.min(s,49);
+  if(p.ns==="E") s=Math.min(s,29);
+  return s;
 }
 function scoreBand(s){ return s>=75?["Eccellente","#3E8E41"]:s>=50?["Buono","#8DB600"]:s>=25?["Mediocre","#E8A13C"]:["Scarso","#C63F2E"]; }
 const ALT_MAP=[[/biscuit|cookie|merendin|snack dolc/i,"fette biscottate integrali con un velo di marmellata"],
@@ -3051,13 +3058,15 @@ function showScanned(prod,fromCache){
   $("#scanResult").hidden=false;
   $("#scanName").textContent=prod.name+(prod.brand?" · "+prod.brand:"")+(fromCache?" (archivio)":"");
   $("#scanKcal").value=prod.kcal||""; $("#scanP").value=prod.p||""; $("#scanC").value=prod.c||""; $("#scanF").value=prod.f||"";
-  const score=rottaScore(prod); const [band,col]=scoreBand(score);
+  const hasDati=!!prod.ns; /* senza Nutri-Score niente punteggio: mai "Buono" a scatola chiusa */
+  const score=hasDati?rottaScore(prod):null; const [band,col]=hasDati?scoreBand(score):["",""];
   const NS_COL={A:"#3E8E41",B:"#8DB600",C:"#E8A13C",D:"#E06A2B",E:"#C63F2E"};
   const NS_TXT={A:"ottima qualità nutrizionale",B:"buona qualità",C:"qualità media: ogni tanto",D:"qualità scarsa: di rado",E:"da limitare il più possibile"};
-  let scoreHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+  let scoreHtml=hasDati?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
       <div style="font-size:1.3rem;font-weight:800">${score}</div><div style="font-size:.6rem">/100</div></div>
-    <div><b>${band}</b><div class="small">60% nutrizione · 30% additivi · 10% bio${prod.bio?" 🌱":""}</div></div></div>`;
+    <div><b>${band}</b><div class="small">55% nutrizione · 20% additivi · 15% lavorazione (NOVA) · 10% bio${prod.bio?" 🌱":""}</div></div></div>`
+    :`<div class="small">ℹ️ Prodotto non in archivio: <b>punteggio non disponibile</b>. Se hai l'etichetta puoi comunque inserire i valori e registrarlo nel diario.</div>`;
   if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:#fff;font-weight:800;border-radius:8px;padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
   /* semafori nutrizionali per 100 g */
   const dot=(v,lo,hi,inv)=>{ const good=inv?v>=hi:v<lo, bad=inv?v<lo:v>hi;
@@ -3082,7 +3091,7 @@ function showScanned(prod,fromCache){
   (U.esclusioni||[]).forEach(e=>{ if((prod.allerg||[]).some(a=>a.includes(e.slice(0,5)))) warns.push(e); });
   if(warns.length) scoreHtml+=`<div class="small" style="margin-top:6px;color:var(--pomodoro)">⚠️ Contiene: <b>${warns.join(", ")}</b></div>`;
   /* alternativa più sana */
-  if(score<50){ let alt="cerca nella barra di Rotta un equivalente fresco e semplice";
+  if(hasDati&&score<50){ let alt="cerca nella barra di Rotta un equivalente fresco e semplice";
     const nm=(prod.name||"").toLowerCase();
     for(const[re,a]of ALT_MAP){ if(re.test(nm)){ alt=a; break; } }
     scoreHtml+=`<div style="margin-top:8px;padding:8px;background:var(--oliva-s);border-radius:10px;font-size:.83rem">💡 <b>Meglio:</b> ${alt}</div>`; }
@@ -3098,14 +3107,16 @@ function showScanned(prod,fromCache){
   $("#scanStatus").textContent="Prodotto trovato. Controlla i valori e registra.";
   $("#dlgScan")._prod=prod;
   /* registro datato per la pagella della spesa (dedup: stesso prodotto, stesso giorno) */
-  if(prod.ean&&(prod.ns||prod.kcal)){ U.scanLog=U.scanLog||[];
+  if(prod.ean&&hasDati){ U.scanLog=U.scanLog||[];
     const dk=todayKey();
     if(!U.scanLog.some(x=>x.ean===prod.ean&&x.d===dk)){
-      U.scanLog.push({d:dk,ean:prod.ean,name:prod.name,s:score}); save(); } }
-  if(cmpProd&&cmpProd.ean!==prod.ean){ renderCompare(cmpProd,prod); cmpProd=null; }
-  else if(cmpProd){ $("#scanStatus").textContent="È lo stesso prodotto: scansiona o cerca un prodotto diverso per confrontare."; }
+      U.scanLog.push({d:dk,ean:prod.ean,name:prod.name,s:score,c:0}); save(); } }
+  if(cmpProd&&cmpProd.ean!==prod.ean&&hasDati){ renderCompare(cmpProd,prod); cmpProd=null; }
+  else if(cmpProd&&cmpProd.ean===prod.ean){ $("#scanStatus").textContent="È lo stesso prodotto: scansiona o cerca un prodotto diverso per confrontare."; }
+  else if(cmpProd&&!hasDati){ $("#scanStatus").textContent="Questo prodotto non ha dati sufficienti per il confronto: prova con un altro."; }
   else $("#scanCmpBox").hidden=true;
   updateCmpBar();
+  $("#scanCmpBar").hidden=!hasDati;
   $("#dlgScan")._ean=prod.ean;
 }
 async function lookupEan(ean){
@@ -3224,10 +3235,16 @@ function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null
 $("#btnScan").onclick=startScan;
 $("#scanClose").onclick=()=>{ stopScanVideoOnly(); $("#dlgScan").close(); };
 $("#scanLookup").onclick=()=>lookupEan($("#scanEan").value);
+$("#scanBuy").onclick=()=>{
+  const ean=$("#dlgScan")._ean; const e=(U.scanLog||[]).find(x=>x.ean===ean&&x.d===todayKey());
+  if(!e){ toast("Serve un prodotto riconosciuto (con punteggio)"); return; }
+  e.c=1; save(); toast("Segnato come comprato 🛒 Conta nella qualità della spesa"); };
 $("#btnCmp").onclick=()=>{
   if(cmpProd){ cmpProd=null; updateCmpBar(); $("#scanStatus").textContent="Confronto annullato."; }
-  else{ cmpProd=$("#dlgScan")._prod; if(!cmpProd) return; $("#scanCmpBox").hidden=true; updateCmpBar();
-    $("#scanStatus").textContent="Confronto attivo: scansiona il 2° prodotto o aprilo dalla ricerca 🛒."; } };
+  else{ const p=$("#dlgScan")._prod; if(!p||!p.ns) return;
+    cmpProd=p; $("#scanCmpBox").hidden=true; updateCmpBar();
+    toast("Confronto attivo: inquadra il 2° prodotto (o aprilo dalla ricerca 🛒)");
+    $("#dlgScan").close(); startScan(); } };
 $("#scanAdd").onclick=()=>{
   const kcal=+$("#scanKcal").value||0, p=+$("#scanP").value||0, c=+$("#scanC").value||0, f=+$("#scanF").value||0;
   const g=Math.max(1,+$("#scanG").value||100);
@@ -3235,7 +3252,8 @@ $("#scanAdd").onclick=()=>{
   const name=$("#scanName").textContent.replace(" (archivio)","");
   const ean=$("#dlgScan")._ean;
   if(ean){ U.prodotti=U.prodotti||{}; const old=U.prodotti[ean]||{}; const full=$("#dlgScan")._prod||{};
-    U.prodotti[ean]={...old,...full,name:name.split(" · ")[0],brand:name.split(" · ")[1]||"",kcal,p,c,f}; }
+    U.prodotti[ean]={...old,...full,name:name.split(" · ")[0],brand:name.split(" · ")[1]||"",kcal,p,c,f};
+    const eLog=(U.scanLog||[]).find(x=>x.ean===ean&&x.d===todayKey()); if(eLog) eLog.c=1; /* registrato nel diario = comprato */ }
   const k=g/100;
   dayLog().pasti.push({id:null,name:"🛒 "+name.split(" · ")[0],g,
     kcal:Math.round(kcal*k),p:+(p*k).toFixed(1),c:+(c*k).toFixed(1),fat:+(f*k).toFixed(1),
@@ -3717,10 +3735,10 @@ function renderSpesaPagella(){
   const box=$("#spesaPagella"); if(!box) return;
   const L=U.scanLog||[]; const now=Date.now();
   const inWin=(x,da,a)=>{ const t=+dateFromKey(x.d); return t>now-da*864e5&&t<=now-a*864e5; };
-  const cur=L.filter(x=>inWin(x,30,0)), prev=L.filter(x=>inWin(x,60,30));
+  const cur=L.filter(x=>x.c&&inWin(x,30,0)), prev=L.filter(x=>x.c&&inWin(x,60,30));
   if(cur.length<5){
-    box.innerHTML=`Hai scansionato <b>${cur.length}</b> prodott${cur.length===1?"o":"i"} negli ultimi 30 giorni.
-      Scansionane almeno 5 per avere la pagella: usa lo scanner 📷 quando fai la spesa.`; return; }
+    box.innerHTML=`Hai segnato come comprati <b>${cur.length}</b> prodott${cur.length===1?"o":"i"} negli ultimi 30 giorni.
+      Ne servono almeno 5 per la pagella: dopo la scansione tocca <b>🛒 Comprato</b> (o registra il prodotto nel diario). Le scansioni "solo per curiosità" non contano.`; return; }
   const avg=a=>a.reduce((s,x)=>s+x.s,0)/a.length;
   const mCur=Math.round(avg(cur)); const [band,col]=scoreBand(mCur);
   let trend="";
@@ -3732,7 +3750,7 @@ function renderSpesaPagella(){
   let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
       <div style="font-size:1.3rem;font-weight:800">${mCur}</div><div style="font-size:.6rem">/100</div></div>
-    <div><b>${band}</b> · media di ${cur.length} scansioni<br>${trend}</div></div>`;
+    <div><b>${band}</b> · media di ${cur.length} acquisti<br>${trend}</div></div>`;
   /* i 3 peggiori (unici per prodotto) con alternativa */
   const worstMap={}; cur.forEach(x=>{ if(!(x.ean in worstMap)||x.s<worstMap[x.ean].s) worstMap[x.ean]=x; });
   const worst=Object.values(worstMap).sort((a,b)=>a.s-b.s).slice(0,3).filter(x=>x.s<75);
