@@ -266,6 +266,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="card" id="regCard">
     <h2>Registra liberamente</h2>
     <input type="search" id="foodSearch" placeholder="Cerca tra ~1020 alimenti… (es. orata, farro)" autocomplete="off">
+    <div id="favBox" hidden style="margin-top:var(--sp-1)"></div>
     <div class="btnrow" style="margin-top:var(--sp-2)">
       <button class="btn ghost sm" id="btnScan">📷 Scansiona barcode</button>
       <button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button>
@@ -274,6 +275,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn ghost sm" id="btnDetta">🎤 Detta</button>
     </div>
     <div class="foodresults" id="foodResults" hidden></div>
+    <div id="ripetiRow" style="margin-top:var(--sp-1)"></div>
     <ul class="loglist" id="logList" style="margin-top:var(--sp-2)"></ul>
   </div>
 
@@ -2147,7 +2149,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.39.1";
+const APP_VERSION="2.40.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2846,7 +2848,65 @@ function renderToday(){
   /* log libero */
   renderLogList();
 }
+function mealKey(n){ return MEAL_CODE[n]||n; } /* gli spuntini si raggruppano per codice "s", MAI per nome esatto */
+function renderRipeti(){
+  const box=$("#ripetiRow"); if(!box) return;
+  const oggiKeys=new Set(dayLog().pasti.map(it=>mealKey(it.meal||"")));
+  const FAM=[["c","Colazione"],["p","Pranzo"],["s","Spuntino"],["e","Cena"]];
+  const btns=[];
+  for(const [code,label] of FAM){
+    if(oggiKeys.has(code)) continue; /* pasto già compilato oggi: niente ripeti */
+    for(let d=1;d<=7;d++){ /* cerca indietro fino a 7 giorni */
+      const k=todayKey(new Date(Date.now()-d*864e5));
+      const l=U.log[k]; if(!l||!l.pasti||!l.pasti.length) continue;
+      const voci=l.pasti.filter(it=>mealKey(it.meal||"")===code);
+      if(!voci.length) continue;
+      const quando=d===1?"ieri":new Date(dateFromKey(k)).toLocaleDateString("it-IT",{weekday:"long"});
+      const prev=voci.slice(0,2).map(v=>v.name).join(", ")+(voci.length>2?"…":"");
+      btns.push({code,k,label,quando,prev}); break;
+    }
+  }
+  box.innerHTML=btns.map(b=>`<button type="button" class="btn ghost sm" data-rip="${b.code}" data-ripk="${b.k}"
+      style="margin:2px 4px 2px 0;text-align:left;white-space:normal">🔁 ${b.label} come ${b.quando} <span class="small">(${b.prev})</span></button>`).join("");
+  $$("#ripetiRow [data-rip]").forEach(bt=>bt.onclick=()=>{
+    const voci=(U.log[bt.dataset.ripk].pasti||[]).filter(it=>mealKey(it.meal||"")===bt.dataset.rip);
+    const start=dayLog().pasti.length;
+    voci.forEach(it=>dayLog().pasti.push({...it})); /* copia dei DATI: modificare oggi non tocca ieri */
+    save(); render(); vib(15);
+    toastUndo(voci.length+(voci.length===1?" voce copiata":" voci copiate"),
+      ()=>{ dayLog().pasti.splice(start,voci.length); save(); render(); });
+  });
+}
+function favStats(){ /* registrazioni manuali degli ultimi 60 giorni: esclusi i pasti da menu e le voci senza alimento */
+  const cut=Date.now()-60*864e5; const st={};
+  for(const [k,l] of Object.entries(U.log||{})){
+    const t=+dateFromKey(k); if(t<cut||!l.pasti) continue;
+    l.pasti.forEach(it=>{ if(it.id==null||it.src==="menu") return;
+      const s=st[it.id]=st[it.id]||{n:0,lastG:it.g,lastT:0};
+      s.n++; if(t>=s.lastT){ s.lastT=t; s.lastG=it.g; } });
+  }
+  return st;
+}
+function renderFavs(){
+  const box=$("#favBox"); if(!box) return;
+  const st=favStats();
+  const man=((U.gusti&&U.gusti.fav)||[]).map(n=>FOOD_DB.findIndex(f=>f[0]===n)).filter(i=>i>=0);
+  const auto=Object.entries(st).map(([id,s])=>({id:+id,n:s.n,lastG:s.lastG}))
+    .filter(x=>!man.includes(x.id)).sort((a,b)=>b.n-a.n).slice(0,10);
+  const chip=(fid,g,star)=>`<button type="button" class="chip" data-favq="${fid}" data-favg="${g}"
+    style="margin:2px 4px 2px 0">${star?"⭐ ":""}${FOOD_DB[fid][0]} <span class="small">${g} g</span></button>`;
+  const chips=man.map(fid=>chip(fid,(st[fid]&&st[fid].lastG)||minOf(FOOD_DB[fid]),true))
+    .concat(auto.map(x=>chip(x.id,x.lastG,false)));
+  if(!chips.length){ box.hidden=true; box.innerHTML=""; return; }
+  box.hidden=false;
+  box.innerHTML=`<div class="small" style="margin-bottom:2px">⭐ I tuoi soliti <span style="opacity:.7">· tieni premuto per fissare o sbloccare</span></div>`+chips.join("");
+  $$("#favBox [data-favq]").forEach(el=>{
+    el.onclick=()=>{ if(el._lp){ el._lp=false; return; } openQtyFor(+el.dataset.favq,+el.dataset.favg); };
+    bindLongPress(el,()=>toggleFavName(FOOD_DB[+el.dataset.favq][0]));
+  });
+}
 function renderLogList(){
+  renderRipeti(); renderFavs();
   const l=dayLog();
   $("#logList").innerHTML=l.pasti.length? l.pasti.map((it,i)=>
     `<li><span>${it.meal?it.meal+" · ":""}${it.name} <span class="small">${it.g} g</span></span>
@@ -3747,7 +3807,8 @@ $$("[data-tema]").forEach(b=>b.onclick=()=>{ U.tema=b.dataset.tema||""; save(); 
 let dlgFood=null;
 $("#foodSearch").oninput=e=>{
   const q=e.target.value.trim().toLowerCase(); const box=$("#foodResults");
-  if(q.length<2){ box.hidden=true; return; }
+  if(q.length<2){ box.hidden=true; renderFavs(); return; }
+  $("#favBox").hidden=true;
   const res=FOOD_DB.map((f,i)=>({f,i})).filter(({f})=>f[0].toLowerCase().includes(q)).slice(0,25);
   const prods=Object.entries(U.prodotti||{}).filter(([e,p])=>p.name.toLowerCase().includes(q)).slice(0,5);
   box.hidden=false;
@@ -3760,16 +3821,32 @@ $("#foodSearch").oninput=e=>{
     $("#foodSearch").value=""; $("#foodResults").hidden=true;
     $("#scanResult").hidden=true; $("#dlgScan").showModal();
     lookupEan(el.dataset.ean); });
-  $$("#foodResults [data-fid]").forEach(el=>el.onclick=()=>{
-    dlgFood=FOOD_DB[+el.dataset.fid];
-    $("#dlgFoodName").textContent=dlgFood[0];
-    $("#dlgFoodInfo").textContent=`${dlgFood[2]} kcal · ${dlgFood[3]}g prot · ${dlgFood[4]}g carb · ${dlgFood[5]}g grassi (per 100 g)`;
-    const h=new Date().getHours();
-    $("#dlgMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
-    $("#dlgGrams").value=100;
-    $("#dlgFav").textContent=U.gusti.fav.includes(dlgFood[0])?"❤ Preferito":"♡ Preferito";
-    $("#dlgQty").showModal(); });
+  $$("#foodResults [data-fid]").forEach(el=>{
+    el.onclick=()=>{ if(el._lp){ el._lp=false; return; } openQtyFor(+el.dataset.fid,100); };
+    bindLongPress(el,()=>toggleFavName(FOOD_DB[+el.dataset.fid][0]));
+  });
 };
+function openQtyFor(fid,g){
+  dlgFood=FOOD_DB[fid];
+  $("#dlgFoodName").textContent=dlgFood[0];
+  $("#dlgFoodInfo").textContent=`${dlgFood[2]} kcal · ${dlgFood[3]}g prot · ${dlgFood[4]}g carb · ${dlgFood[5]}g grassi (per 100 g)`;
+  const h=new Date().getHours();
+  $("#dlgMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
+  $("#dlgGrams").value=g||100;
+  $("#dlgFav").textContent=U.gusti.fav.includes(dlgFood[0])?"❤ Preferito":"♡ Preferito";
+  $("#dlgQty").showModal();
+}
+function bindLongPress(el,fn){ /* tieni premuto ~mezzo secondo; il click successivo viene assorbito */
+  let t=null;
+  el.onpointerdown=()=>{ t=setTimeout(()=>{ t=null; el._lp=true; fn(); },550); };
+  const clear=()=>{ if(t){ clearTimeout(t); t=null; } };
+  el.onpointerup=el.onpointerleave=el.onpointercancel=clear;
+}
+function toggleFavName(n){ U.gusti=U.gusti||{fav:[],ban:[]};
+  const i=U.gusti.fav.indexOf(n);
+  if(i>=0){ U.gusti.fav.splice(i,1); toast(n+" tolto dai fissati"); }
+  else { U.gusti.fav.push(n); vib(15); toast("⭐ "+n+" fissato in cima"); }
+  save(); renderFavs(); }
 $("#dlgCancel").onclick=()=>$("#dlgQty").close();
 $("#dlgFav").onclick=()=>{ const n=dlgFood[0]; const i=U.gusti.fav.indexOf(n);
   if(i>=0){U.gusti.fav.splice(i,1);} else {U.gusti.fav.push(n);}
