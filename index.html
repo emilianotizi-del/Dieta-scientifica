@@ -2079,7 +2079,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.24.0";
+const APP_VERSION="2.25.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3418,13 +3418,24 @@ const OUT_LOCALI={
   ["Focaccine o pizzette (2)",300,8,40,12],["Tramezzino",220,9,24,10],["Mini burger da aperitivo",280,12,26,14]]};
 function drawOutVoci(){
   const L=OUT_LOCALI[$("#outLocale").value];
-  $("#outVoci").innerHTML=L.map((v,i)=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
-    <input type="checkbox" style="width:auto" data-oi="${i}"><span style="flex:1">${v[0]}</span><span class="small">${v[1]} kcal</span></label>`).join("");
-  $$("#outVoci [data-oi]").forEach(cb=>cb.onchange=outTotLive); outTotLive(); }
+  $("#outVoci").innerHTML=L.map((v,i)=>`<div style="display:flex;gap:8px;align-items:center;font-size:.85rem;padding:3px 0">
+    <input type="checkbox" style="width:auto" data-oi="${i}" id="oc${i}">
+    <label for="oc${i}" style="flex:1;font-weight:400;margin:0">${v[0]}</label>
+    <button type="button" class="mini" data-oq="${i}" hidden>×1</button>
+    <span class="small">${v[1]} kcal</span></div>`).join("");
+  $$("#outVoci [data-oi]").forEach(cb=>cb.onchange=()=>{
+    const b=$("#outVoci [data-oq='"+cb.dataset.oi+"']");
+    if(b){ b.hidden=!cb.checked; b.textContent="×1"; }
+    outTotLive(); });
+  $$("#outVoci [data-oq]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation();
+    b.textContent="×"+((+b.textContent.slice(1))%3+1); outTotLive(); });
+  outTotLive(); }
 function outSelItems(){ const L=OUT_LOCALI[$("#outLocale").value];
-  return [...$$("#outVoci [data-oi]")].filter(cb=>cb.checked).map(cb=>L[+cb.dataset.oi]); }
+  return [...$$("#outVoci [data-oi]")].filter(cb=>cb.checked).map(cb=>{
+    const b=$("#outVoci [data-oq='"+cb.dataset.oi+"']");
+    return {v:L[+cb.dataset.oi],q:b?Math.max(1,+b.textContent.slice(1)||1):1}; }); }
 function outTotLive(){
-  const s=outSelItems().reduce((a,v)=>({k:a.k+v[1],p:a.p+v[2],c:a.c+v[3],f:a.f+v[4]}),{k:0,p:0,c:0,f:0});
+  const s=outSelItems().reduce((a,x)=>({k:a.k+x.v[1]*x.q,p:a.p+x.v[2]*x.q,c:a.c+x.v[3]*x.q,f:a.f+x.v[4]*x.q}),{k:0,p:0,c:0,f:0});
   $("#outTot").innerHTML=`<b>Totale: ${s.k} kcal</b> · P${s.p} · C${s.c} · G${s.f}`; }
 function outTab(loc){
   $("#outLoc").hidden=!loc; $("#outQuick").hidden=loc;
@@ -3441,9 +3452,9 @@ $("#outAdd").onclick=()=>{
   if(!$("#outLoc").hidden){ /* guidato per locale */
     const sel=outSelItems();
     if(!sel.length){ toast("Scegli almeno una voce"); return; }
-    const s=sel.reduce((a,v)=>({k:a.k+v[1],p:a.p+v[2],c:a.c+v[3],f:a.f+v[4]}),{k:0,p:0,c:0,f:0});
+    const s=sel.reduce((a,x)=>({k:a.k+x.v[1]*x.q,p:a.p+x.v[2]*x.q,c:a.c+x.v[3]*x.q,f:a.f+x.v[4]*x.q}),{k:0,p:0,c:0,f:0});
     const lab=$("#outLocale").selectedOptions[0].textContent.replace(/^[^ ]+ /,"");
-    dayLog().pasti.push({id:null,name:"Fuori casa ("+lab+"): "+sel.map(v=>v[0]).join(" + "),g:0,
+    dayLog().pasti.push({id:null,name:"Fuori casa ("+lab+"): "+sel.map(x=>x.v[0]+(x.q>1?" ×"+x.q:"")).join(" + "),g:0,
       kcal:s.k,p:s.p,c:s.c,fat:s.f,meal:$("#outMeal").value,src:"out"});
   } else {
     const [kcal,p,c,f]=OUT_SIZES[$("#outSize").value];
