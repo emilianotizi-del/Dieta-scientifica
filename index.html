@@ -343,7 +343,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="card">
     <h2>Lista della spesa <button class="btn ghost sm" id="btnSpesa">Genera · 7 giorni</button></h2>
     <div id="spesaList" class="small">Genera i menu dei prossimi 7 giorni e aggrega gli ingredienti per reparto.</div>
-    <div class="btnrow" style="margin-top:var(--sp-2)"><button class="btn ghost sm" id="btnScanSuper">📷 Scansiona al supermercato</button><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
+    <div class="btnrow" style="margin-top:var(--sp-2)"><button class="btn ghost sm" id="btnScanSuper">📷 Scansiona al supermercato</button><button class="btn ghost sm" id="btnPrep">🍱 Cucina per la settimana</button><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
   </div>
   <div class="card">
     <h2>🛒 Qualità della tua spesa</h2>
@@ -637,6 +637,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <button class="sheetbtn" id="actSkip">🙅 Oggi non l'ho mangiato (togli dal pasto)</button>
   <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
   <button class="sheetbtn" onclick="this.closest('dialog').close()">Annulla</button>
+</dialog>
+<dialog id="dlgPrep">
+  <h3 style="margin-bottom:2px">🍱 Cucina per la settimana</h3>
+  <div id="prepBody"></div>
 </dialog>
 <dialog id="dlgShare">
   <h3 style="margin-bottom:2px">📤 La tua settimana in un'immagine</h3>
@@ -2159,7 +2163,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.41.0";
+const APP_VERSION="2.42.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2679,6 +2683,23 @@ function genMenu(dateKey,force){
       ferro:isMestruale(dateKey),calcio:calcioBoostOn(),folati:folatiBoostOn()};
     meals=split.map(([n,q])=>buildMeal(n,k2*q,m.p*q,r2,ctx2));
   }
+  /* 🍱 meal prep: nei giorni coperti, i pasti indicati usano il piatto preparato in anticipo.
+     Guardato da U.prep: chi non usa la funzione passa di qui senza alcuna differenza (MENU_V invariato). */
+  if(U.prep&&U.prep.days&&U.prep.days.includes(dateKey)){
+    meals=meals.map(me=>{
+      const fid=U.prep.subs?U.prep.subs[dateKey+"|"+me.name]:null;
+      if(fid==null){ me.items.forEach(it=>{ if(prepDuplicabile(it)) it.prep=1; }); return me; }
+      const fa=FOOD_DB[fid]; if(!fa) return me;
+      const tk=me.tot.kcal;
+      const g=Math.max(minOf(fa),Math.min(capOf(fa),Math.round(tk/(fa[2]||1)*100/10)*10));
+      const items=[]; const it0=scale(fa,g); it0.tag="Piatto"; it0.prep=1; items.push(it0);
+      const gap=tk-it0.kcal;
+      if(gap>tk*0.10){ const pane=FOOD_DB.find(x=>x[0]==="Pane integrale");
+        if(pane){ const pg=Math.max(30,Math.min(90,Math.round(gap/(pane[2]||1)*100/10)*10));
+          const pit=scale(pane,pg); pit.tag="Pane"; items.push(pit); } }
+      const tot=items.reduce((s,x)=>({kcal:s.kcal+x.kcal,p:s.p+x.p,c:s.c+x.c,fat:s.fat+x.fat}),{kcal:0,p:0,c:0,fat:0});
+      return {name:me.name,items,tot}; });
+  }
   /* avanzi intelligenti: il pasto indicato diventa il piatto raddoppiato del giorno prima */
   const avD=(U.avanzi||{})[dateKey];
   if(avD){ meals=meals.map(me=>{
@@ -2808,7 +2829,7 @@ function renderToday(){
       <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
         <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
       <ul>${me.items.map((it,j)=>{const prev=me.items[j-1];const cont=it.tag&&prev&&prev.tag===it.tag;
-        return `<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag${cont?" cont":""}">${cont?"+":it.tag}</span>`:""}${it.name}</span><span class="q">${qtyLabel(it)}${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`}).join("")}</ul>
+        return `<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag${cont?" cont":""}">${cont?"+":it.tag}</span>`:""}${it.name}${it.prep?` <span class="small">🍱 preparato</span>`:""}</span><span class="q">${qtyLabel(it)}${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`}).join("")}</ul>
     </div>`).join("");
   $$("#menuList [data-act]").forEach(row=>row.onclick=()=>{
     const [mi,ii]=row.dataset.act.split(":").map(Number);
@@ -3973,6 +3994,110 @@ $("#outAdd").onclick=()=>{
   }
   save(); $("#dlgOut").close(); render(); vib(15); toast("Pasto fuori registrato"); };
 /* --- SETTIMANA --- */
+/* ---- 🍱 Meal prep settimanale ---- */
+const PREP_NO=["fritt","insalat","tartare","carpaccio","crud","poke","sushi","caprese","pinzimonio",
+  "affettat","bresaola","toast","tramezzino","panino","piadina"]; /* lista esplicita: non si preparano in anticipo */
+function prepDuplicabile(it){
+  if(it.id==null) return false;
+  if(it.tag!=="Piatto"&&it.tag!=="Primo"&&it.tag!=="Secondo") return false; /* stesso criterio degli avanzi */
+  const n=FOOD_DB[it.id][0].toLowerCase();
+  return !PREP_NO.some(w=>n.includes(w));
+}
+function prepSlots(days){ /* solo pranzi e cene, in ordine cronologico */
+  const out=[];
+  days.forEach(k=>{ const m=genMenu(k); m.meals.forEach(me=>{
+    if(MEAL_CODE[me.name]!=="p"&&MEAL_CODE[me.name]!=="e") return;
+    const main=me.items.find(it=>prepDuplicabile(it));
+    if(main) out.push({k,meal:me.name,fid:main.id,g:main.g,veg:isVegDay(k)}); }); });
+  return out;
+}
+function prepConsolida(days){
+  /* scelta DETERMINISTICA dei piatti da ripetere: i giorni scelti e il salt entrano nel seme */
+  const slots=prepSlots(days);
+  const liberi=slots.filter(s=>!s.veg); /* i giorni veg tengono il loro piatto: mai un ripetuto non-veg su un giorno veg */
+  if(liberi.length<2) return {slots,subs:{}};
+  const r=rng(hash(days.join("")+"|prep|"+U.salt+"|"+MENU_V));
+  const pool=[...new Set(liberi.map(s=>s.fid))].sort((a,b)=>FOOD_DB[a][0].localeCompare(FOOD_DB[b][0]));
+  const nRep=Math.min(3,Math.max(2,Math.ceil(liberi.length/4)),pool.length);
+  const scelti=[];
+  while(scelti.length<nRep&&pool.length){ const i=Math.floor(r()*pool.length); scelti.push(pool.splice(i,1)[0]); }
+  const subs={};
+  liberi.forEach((s,i)=>{ subs[s.k+"|"+s.meal]=scelti[i%scelti.length]; });
+  return {slots,subs,scelti};
+}
+function prepPiano(days){
+  /* piano di cottura dai menu FINALI: piatto -> grammi totali e porzioni con etichetta giorno */
+  const gruppi={};
+  days.forEach(k=>{ const m=genMenu(k); m.meals.forEach(me=>{
+    me.items.forEach(it=>{ if(!it.prep&&!(U.prep&&U.prep.subs&&U.prep.subs[k+"|"+me.name]===it.id)) return;
+      if(it.id==null) return;
+      const n=FOOD_DB[it.id][0];
+      const g0=gruppi[n]=gruppi[n]||{g:0,porz:[]};
+      g0.g+=it.g;
+      const dd=dateFromKey(k);
+      g0.porz.push(GIORNI[dd.getDay()].toLowerCase()+" "+(MEAL_CODE[me.name]==="p"?"pranzo":"cena")+" ("+it.g+" g)"); }); }); });
+  return gruppi;
+}
+function prepGiorniHtml(){
+  const oggi=dateFromKey(todayKey());
+  let h="";
+  for(let i=0;i<7;i++){ const d=new Date(+oggi+i*864e5); const k=todayKey(d);
+    const feriale=d.getDay()>=1&&d.getDay()<=5;
+    h+=`<label class="ckrow"><input type="checkbox" style="width:auto" data-prepd="${k}" ${feriale?"checked":""}>
+      <span style="flex:1">${GIORNI[d.getDay()]} ${d.getDate()}${i===0?" (oggi)":""}</span></label>`; }
+  return h;
+}
+function prepMostraPiano(){
+  const gruppi=prepPiano(U.prep.days);
+  const nomi=Object.keys(gruppi).sort();
+  $("#prepBody").innerHTML=`<div class="small" style="margin-bottom:var(--sp-2)">Domenica (o quando preferisci) prepari:</div>
+    ${nomi.length?nomi.map(n=>{ const g0=gruppi[n];
+      return `<div style="margin-bottom:var(--sp-2)"><b>${n}</b> · ${g0.g>=1000?(g0.g/1000).toFixed(1).replace(".",",")+" kg":g0.g+" g"} in tutto<br>
+        <span class="small">${g0.porz.length} ${g0.porz.length===1?"porzione":"porzioni"} → ${g0.porz.join(", ")}</span></div>`; }).join("")
+      :`<div class="small">Nei giorni scelti non ci sono piatti adatti alla preparazione anticipata.</div>`}
+    <div class="notice">🧊 Conservazione: in frigo in contenitore chiuso i piatti cotti durano in genere 2–3 giorni; per i giorni successivi è meglio il freezer, scongelando in frigo. Nel dubbio, annusa e usa il buon senso.</div>
+    <div class="btnrow" style="margin-top:var(--sp-2)">
+      <button class="btn ghost" id="prepOff">✕ Rimuovi meal prep</button>
+      <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button></div>`;
+  $("#prepOff").onclick=()=>{ const days=U.prep.days; delete U.prep;
+    days.forEach(k=>delete U.menuCache[k]); save(); render();
+    $("#dlgPrep").close(); toast("Meal prep rimosso: i menu tornano come prima"); };
+}
+function openPrep(){
+  if(U.prep&&U.prep.days){ prepMostraPiano(); $("#dlgPrep").showModal(); return; }
+  $("#prepBody").innerHTML=`<div class="small" style="margin-bottom:var(--sp-2)">Scegli i giorni da coprire cucinando in anticipo:</div>
+    ${prepGiorniHtml()}
+    <div class="btnrow" style="margin-top:var(--sp-2)">
+      <button class="btn" id="prepGo">Avanti</button>
+      <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button></div>`;
+  $("#prepGo").onclick=()=>{
+    const days=[...$$("#prepBody [data-prepd]")].filter(c=>c.checked).map(c=>c.dataset.prepd);
+    if(!days.length){ toast("Scegli almeno un giorno"); return; }
+    const cons=prepConsolida(days);
+    const distinti=new Set(cons.slots.filter(s=>!s.veg).map(s=>s.fid));
+    const conferma=(subs)=>{ U.prep={days,subs};
+      days.forEach(k=>delete U.menuCache[k]); save(); render();
+      prepMostraPiano(); };
+    if(Object.keys(cons.subs).length&&distinti.size>cons.scelti.length){
+      /* prima/dopo per il consenso informato */
+      const dopoNome=(s)=>FOOD_DB[cons.subs[s.k+"|"+s.meal]!=null?cons.subs[s.k+"|"+s.meal]:s.fid][0];
+      $("#prepBody").innerHTML=`<div class="small" style="margin-bottom:var(--sp-2)">I giorni scelti hanno ${distinti.size} piatti diversi.
+        Vuoi che ne ripeta ${cons.scelti.length} per cucinare meno?</div>
+        <table style="width:100%;font-size:.82rem"><tr><th style="text-align:left">Pasto</th><th style="text-align:left">Ora</th><th style="text-align:left">Consolidato</th></tr>
+        ${cons.slots.map(s=>{ const dd=dateFromKey(s.k);
+          return `<tr><td>${GIORNI[dd.getDay()]} ${MEAL_CODE[s.meal]==="p"?"pranzo":"cena"}${s.veg?" 🌿":""}</td>
+            <td>${FOOD_DB[s.fid][0]}</td><td>${s.veg?FOOD_DB[s.fid][0]:dopoNome(s)}</td></tr>`; }).join("")}</table>
+        <div class="small" style="margin-top:var(--sp-1)">I giorni 🌿 veg tengono il loro piatto.</div>
+        <div class="btnrow" style="margin-top:var(--sp-2)">
+          <button class="btn" id="prepSi">Sì, consolida</button>
+          <button class="btn ghost" id="prepNo">No, tieni i menu così</button></div>`;
+      $("#prepSi").onclick=()=>conferma(cons.subs);
+      $("#prepNo").onclick=()=>conferma({});
+    } else conferma({});
+  };
+  $("#dlgPrep").showModal();
+}
+$("#btnPrep").onclick=openPrep;
 /* ---- 📤 Recap settimanale condivisibile ---- */
 const SHARE_VOCI=[
   ["ader","Aderenza % al piano",1],["passi","Passi totali della settimana",1],
