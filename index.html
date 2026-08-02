@@ -2038,7 +2038,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.16.0";
+const APP_VERSION="2.17.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2257,6 +2257,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const bProt=byName(P,/yogurt greco|skyr|fiocchi di latte|ricotta|albume/i)
     .filter(o=>o.f[3]>=8&&eff(o)<=9.5);
   const isPitem=x=>x.f[3]>=10&&x.f[2]/Math.max(x.f[3],1)<=15;
+  const NON_CONTORNO=/^(sugo|salsa|passata|pelati|pesto|rag\u00f9|concentrato)/i; /* un sugo non \u00e8 un contorno */
 
   if(name==="Colazione"){
     const c=pick(byName([...Sn,...C],/avena|porridge|fette|pan(e|carr)|gallette|muesli|pancake/i),r)||pick(Sn,r);
@@ -2285,7 +2286,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       if(pr){ const daPasta=/vongol|cozz|gamber|scamp|calamar|sepp|moscardin|tonno|alic|acciug|sgombro|salmone|baccal|merluzz|ceci|fagiol|lenticch|pisell|ricotta|salsicc|speck|guancial|pancett|nduja|uova|zucca|funghi|pesto/i.test(pr.f[0]);
         addFit(pr.f,kcalTarget*0.30,60,220,daPasta?"Primo":"Secondo"); }
       if(olio) addFit(olio,kcalTarget*0.12,5,25,"Condimento");
-      const v=pick(V.filter(o=>capOf(o.f)>=100),r); if(v) addFit(v.f,kcalTarget*0.12,150,320,"Contorno");
+      const v=pick(V.filter(o=>capOf(o.f)>=100&&!NON_CONTORNO.test(o.f[0])),r); if(v) addFit(v.f,kcalTarget*0.12,150,320,"Contorno");
     } else { /* secondo + contorno + pane + olio */
       const roll=r(); let p;
       const t1=ctx.veg?0.35:0.18, t2=ctx.veg?0.70:0.36;
@@ -2293,7 +2294,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       else if(roll<t2&&CHEESES.length) p=pick(CHEESES,r);
       else p=pick(Pmain,r);
       if(p) addFit(p.f,kcalTarget*0.40,90,280,"Secondo");
-      const v=pick(V.filter(o=>capOf(o.f)>=100),r); if(v) addFit(v.f,kcalTarget*0.16,150,350,"Contorno");
+      const v=pick(V.filter(o=>capOf(o.f)>=100&&!NON_CONTORNO.test(o.f[0])),r); if(v) addFit(v.f,kcalTarget*0.16,150,350,"Contorno");
       const b=pick(byName(C,/pane|friselle|carasau/i),r)||pick(C,r);
       if(b) addFit(b.f,kcalTarget*0.20,30,90,"Pane");
       if(olio) addFit(olio,kcalTarget*0.15,5,25,"Condimento");
@@ -2353,7 +2354,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     /* 1) prima gli alimenti non proteici (minimi dimezzabili) */
     const rNP=Math.max(kcalTarget/kT,0.5);
     raw.filter(x=>!isPitem(x)).forEach(x=>{
-      const mn=(x.f[7]==="fr"||x.f[7]==="s"||mealCode==="s")?x.min:Math.max(10,Math.round(x.min*0.5/x.st)*x.st);
+      const mn=(x.f[7]==="fr"||x.f[7]==="s"||mealCode==="s"||x.tag==="Primo")?x.min:Math.max(10,Math.round(x.min*0.5/x.st)*x.st);
       x.g=clamp(x.g*rNP,Math.min(mn,x.max),x.max,x.st); });
     kT=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
     if(kT<=kcalTarget*1.06) break;
@@ -2371,7 +2372,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
-const MENU_V=7;
+const MENU_V=8;
 function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey] && U.menuCache[dateKey].mv===MENU_V) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
