@@ -313,7 +313,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="card">
     <h2>Lista della spesa <button class="btn ghost sm" id="btnSpesa">Genera · 7 giorni</button></h2>
     <div id="spesaList" class="small">Genera i menu dei prossimi 7 giorni e aggrega gli ingredienti per reparto.</div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" id="btnScanSuper">📷 Scansiona al supermercato</button><button class="btn ghost sm" id="btnSpesaCopy" hidden>⎘ Copia lista</button></div>
   </div>
   <div class="card">
     <h2>🛒 Qualità della tua spesa</h2>
@@ -501,6 +501,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 </dialog>
 <dialog id="dlgScan">
   <h3 style="margin-bottom:6px">Scansiona un prodotto</h3>
+  <div class="btnrow" style="margin:6px 0">
+    <button class="btn sm" id="scanModeEat" type="button">🍽 Lo mangio</button>
+    <button class="btn ghost sm" id="scanModeShop" type="button">🛒 Sto scegliendo</button>
+  </div>
   <div style="position:relative">
     <video id="scanVideo" playsinline muted style="width:100%;border-radius:12px;background:#000;min-height:180px"></video>
     <div id="scanOk" hidden style="position:absolute;inset:0;border-radius:12px;background:rgba(85,140,80,.55);
@@ -519,6 +523,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div id="scanScore" hidden style="margin:6px 0"></div>
     <div class="btnrow" id="scanCmpBar" style="margin:4px 0"><button class="btn ghost sm" id="btnCmp">⚖️ Confronta</button></div>
     <div id="scanCmpBox" hidden style="margin:6px 0"></div>
+    <div id="scanDiario">
     <div class="small" id="scanCheck"></div>
     <div class="grid3" style="margin-top:6px">
       <div><label>kcal/100g</label><input type="number" id="scanKcal" inputmode="decimal"></div>
@@ -530,9 +535,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <div><label>Grammi mangiati</label><input type="number" id="scanG" inputmode="numeric" value="100"></div>
       <div><label>Pasto</label><select id="scanMeal"><option>Colazione</option><option>Pranzo</option><option>Cena</option><option>Spuntino</option></select></div>
     </div>
+    </div>
     <div class="btnrow" style="margin-top:10px">
       <button class="btn" id="scanAdd">Registra nel diario</button>
-      <button class="btn ghost" id="scanBuy">🛒 Comprato</button>
+      <button class="btn" id="scanCart" hidden>➕ Aggiungi al carrello</button>
     </div>
   </div>
   <div class="btnrow" style="margin-top:12px">
@@ -2093,7 +2099,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.28.0";
+const APP_VERSION="2.29.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3151,6 +3157,7 @@ async function lookupEan(ean){
 }
 async function startScan(){
   $("#scanResult").hidden=true; $("#scanEan").value="";
+  setScanMode(U.scanMode||"mangia");
   $("#scanStatus").textContent="Inquadra il codice a barre…";
   $("#dlgScan").showModal();
   requestAnimationFrame(()=>{ try{ document.activeElement&&document.activeElement.blur(); }catch(e){} });
@@ -3238,10 +3245,23 @@ function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null
 $("#btnScan").onclick=startScan;
 $("#scanClose").onclick=()=>{ stopScanVideoOnly(); $("#dlgScan").close(); };
 $("#scanLookup").onclick=()=>lookupEan($("#scanEan").value);
-$("#scanBuy").onclick=()=>{
-  const ean=$("#dlgScan")._ean; const e=(U.scanLog||[]).find(x=>x.ean===ean&&x.d===todayKey());
-  if(!e){ toast("Serve un prodotto riconosciuto (con punteggio)"); return; }
-  e.c=1; save(); toast("Segnato come comprato 🛒 Conta nella qualità della spesa"); };
+function setScanMode(m){ U.scanMode=m; const scelgo=m==="scelgo";
+  $("#scanModeEat").className="btn "+(scelgo?"ghost ":"")+"sm";
+  $("#scanModeShop").className="btn "+(scelgo?"":"ghost ")+"sm";
+  const d=$("#scanDiario"); if(d) d.hidden=scelgo;
+  $("#scanAdd").hidden=scelgo; $("#scanCart").hidden=!scelgo; save(); }
+$("#scanModeEat").onclick=()=>setScanMode("mangia");
+$("#scanModeShop").onclick=()=>setScanMode("scelgo");
+$("#btnScanSuper").onclick=()=>{ setScanMode("scelgo"); startScan(); };
+$("#scanCart").onclick=()=>{
+  const p=$("#dlgScan")._prod, ean=$("#dlgScan")._ean;
+  if(!ean){ toast("Scansiona prima un prodotto"); return; }
+  U.carrello=U.carrello||[];
+  if(!U.carrello.some(x=>x.ean===ean))
+    U.carrello.push({ean,name:(p&&p.name)||("Prodotto "+ean),s:(p&&NS_OK(p.ns))?rottaScore(p):null,d:todayKey()});
+  const e=(U.scanLog||[]).find(x=>x.ean===ean&&x.d===todayKey()); if(e) e.c=1; /* nel carrello = acquisto per la pagella */
+  save(); toast("Aggiunto al carrello 🛒 Lo trovi nella lista della spesa");
+  $("#dlgScan").close(); startScan(); };
 $("#btnCmp").onclick=()=>{
   if(cmpProd){ cmpProd=null; updateCmpBar(); $("#scanStatus").textContent="Confronto annullato."; }
   else{ const p=$("#dlgScan")._prod; if(!p||!NS_OK(p.ns)) return;
@@ -3679,7 +3699,16 @@ function buildSpesa(){
         <input type="checkbox" style="width:auto" data-spesa="${key.replace(/"/g,"&quot;")}" ${ck}>
         <span style="flex:1;${ck?"font-weight:600":"opacity:.65"}">${n}</span></label></li>`; }).join("")
   }</ul></div>`:"";
-  $("#spesaList").innerHTML=(html||"Nessun ingrediente.")+basHtml;
+  U.carrello=(U.carrello||[]).filter(x=>+dateFromKey(x.d)>Date.now()-14*864e5); /* il carrello scade dopo 14 giorni */
+  const carHtml=U.carrello.length?`<div style="margin-top:10px"><b style="font-size:.82rem">🛍 Aggiunti da scanner al supermercato</b><ul>${
+    U.carrello.map(x=>{ const key="🛍 "+x.name, ckc=U.spesaCk[key]?"checked":"";
+      return `<li style="list-style:none"><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
+        <input type="checkbox" style="width:auto" data-spesa="${key.replace(/"/g,"&quot;")}" ${ckc}>
+        <span style="flex:1;${ckc?"text-decoration:line-through;opacity:.55":""}">${x.name}${x.s!=null?` <span class="small">(${x.s}/100)</span>`:""}</span>
+        <button type="button" class="mini" data-carrm="${x.ean}">✕</button></label></li>`; }).join("")}</ul></div>`:"";
+  $("#spesaList").innerHTML=(html||"Nessun ingrediente.")+basHtml+carHtml;
+  $$("#spesaList [data-carrm]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation();
+    U.carrello=U.carrello.filter(x=>x.ean!==b.dataset.carrm); save(); buildSpesa(); });
   $("#btnSpesaCopy").hidden=false;
   $$("#spesaList [data-spesa]").forEach(cb=>cb.onchange=()=>{
     if(cb.checked) U.spesaCk[cb.dataset.spesa]=1; else delete U.spesaCk[cb.dataset.spesa];
@@ -3689,7 +3718,8 @@ function buildSpesa(){
       .sort((a,b)=>a[0].localeCompare(b[0]))
       .map(([n,v])=>"- "+n+" · "+(v.g>=1000?(v.g/1000).toFixed(1)+" kg":Math.round(v.g/5)*5+" g"));
     return rows.length?lab+"\n"+rows.join("\n"):""; }).filter(Boolean).join("\n\n")
-    +(basici.size?"\n\n🧂 Basici da controllare\n"+[...basici].sort().map(n=>"- "+n+(U.spesaCk["🧂 "+n]?" ← MANCA":"")).join("\n"):"");
+    +(basici.size?"\n\n🧂 Basici da controllare\n"+[...basici].sort().map(n=>"- "+n+(U.spesaCk["🧂 "+n]?" ← MANCA":"")).join("\n"):"")
+    +((U.carrello||[]).length?"\n\n🛍 Dal supermercato\n"+U.carrello.map(x=>"- "+x.name).join("\n"):"");
 }
 $("#btnSpesa").onclick=()=>{ buildSpesa(); toast("Lista generata sui prossimi 7 giorni"); };
 $("#btnSpesaCopy").onclick=()=>{ 
@@ -3741,7 +3771,7 @@ function renderSpesaPagella(){
   const cur=L.filter(x=>x.c&&inWin(x,30,0)), prev=L.filter(x=>x.c&&inWin(x,60,30));
   if(cur.length<5){
     box.innerHTML=`Hai segnato come comprati <b>${cur.length}</b> prodott${cur.length===1?"o":"i"} negli ultimi 30 giorni.
-      Ne servono almeno 5 per la pagella: dopo la scansione tocca <b>🛒 Comprato</b> (o registra il prodotto nel diario). Le scansioni "solo per curiosità" non contano.`; return; }
+      Ne servono almeno 5 per la pagella: al supermercato usa <b>➕ Aggiungi al carrello</b> dopo la scansione, oppure registra il prodotto nel diario. Le scansioni "solo per curiosità" non contano.`; return; }
   const avg=a=>a.reduce((s,x)=>s+x.s,0)/a.length;
   const mCur=Math.round(avg(cur)); const [band,col]=scoreBand(mCur);
   let trend="";
