@@ -488,8 +488,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <h3 style="margin-bottom:6px">Scansiona un prodotto</h3>
   <div style="position:relative">
     <video id="scanVideo" playsinline muted style="width:100%;border-radius:12px;background:#000;min-height:180px"></video>
-    <div id="scanOk" hidden style="position:absolute;inset:0;border-radius:12px;background:rgba(85,140,80,.85);
-      display:flex;align-items:center;justify-content:center;font-size:3.4rem;color:#fff">✓</div>
+    <div id="scanOk" hidden style="position:absolute;inset:0;border-radius:12px;background:rgba(85,140,80,.55);
+      display:flex;align-items:center;justify-content:center;font-size:3.2rem;color:#fff">✓</div>
+    <div id="scanPulse" style="position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;
+      border-radius:999px;padding:4px 12px;font-size:.75rem">🔎 In ascolto…</div>
   </div>
   <div class="small" id="scanStatus" style="margin-top:6px">Inquadra il codice a barre a 15-20 cm, fermo e in buona luce…</div>
   <label>Oppure inserisci l'EAN a mano</label>
@@ -499,6 +501,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   </div>
   <div id="scanResult" hidden style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
     <b id="scanName" style="font-size:.95rem"></b>
+    <div id="scanScore" hidden style="margin:6px 0"></div>
     <div class="small" id="scanCheck"></div>
     <div class="grid3" style="margin-top:6px">
       <div><label>kcal/100g</label><input type="number" id="scanKcal" inputmode="decimal"></div>
@@ -519,10 +522,38 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   </div>
   <div class="small" style="margin-top:8px">Dati da Open Food Facts (serve internet alla prima scansione). I prodotti restano nel tuo archivio: la prossima volta niente rete. Verifica sempre l'etichetta.</div>
 </dialog>
+<dialog id="dlgDay">
+  <h3 id="dayEdTitle" style="margin-bottom:8px"></h3>
+  <div id="dayEdList" style="max-height:200px;overflow-y:auto;margin-bottom:10px"></div>
+  <label>Aggiungi qualcosa a questo giorno</label>
+  <input id="dayEdNome" placeholder="Cosa hai mangiato">
+  <div class="grid3" style="margin-top:6px">
+    <div><label>Grammi</label><input type="number" id="dayEdG" inputmode="numeric"></div>
+    <div><label>kcal</label><input type="number" id="dayEdKcal" inputmode="numeric"></div>
+    <div><label>Pasto</label><select id="dayEdMeal"><option>Colazione</option><option>Pranzo</option><option>Cena</option><option>Spuntino</option></select></div>
+  </div>
+  <div class="grid3" style="margin-top:6px">
+    <div><label>Prot (g)</label><input type="number" id="dayEdP" inputmode="decimal"></div>
+    <div><label>Carb (g)</label><input type="number" id="dayEdC" inputmode="decimal"></div>
+    <div><label>Grassi (g)</label><input type="number" id="dayEdF" inputmode="decimal"></div>
+  </div>
+  <button class="btn ghost sm" id="dayEdAdd" style="margin-top:8px">＋ Aggiungi</button>
+  <div class="grid2" style="margin-top:10px">
+    <div><label>Passi del giorno</label><input type="number" id="dayEdPassi" inputmode="numeric"></div>
+    <div><label>Acqua (ml)</label><input type="number" id="dayEdAcqua" inputmode="numeric"></div>
+  </div>
+  <div class="btnrow" style="margin-top:12px">
+    <button class="btn" id="dayEdSave">Salva</button>
+    <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button>
+  </div>
+</dialog>
 <dialog id="dlgPassiGuida">
   <h3 style="margin-bottom:8px">Passi automatici dall'iPhone</h3>
   <div class="small" style="line-height:1.6">
     Si fa una volta sola, in 2 minuti, con l'app <b>Comandi Rapidi</b> (è già sul telefono).
+  </div>
+  <div class="small" style="margin:8px 0;padding:8px;background:var(--grano-s);border-radius:10px">
+    ⚠️ <b>Limite di iPhone</b>: l'automazione apre il link in <b>Safari</b>, non nell'app sulla schermata Home — quindi i passi arrivano solo se usi Rotta 80 da Safari. Se la usi dall'icona, per ora conviene l'<b>inserimento manuale</b> (10 secondi la sera dalla pagina Oggi). Con l'app da store, i passi arriveranno da soli da Apple Salute.
   </div>
   <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:12px;font-size:.85rem;line-height:1.7">
     <b>1.</b> Tocca il pulsante qui sotto per <b>copiare il link magico</b> 🔗<br>
@@ -1990,7 +2021,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.9.18";
+const APP_VERSION="2.10.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2575,6 +2606,13 @@ function showScanned(prod,fromCache){
   $("#scanResult").hidden=false;
   $("#scanName").textContent=prod.name+(prod.brand?" · "+prod.brand:"")+(fromCache?" (archivio)":"");
   $("#scanKcal").value=prod.kcal||""; $("#scanP").value=prod.p||""; $("#scanC").value=prod.c||""; $("#scanF").value=prod.f||"";
+  const NS_COL={A:"#3E8E41",B:"#8DB600",C:"#E8A13C",D:"#E06A2B",E:"#C63F2E"};
+  const NS_TXT={A:"ottima qualità nutrizionale",B:"buona qualità",C:"qualità media: ogni tanto",D:"qualità scarsa: di rado",E:"da limitare il più possibile"};
+  let scoreHtml="";
+  if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:#fff;font-weight:800;border-radius:8px;padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
+  if(prod.nova>=4) scoreHtml+=`<div class="small" style="margin-top:4px">⚠️ <b>Ultra-processato</b> (NOVA 4): tanti additivi e lavorazione industriale spinta.</div>`;
+  else if(prod.nova===3) scoreHtml+=`<div class="small" style="margin-top:4px">Alimento processato (NOVA 3).</div>`;
+  $("#scanScore").innerHTML=scoreHtml; $("#scanScore").hidden=!scoreHtml;
   const ch=coherent(prod.kcal,prod.p,prod.c,prod.f);
   $("#scanCheck").innerHTML=ch.ok
     ? `✅ Dati coerenti (dai macro: ~${Math.round(ch.calc)} kcal)`
@@ -2587,15 +2625,15 @@ function showScanned(prod,fromCache){
 async function lookupEan(ean){
   ean=(ean||"").replace(/\D/g,""); if(ean.length<8){ $("#scanStatus").textContent="Codice non valido."; return; }
   U.prodotti=U.prodotti||{};
-  if(U.prodotti[ean]){ showScanned({...U.prodotti[ean],ean},true); return; }
+  if(U.prodotti[ean]&&U.prodotti[ean].kcal){ showScanned({...U.prodotti[ean],ean},true); return; }
   $("#scanStatus").textContent="Cerco su Open Food Facts…";
   try{
-    const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments");
+    const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments,nutriscore_grade,nova_group");
     const j=await r.json();
     if(j.status!==1||!j.product){ $("#scanStatus").textContent="Prodotto non trovato: inserisci i valori dall'etichetta."; 
       showScanned({ean,name:"Prodotto "+ean,kcal:"",p:"",c:"",f:""}); return; }
     const n=j.product.nutriments||{};
-    const prod={ean,
+    const prod={ean,ns:(j.product.nutriscore_grade||"").toUpperCase(),nova:j.product.nova_group||0,
       name:j.product.product_name_it||j.product.product_name||("Prodotto "+ean),
       brand:(j.product.brands||"").split(",")[0],
       kcal:Math.round(n["energy-kcal_100g"]||((n.energy_100g||0)/4.184))||"",
@@ -2682,9 +2720,10 @@ async function startZX(v){
   }
 }
 function onScanHit(code){
-  $("#scanOk").hidden=false;
+  $("#scanOk").hidden=false; $("#scanPulse").textContent="✓ Letto!";
   if(navigator.vibrate) try{navigator.vibrate(80);}catch(e){}
-  setTimeout(()=>{ stopScanVideoOnly(); $("#scanOk").hidden=true; lookupEan(code); },700);
+  setTimeout(()=>{ stopScanVideoOnly(); $("#scanOk").hidden=true;
+    $("#scanPulse").textContent="🔎 In ascolto…"; lookupEan(code); },450);
 }
 function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
   if(zxReader){ try{zxReader.reset();}catch(e){} zxReader=null; }
@@ -2698,7 +2737,8 @@ $("#scanAdd").onclick=()=>{
   if(!kcal&&!p&&!c&&!f){ toast("Inserisci i valori dall'etichetta"); return; }
   const name=$("#scanName").textContent.replace(" (archivio)","");
   const ean=$("#dlgScan")._ean;
-  if(ean){ U.prodotti=U.prodotti||{}; U.prodotti[ean]={name:name.split(" · ")[0],brand:name.split(" · ")[1]||"",kcal,p,c,f}; }
+  if(ean){ U.prodotti=U.prodotti||{}; const old=U.prodotti[ean]||{};
+    U.prodotti[ean]={name:name.split(" · ")[0],brand:name.split(" · ")[1]||"",kcal,p,c,f,ns:old.ns,nova:old.nova}; }
   const k=g/100;
   dayLog().pasti.push({id:null,name:"🛒 "+name.split(" · ")[0],g,
     kcal:Math.round(kcal*k),p:+(p*k).toFixed(1),c:+(c*k).toFixed(1),fat:+(f*k).toFixed(1),
@@ -2923,8 +2963,31 @@ function renderWeek(){
     <div class="bar"><i class="${cl}" style="width:${Math.min(v/t*100,100)}%"></i></div>`).join("");
   $("#weekTable").innerHTML=`<tr><th>Giorno</th><th>kcal</th><th>Obiett.</th><th>Prot</th><th>Passi</th><th>💧L</th><th>💪</th></tr>`+
     data.map(d=>{ const dd=dateFromKey(d.k); const l=U.log[d.k]||{passi:0,wo:false,acqua:0};
-      return `<tr><td>${GIORNI[dd.getDay()]} ${dd.getDate()}</td><td>${fmt(Math.round(d.tot.kcal))}</td>
+      return `<tr data-day="${d.k}" style="cursor:pointer"><td>${GIORNI[dd.getDay()]} ${dd.getDate()} ✎</td><td>${fmt(Math.round(d.tot.kcal))}</td>
       <td>${fmt(d.target.kcal)}</td><td>${Math.round(d.tot.p)}g</td><td>${fmt(l.passi)}</td><td>${((l.acqua||0)/1000).toFixed(1)}</td><td>${l.wo?"✓":"–"}</td></tr>`; }).join("");
+  $$("#weekTable [data-day]").forEach(tr=>tr.onclick=()=>openDayEditor(tr.dataset.day));
+}
+function openDayEditor(k){
+  const dd=dateFromKey(k); const l=U.log[k]||(U.log[k]={pasti:[],passi:0,acqua:0,wo:false});
+  $("#dayEdTitle").textContent="Diario di "+GIORNI[dd.getDay()]+" "+dd.getDate()+" "+MESI[dd.getMonth()];
+  const list=$("#dayEdList");
+  const draw=()=>{ list.innerHTML=(l.pasti||[]).length? l.pasti.map((p,i)=>
+      `<div class="fooditem"><span>${p.meal?p.meal+" · ":""}${p.name}<br><span class="small">${p.g?p.g+" g · ":""}${p.kcal} kcal</span></span>
+       <button class="mini" data-del="${i}" aria-label="Elimina">🗑</button></div>`).join("")
+    :'<div class="small">Nessun pasto registrato in questo giorno.</div>';
+    $$("#dayEdList [data-del]").forEach(b=>b.onclick=()=>{ l.pasti.splice(+b.dataset.del,1); save(); draw(); render(); }); };
+  draw();
+  $("#dayEdPassi").value=l.passi||0; $("#dayEdAcqua").value=l.acqua||0;
+  $("#dayEdSave").onclick=()=>{ l.passi=Math.max(0,+$("#dayEdPassi").value||0);
+    l.acqua=Math.max(0,+$("#dayEdAcqua").value||0); save(); render(); $("#dlgDay").close(); toast("Giorno aggiornato"); };
+  $("#dayEdAdd").onclick=()=>{ const nm=$("#dayEdNome").value.trim(); const kc=+$("#dayEdKcal").value||0;
+    if(!nm||!kc){ toast("Nome e kcal come minimo"); return; }
+    l.pasti.push({id:null,name:nm,g:+$("#dayEdG").value||0,kcal:kc,
+      p:+$("#dayEdP").value||0,c:+$("#dayEdC").value||0,fat:+$("#dayEdF").value||0,
+      meal:$("#dayEdMeal").value,src:"manuale"});
+    ["dayEdNome","dayEdG","dayEdKcal","dayEdP","dayEdC","dayEdF"].forEach(i=>$("#"+i).value="");
+    save(); draw(); render(); toast("Aggiunto ✓"); };
+  $("#dlgDay").showModal();
 }
 
 const REPARTI=[["🥬 Ortofrutta",["verdura","frutta"]],["🧊 Banco frigo",["latticini","uova","carne","salumi","pesce"]],
