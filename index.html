@@ -221,7 +221,9 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
         <text id="dialPct" x="48" y="53" text-anchor="middle" font-size="17" font-weight="800" fill="#22333B">0%</text>
       </svg>
       <div>
-        <div class="num"><span id="kcalEaten">0</span> / <b id="kcalTarget">–</b> <span>kcal</span></div>
+        <div class="small" id="kcalResLbl">Ti restano</div>
+        <div class="num"><b id="kcalRes">–</b> <span id="kcalResSuf">kcal</span></div>
+        <div class="small" style="margin-top:2px"><b id="kcalEaten">0</b> mangiate · <span id="kcalTgtWord">target</span> <b id="kcalTarget">–</b> kcal</div>
         <div style="margin-top:6px"><span class="chip" id="dayTypeChip">–</span> <span class="chip veg" id="vegChip" hidden>🌿 veg</span></div>
         <div class="small" id="schemaLabel" style="margin-top:5px"></div>
       </div>
@@ -2112,7 +2114,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.32.0";
+const APP_VERSION="2.33.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2619,6 +2621,18 @@ function renderToday(){
   const k=todayKey(); const menu=genMenu(k); const m=menu.target; const tot=totalsOf(k);
   const d=new Date();
   $("#topdate").textContent=GIORNI[d.getDay()]+" "+d.getDate()+" "+MESI[d.getMonth()];
+  const kcalRes=m.kcal-Math.round(tot.kcal);
+  const wordT=(U.mode==="diario"||U.ritmo==="mantenimento")?"riferimento":"target";
+  if(kcalRes>=0){
+    $("#kcalResLbl").hidden=false;
+    $("#kcalRes").textContent=fmt(kcalRes); $("#kcalRes").style.color="";
+    $("#kcalResSuf").textContent="kcal";
+  } else {
+    $("#kcalResLbl").hidden=true;
+    $("#kcalRes").textContent="+"+fmt(-kcalRes); $("#kcalRes").style.color="var(--pomodoro)";
+    $("#kcalResSuf").textContent="kcal oltre il "+wordT;
+  }
+  $("#kcalTgtWord").textContent=wordT;
   $("#kcalEaten").textContent=fmt(Math.round(tot.kcal));
   $("#kcalTarget").textContent=fmt(m.kcal);
   const pct=Math.min(tot.kcal/m.kcal,1.15);
