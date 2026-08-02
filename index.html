@@ -503,6 +503,8 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div id="scanResult" hidden style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
     <b id="scanName" style="font-size:.95rem"></b>
     <div id="scanScore" hidden style="margin:6px 0"></div>
+    <div class="btnrow" id="scanCmpBar" style="margin:4px 0"><button class="btn ghost sm" id="btnCmp">⚖️ Confronta</button></div>
+    <div id="scanCmpBox" hidden style="margin:6px 0"></div>
     <div class="small" id="scanCheck"></div>
     <div class="grid3" style="margin-top:6px">
       <div><label>kcal/100g</label><input type="number" id="scanKcal" inputmode="decimal"></div>
@@ -2038,7 +2040,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.17.0";
+const APP_VERSION="2.18.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2781,6 +2783,33 @@ const ALT_MAP=[[/biscuit|cookie|merendin|snack dolc/i,"fette biscottate integral
  [/ice-cream|gelat/i,"yogurt greco freddo con frutta e miele"],
  [/juice|succo/i,"frutta intera di stagione"],
  [/pizza/i,"la pizza del sabato è già nel tuo piano 😉"]];
+let cmpProd=null; /* primo prodotto del confronto (max 2 alla volta) */
+function updateCmpBar(){ const b=$("#btnCmp"); if(!b) return;
+  b.textContent=cmpProd?"✳️ In attesa del 2° prodotto — tocca per annullare":"⚖️ Confronta"; }
+function renderCompare(a,b){
+  const sa=rottaScore(a),sb=rottaScore(b);
+  const [bda,cla]=scoreBand(sa),[bdb,clb]=scoreBand(sb);
+  const win=sa>sb?"a":sb>sa?"b":"";
+  const cdot=(v,lo,hi,inv)=>{ if(v==null||v==="") return "–";
+    const bad=inv?v<lo:v>hi, good=inv?v>=hi:v<lo;
+    return (bad?"🔴":good?"🟢":"🟡")+" "+v+" g"; };
+  const M=[["Zuccheri",p=>cdot(p.zucch,5,22.5)],
+    ["Grassi sat.",p=>cdot(p.sat,1.5,5)],
+    ["Sale",p=>cdot(p.sale,0.3,1.5)],
+    ["Fibre",p=>cdot(p.fibre||null,3,6,true)],
+    ["Proteine",p=>cdot(p.p||null,4,8,true)],
+    ["Additivi",p=>Array.isArray(p.adds)?(p.adds.length+(p.adds.some(x=>addRisk(x)===2)?" ⚠️":p.adds.some(x=>addRisk(x)===1)?" ·":"")):"–"]];
+  const head=(p,s,bd,cl,w)=>`<div style="border:2px solid ${w?cl:"var(--line)"};border-radius:10px;padding:6px;text-align:center">
+    ${w?"🏆 ":""}<b style="font-size:.78rem">${p.name}</b>
+    <div style="margin-top:3px"><span style="background:${cl};color:#fff;border-radius:8px;padding:2px 8px;font-weight:800">${s}</span> <span class="small">${bd}</span></div></div>`;
+  let h=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${head(a,sa,bda,cla,win==="a")}${head(b,sb,bdb,clb,win==="b")}</div>`;
+  h+=`<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 8px;font-size:.78rem;margin-top:6px">`
+    +M.map(([lab,fn])=>`<div class="small">${lab}</div><div style="text-align:center">${fn(a)}</div><div style="text-align:center">${fn(b)}</div>`).join("")+`</div>`;
+  h+=`<div class="small" style="margin-top:6px;text-align:center">${win?("Vince <b>"+(win==="a"?a.name:b.name)+"</b>"):"Pareggio"}</div>
+  <div class="btnrow" style="margin-top:6px"><button class="btn ghost sm" id="btnCmpReset">🔄 Nuovo confronto</button></div>`;
+  const box=$("#scanCmpBox"); box.innerHTML=h; box.hidden=false;
+  $("#btnCmpReset").onclick=()=>{ cmpProd=null; box.hidden=true; updateCmpBar(); };
+}
 function showScanned(prod,fromCache){
   $("#scanResult").hidden=false;
   $("#scanName").textContent=prod.name+(prod.brand?" · "+prod.brand:"")+(fromCache?" (archivio)":"");
@@ -2830,6 +2859,11 @@ function showScanned(prod,fromCache){
   const h=new Date().getHours();
   $("#scanMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
   $("#scanStatus").textContent="Prodotto trovato. Controlla i valori e registra.";
+  $("#dlgScan")._prod=prod;
+  if(cmpProd&&cmpProd.ean!==prod.ean){ renderCompare(cmpProd,prod); cmpProd=null; }
+  else if(cmpProd){ $("#scanStatus").textContent="È lo stesso prodotto: scansiona o cerca un prodotto diverso per confrontare."; }
+  else $("#scanCmpBox").hidden=true;
+  updateCmpBar();
   $("#dlgScan")._ean=prod.ean;
 }
 async function lookupEan(ean){
@@ -2948,14 +2982,18 @@ function stopScanVideoOnly(){ if(scanLoop){clearInterval(scanLoop);scanLoop=null
 $("#btnScan").onclick=startScan;
 $("#scanClose").onclick=()=>{ stopScanVideoOnly(); $("#dlgScan").close(); };
 $("#scanLookup").onclick=()=>lookupEan($("#scanEan").value);
+$("#btnCmp").onclick=()=>{
+  if(cmpProd){ cmpProd=null; updateCmpBar(); $("#scanStatus").textContent="Confronto annullato."; }
+  else{ cmpProd=$("#dlgScan")._prod; if(!cmpProd) return; $("#scanCmpBox").hidden=true; updateCmpBar();
+    $("#scanStatus").textContent="Confronto attivo: scansiona il 2° prodotto o aprilo dalla ricerca 🛒."; } };
 $("#scanAdd").onclick=()=>{
   const kcal=+$("#scanKcal").value||0, p=+$("#scanP").value||0, c=+$("#scanC").value||0, f=+$("#scanF").value||0;
   const g=Math.max(1,+$("#scanG").value||100);
   if(!kcal&&!p&&!c&&!f){ toast("Inserisci i valori dall'etichetta"); return; }
   const name=$("#scanName").textContent.replace(" (archivio)","");
   const ean=$("#dlgScan")._ean;
-  if(ean){ U.prodotti=U.prodotti||{}; const old=U.prodotti[ean]||{};
-    U.prodotti[ean]={name:name.split(" · ")[0],brand:name.split(" · ")[1]||"",kcal,p,c,f,ns:old.ns,nova:old.nova}; }
+  if(ean){ U.prodotti=U.prodotti||{}; const old=U.prodotti[ean]||{}; const full=$("#dlgScan")._prod||{};
+    U.prodotti[ean]={...old,...full,name:name.split(" · ")[0],brand:name.split(" · ")[1]||"",kcal,p,c,f}; }
   const k=g/100;
   dayLog().pasti.push({id:null,name:"🛒 "+name.split(" · ")[0],g,
     kcal:Math.round(kcal*k),p:+(p*k).toFixed(1),c:+(c*k).toFixed(1),fat:+(f*k).toFixed(1),
