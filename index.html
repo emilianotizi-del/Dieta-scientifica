@@ -584,6 +584,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <h3 id="actTitle" style="margin-bottom:2px"></h3>
   <div class="small" id="actSub" style="margin-bottom:12px"></div>
   <button class="sheetbtn" id="actRec">📖 Vedi la ricetta</button>
+  <button class="sheetbtn" id="actDouble" hidden>🍲 Ne cucino il doppio</button>
   <button class="sheetbtn" id="actSwap">⇄ Sostituisci con un equivalente</button>
   <button class="sheetbtn" id="actSkip">🙅 Oggi non l'ho mangiato (togli dal pasto)</button>
   <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
@@ -2049,7 +2050,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.20.0";
+const APP_VERSION="2.21.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2063,6 +2064,11 @@ function dateFromKey(k){return new Date(k+"T12:00:00");}
 function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function rng(seed){let s=seed||1;return()=>{s=Math.imul(s^(s>>>15),s|1);s^=s+Math.imul(s^(s>>>7),s|61);return((s^(s>>>14))>>>0)/4294967296;};}
 
+function avanziTarget(dateKey,mealName){
+  const nd=todayKey(new Date(+dateFromKey(dateKey)+864e5));
+  if(mealName==="Cena") return {day:nd,meal:"Pranzo"};
+  if(mealName==="Pranzo") return {day:nd,meal:"Cena"};
+  return null; }
 function inPause(k){ return (U.pause||[]).some(p=>k>=p.from&&k<p.until); }
 function pausaAttiva(){ const k=todayKey(); return (U.pause||[]).find(p=>k>=p.from&&k<p.until)||null; }
 function recalibrate(){
@@ -2418,6 +2424,19 @@ function genMenu(dateKey,force){
     const ctx2={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2,dateKey};
     meals=split.map(([n,q])=>buildMeal(n,k2*q,m.p*q,r2,ctx2));
   }
+  /* avanzi intelligenti: il pasto indicato diventa il piatto raddoppiato del giorno prima */
+  const avD=(U.avanzi||{})[dateKey];
+  if(avD){ meals=meals.map(me=>{
+    const a=avD[me.name]; const fa=a&&FOOD_DB[a.fid]; if(!fa) return me;
+    const tk=me.tot.kcal;
+    let g=Math.max(minOf(fa),Math.min(capOf(fa),Math.round(tk/(fa[2]||1)*100/10)*10));
+    const items=[]; const it0=scale(fa,g); it0.tag="🍲 Avanzi di ieri"; items.push(it0);
+    const gap=tk-it0.kcal;
+    if(gap>tk*0.10){ const pane=FOOD_DB.find(x=>x[0]==="Pane integrale");
+      if(pane){ const pg=Math.max(30,Math.min(90,Math.round(gap/(pane[2]||1)*100/10)*10));
+        const pit=scale(pane,pg); pit.tag="Pane"; items.push(pit); } }
+    const tot=items.reduce((s,x)=>({kcal:s.kcal+x.kcal,p:s.p+x.p,c:s.c+x.c,fat:s.fat+x.fat}),{kcal:0,p:0,c:0,fat:0});
+    return {name:me.name,items,tot,avanzi:a.da}; }); }
   const menu={mv:MENU_V,schema,veg,dayType:dayType(dateKey),target:m,meals,eaten:(U.menuCache[dateKey]&&U.menuCache[dateKey].eaten)||{},comp};
   U.menuCache[dateKey]=menu;
   /* mantieni cache leggera */
@@ -2582,6 +2601,21 @@ function openItemActions(dateKey,mi,ii){
   $("#actSub").textContent=(it.g?it.g+" g · ":"")+it.kcal+" kcal"+(isAroma?" · aroma: quanto basta":"");
   $("#actRec").hidden=!hasRec;
   $("#actRec").onclick=()=>{ $("#dlgAct").close(); openRecipe(f[0],it,dateKey,mi,ii); };
+  const mealNm=menu.meals[mi].name;
+  const tgt=avanziTarget(dateKey,mealNm);
+  const isMain=!!tgt&&f&&(it.tag==="Piatto"||it.tag==="Primo"||it.tag==="Secondo");
+  const already=isMain&&U.avanzi&&U.avanzi[tgt.day]&&U.avanzi[tgt.day][tgt.meal]&&U.avanzi[tgt.day][tgt.meal].fid===it.id;
+  $("#actDouble").hidden=!isMain;
+  $("#actDouble").textContent=already?"✕ Togli gli avanzi di domani":"🍲 Ne cucino il doppio";
+  $("#actDouble").onclick=()=>{ $("#dlgAct").close(); if(!isMain) return;
+    if(already){ delete U.avanzi[tgt.day][tgt.meal];
+      if(!Object.keys(U.avanzi[tgt.day]).length) delete U.avanzi[tgt.day];
+      delete U.menuCache[tgt.day]; save(); render(); toast("Avanzi tolti: domani torna il menu normale"); return; }
+    U.avanzi=U.avanzi||{};
+    const oggi=todayKey(); for(const dk of Object.keys(U.avanzi)) if(dk<oggi) delete U.avanzi[dk];
+    (U.avanzi[tgt.day]=U.avanzi[tgt.day]||{})[tgt.meal]={fid:it.id,da:dateKey};
+    delete U.menuCache[tgt.day]; save(); render();
+    toast("Fatto 🍲 Domani a "+(tgt.meal==="Pranzo"?"pranzo":"cena")+": avanzi di "+f[0]); };
   $("#actSwap").onclick=()=>{ $("#dlgAct").close(); swapItem(dateKey,mi,ii); };
   $("#actSkip").onclick=()=>{ $("#dlgAct").close();
     menu.meals[mi].items.splice(ii,1); save(); render();
