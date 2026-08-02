@@ -395,8 +395,19 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
     <button class="btn" style="margin-top:10px" id="btnMisure">Registra misure</button>
     <div class="hero-eta" id="bfBox"></div>
+    <canvas id="vitaChart" width="640" height="240" style="margin-top:var(--sp-3)" aria-label="Grafico del girovita"></canvas>
     <ul class="loglist" id="misureList" style="margin-top:var(--sp-2)"></ul>
-    <div class="small">Il girovita si misura all'ombelico, rilassato. Spesso scende anche nelle settimane in cui la bilancia si ferma.</div>
+    <div class="small">📏 Come si misura: in piedi, all'altezza dell'ombelico, a fine espirazione normale, col metro aderente ma senza stringere. Spesso il girovita scende anche nelle settimane in cui la bilancia si ferma.</div>
+    <div class="notice"><!-- CLINICO-DA-VALIDARE -->ℹ️ Per orientarti: le linee guida (OMS) associano un rischio cardiometabolico aumentato a valori sopra ~102 cm negli uomini e ~88 cm nelle donne. È un riferimento di popolazione, non una diagnosi: se il tuo valore è sopra queste soglie o ti fa pensare, parlane con il tuo medico.</div>
+  </div>
+  <div class="card">
+    <h2>📸 Le tue foto</h2>
+    <div class="small" style="margin-bottom:var(--sp-2)">Una foto al mese racconta più della bilancia: stessa posa, stessa luce, stesso specchio. Le foto restano <b>solo su questo dispositivo</b>: se cancelli i dati del browser o cambi telefono, si perdono (il backup cloud arriverà con gli account). Non entrano mai nel recap condivisibile né in alcun export.</div>
+    <label class="btn ghost sm" style="display:inline-block">📷 Aggiungi foto<input type="file" id="fotoIn" accept="image/*" hidden></label>
+    <div class="small" id="fotoHint" style="margin-top:var(--sp-1)"></div>
+    <div id="fotoGal" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--sp-2)"></div>
+    <div id="fotoCmp" hidden style="margin-top:var(--sp-2)"></div>
+    <button class="btn ghost sm" id="fotoWipe" hidden style="margin-top:var(--sp-2);color:var(--pomodoro)">🗑 Elimina tutte le foto</button>
   </div>
   <div class="card">
     <h2>Storico pesate</h2>
@@ -2163,7 +2174,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.42.0";
+const APP_VERSION="2.43.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3823,6 +3834,7 @@ $("#btnWipe").onclick=()=>{
   if(!confirm("Vuoi davvero cancellare TUTTI i dati (profili, diario, pesate)? Non si può annullare."))return;
   if(!confirm("Ultima conferma: l'app tornerà come appena installata."))return;
   try{ localStorage.removeItem(Storage.KEY); }catch(e){}
+  try{ if(window.indexedDB) indexedDB.deleteDatabase("rotta80"); }catch(e){}
   location.reload();
 };
 
@@ -3994,6 +4006,88 @@ $("#outAdd").onclick=()=>{
   }
   save(); $("#dlgOut").close(); render(); vib(15); toast("Pasto fuori registrato"); };
 /* --- SETTIMANA --- */
+/* ---- 📸 Foto progressi: IndexedDB (le foto NON vanno in localStorage), ridimensiona 900px, JPEG 0.8 ---- */
+function fotoDims(w,h,max=900){ if(Math.max(w,h)<=max) return [Math.round(w),Math.round(h)];
+  const k=max/Math.max(w,h); return [Math.round(w*k),Math.round(h*k)]; }
+function fotoDB(){ return new Promise((res,rej)=>{
+  if(!window.indexedDB){ rej(new Error("no-idb")); return; }
+  const rq=indexedDB.open("rotta80",1);
+  rq.onupgradeneeded=()=>{ rq.result.createObjectStore("foto",{keyPath:"id",autoIncrement:true}); };
+  rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+function fotoTx(mode,fn){ return fotoDB().then(db=>new Promise((res,rej)=>{
+  const tx=db.transaction("foto",mode); const st=tx.objectStore("foto");
+  const out=fn(st);
+  tx.oncomplete=()=>res(out&&out.result!==undefined?out.result:undefined);
+  tx.onerror=()=>rej(tx.error); })); }
+const fotoPut=rec=>fotoTx("readwrite",st=>st.add(rec));
+const fotoAll=()=>fotoTx("readonly",st=>st.getAll());
+const fotoDel=id=>fotoTx("readwrite",st=>st.delete(id));
+const fotoClear=()=>fotoTx("readwrite",st=>st.clear());
+async function caricaImg(file){
+  if(window.createImageBitmap) return createImageBitmap(file);
+  return new Promise((res,rej)=>{ const img=new Image();
+    img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
+async function ridimensionaFoto(file){
+  const img=await caricaImg(file);
+  const [w,h]=fotoDims(img.width||img.naturalWidth,img.height||img.naturalHeight,900);
+  const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+  const cx=cv.getContext("2d"); if(cx) cx.drawImage(img,0,0,w,h);
+  return new Promise(res=>cv.toBlob(b=>res(b),"image/jpeg",0.8));
+}
+let _fotoSel=[];
+async function renderFoto(){
+  const gal=$("#fotoGal"); if(!gal) return;
+  if(!window.indexedDB){ gal.innerHTML='<span class="small">Le foto non sono disponibili su questo browser.</span>'; return; }
+  let rows=[]; try{ rows=await fotoAll()||[]; }catch(e){ return; }
+  rows.sort((a,b)=>a.t-b.t);
+  $("#fotoWipe").hidden=!rows.length;
+  /* promemoria mensile discreto */
+  const hint=$("#fotoHint");
+  if(!rows.length) hint.textContent="";
+  else { const gg=Math.floor((Date.now()-rows[rows.length-1].t)/864e5);
+    hint.textContent=gg>=30?"💡 È passato circa un mese dall'ultima foto: è un buon momento per la prossima.":""; }
+  gal.innerHTML=rows.length?rows.map(r=>{ const dd=dateFromKey(r.d);
+    let url=""; try{ url=URL.createObjectURL(r.blob); }catch(e){}
+    const sel=_fotoSel.includes(r.id);
+    return `<div style="text-align:center">
+      <img src="${url}" alt="Foto del ${dd.getDate()} ${MESI[dd.getMonth()]}" data-fsel="${r.id}"
+        style="width:88px;height:112px;object-fit:cover;border-radius:var(--r-s);${sel?"outline:3px solid var(--grano);":""}cursor:pointer">
+      <div class="small">${dd.getDate()} ${MESI[dd.getMonth()].slice(0,3).toLowerCase()}
+        <button type="button" class="mini" data-fdel="${r.id}" aria-label="Elimina foto">✕</button></div></div>`; }).join("")
+    :'<span class="small">Nessuna foto ancora: la prima è quella che ringrazierai di più.</span>';
+  $$("#fotoGal [data-fdel]").forEach(b=>b.onclick=async e=>{ e.stopPropagation();
+    if(!confirm("Eliminare questa foto? Non si può annullare.")) return;
+    await fotoDel(+b.dataset.fdel); _fotoSel=_fotoSel.filter(x=>x!==+b.dataset.fdel); renderFoto(); });
+  $$("#fotoGal [data-fsel]").forEach(im=>im.onclick=()=>{
+    const id=+im.dataset.fsel;
+    _fotoSel=_fotoSel.includes(id)?_fotoSel.filter(x=>x!==id):[..._fotoSel.slice(-1),id];
+    renderFoto(); });
+  /* confronto prima/dopo */
+  const cmp=$("#fotoCmp");
+  if(_fotoSel.length===2){
+    const [a,b]=_fotoSel.map(id=>rows.find(r=>r.id===id)).filter(Boolean).sort((x,y)=>x.t-y.t);
+    if(a&&b){ const lab=r=>{ const dd=dateFromKey(r.d); return dd.getDate()+" "+MESI[dd.getMonth()].slice(0,3).toLowerCase()+" "+dd.getFullYear(); };
+      let ua="",ub=""; try{ ua=URL.createObjectURL(a.blob); ub=URL.createObjectURL(b.blob); }catch(e){}
+      cmp.hidden=false;
+      cmp.innerHTML=`<b class="bsez">Prima / dopo</b><div style="display:flex;gap:8px;margin-top:var(--sp-1)">
+        <div style="flex:1;text-align:center"><img src="${ua}" style="width:100%;border-radius:var(--r-s)"><div class="small">${lab(a)}</div></div>
+        <div style="flex:1;text-align:center"><img src="${ub}" style="width:100%;border-radius:var(--r-s)"><div class="small">${lab(b)}</div></div></div>`; }
+  } else { cmp.hidden=true; cmp.innerHTML=""; }
+}
+$("#fotoIn").onchange=async e=>{
+  const file=e.target.files&&e.target.files[0]; e.target.value=""; if(!file) return;
+  try{
+    const blob=await ridimensionaFoto(file);
+    if(!blob){ toast("Non sono riuscito a elaborare la foto"); return; }
+    await fotoPut({d:todayKey(),t:Date.now(),blob});
+    vib(15); toast("Foto salvata su questo dispositivo 📸"); renderFoto();
+  }catch(err){ toast("Foto non salvata: riprova"); }
+};
+$("#fotoWipe").onclick=async()=>{
+  if(!confirm("Eliminare TUTTE le foto? Non si può annullare.")) return;
+  try{ await fotoClear(); }catch(e){}
+  _fotoSel=[]; renderFoto(); toast("Foto eliminate");
+};
 /* ---- 🍱 Meal prep settimanale ---- */
 const PREP_NO=["fritt","insalat","tartare","carpaccio","crud","poke","sushi","caprese","pinzimonio",
   "affettat","bresaola","toast","tramezzino","panino","piadina"]; /* lista esplicita: non si preparano in anticipo */
@@ -4598,6 +4692,8 @@ $("#btnReport").onclick=()=>{
     </div>
     <h3>Peso</h3>
     <div class="small">${pesi.length?pesi.map(w=>w.kg.toFixed(1)+" kg").join(" → ")+(pDelta!==null?" ("+(pDelta<=0?"":"+")+pDelta.toFixed(1)+" kg in settimana)":""):"Nessuna pesata registrata questa settimana."}</div>
+    ${(U.misure||[]).filter(m=>m.vita!=null).length?`<h3>Girovita</h3>
+    <div class="small">Ultima misura: ${(U.misure.filter(m=>m.vita!=null).slice(-1)[0].vita).toFixed(1).replace(".",",")} cm${(()=>{ const vv=U.misure.filter(m=>m.vita!=null); return vv.length>1?" · andamento: "+vv.slice(-4).map(m=>m.vita.toFixed(0)).join(" → ")+" cm":""; })()}</div>`:""}
     <h3>Attività e idratazione</h3>
     <div class="grid3">
       <div><b>${fmt(passiM)}</b><br><span class="small">passi medi/die</span></div>
@@ -4692,7 +4788,29 @@ function renderProg(){
     else n.hidden=true;
   } else n.hidden=true;
   renderMisure();
-  drawChart();
+  drawChart(); drawVitaChart(); renderFoto();
+}
+function drawVitaChart(){
+  const cv=$("#vitaChart"); if(!cv) return;
+  const ctx=cv.getContext&&cv.getContext("2d"); if(!ctx) return;
+  const cvar=n=>getComputedStyle(document.body).getPropertyValue(n).trim()||"#888";
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const data=(U.misure||[]).filter(m=>m.vita!=null);
+  cv.style.display=data.length?"block":"none";
+  if(!data.length) return;
+  const W=cv.width,H=cv.height,pad=36;
+  const vals=data.map(m=>m.vita);
+  const minY=Math.min(...vals)-2, maxY=Math.max(...vals)+2;
+  const x=i=>pad+(W-2*pad)*(data.length===1?0.5:i/(data.length-1));
+  const y=v=>H-pad-(H-2*pad)*((v-minY)/Math.max(maxY-minY,0.001));
+  ctx.strokeStyle=cvar("--line"); ctx.lineWidth=1; ctx.fillStyle=cvar("--ink2"); ctx.font="11px sans-serif";
+  for(let g=0;g<=3;g++){ const v=minY+(maxY-minY)*g/3; const yy=y(v);
+    ctx.beginPath(); ctx.moveTo(pad,yy); ctx.lineTo(W-pad,yy); ctx.stroke();
+    ctx.fillText(v.toFixed(0)+" cm",4,yy+4); }
+  ctx.strokeStyle=cvar("--mare"); ctx.lineWidth=2.5; ctx.beginPath();
+  data.forEach((m,i)=>{ i?ctx.lineTo(x(i),y(m.vita)):ctx.moveTo(x(i),y(m.vita)); }); ctx.stroke();
+  ctx.fillStyle=cvar("--mare");
+  data.forEach((m,i)=>{ ctx.beginPath(); ctx.arc(x(i),y(m.vita),3.5,0,7); ctx.fill(); });
 }
 function drawChart(){
   const cv=$("#weightChart"), ctx=cv.getContext&&cv.getContext("2d");
