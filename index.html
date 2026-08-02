@@ -649,7 +649,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   </div>
 </dialog>
 <div id="onboard" hidden>
-  <div class="ob-dots"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="ob-dots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
 
   <section class="ob-step" data-ob="0">
     <div class="ob-hero">🍅</div>
@@ -661,6 +661,15 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   </section>
 
   <section class="ob-step" data-ob="1" hidden>
+    <h2 class="ob-h">Cosa vuoi fare con Rotta?</h2>
+    <button class="btn ghost ob-card on" data-scopo="dimagrire">🎯 <b>Dimagrire</b><span class="small">Piano completo: menu, deficit calibrato, ricariche e taratura sui tuoi risultati</span></button>
+    <button class="btn ghost ob-card" data-scopo="diario">📓 <b>Diario alimentare</b><span class="small">Registra cosa mangi, scanner e punteggi prodotti, senza obiettivo di peso: calorie di riferimento al mantenimento</span></button>
+    <button class="btn ghost ob-card" data-scopo="prehab">🏥 <b>Prepararmi a un intervento</b><span class="small">Percorso di prehabilitation (nutrizione + esercizio pre-operatorio) — in arrivo, andrà seguito col tuo medico</span></button>
+    <div class="notice" id="obPrehabNote" hidden>Il percorso pre-operatorio richiede la supervisione del tuo chirurgo e arriverà in una prossima versione, costruito con un comitato medico. Intanto ti attivo il <b>diario alimentare</b>: registrare bene ciò che mangi è già il primo passo di ogni preparazione.</div>
+    <button class="btn ob-cta" data-obnext>Avanti</button>
+  </section>
+
+  <section class="ob-step" data-ob="2" hidden>
     <h2 class="ob-h">Parlami di te</h2>
     <label>Sesso</label>
     <div class="grid2">
@@ -675,23 +684,25 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <button class="btn ob-cta" data-obnext>Avanti</button>
   </section>
 
-  <section class="ob-step" data-ob="2" hidden>
+  <section class="ob-step" data-ob="3" hidden>
     <h2 class="ob-h">L'obiettivo</h2>
     <div class="grid2">
       <div><label>Peso attuale (kg)</label><input type="number" id="obPeso" inputmode="decimal" step="0.1" min="40" max="250"></div>
-      <div><label>Peso obiettivo (kg)</label><input type="number" id="obGoal" inputmode="decimal" step="0.1" min="40" max="250"></div>
+      <div id="obGoalCell"><label>Peso obiettivo (kg)</label><input type="number" id="obGoal" inputmode="decimal" step="0.1" min="40" max="250"></div>
     </div>
+    <div id="obRitmoWrap">
     <label style="margin-top:10px">Che ritmo vuoi tenere?</label>
     <button class="btn ghost ob-card" data-ritmo="moderato">🌿 <b>Rilassato</b><span class="small">−0,5 kg a settimana circa · più margine a tavola</span></button>
     <button class="btn ghost ob-card on" data-ritmo="sostenuto">⚖️ <b>Equilibrato</b><span class="small">−0,7 kg a settimana circa · il ritmo consigliato</span></button>
     <button class="btn ghost ob-card" data-ritmo="aggressivo">🔥 <b>Deciso</b><span class="small">−1 kg a settimana circa · richiede costanza</span></button>
+    </div>
     <label style="margin-top:10px">Passi al giorno, di solito: <b id="obPassiVal">6.000</b></label>
     <input type="range" id="obPassi" min="2000" max="15000" step="500" value="6000">
     <div class="small ob-err" style="color:var(--pomodoro);margin-top:8px"></div>
     <button class="btn ob-cta" data-obnext>Avanti</button>
   </section>
 
-  <section class="ob-step" data-ob="3" hidden>
+  <section class="ob-step" data-ob="4" hidden>
     <h2 class="ob-h">I tuoi gusti</h2>
     <label>C'è qualcosa che non vuoi mai nel piatto?</label>
     <div class="grid2">
@@ -715,7 +726,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <button class="btn ob-cta" id="obBuild">Prepara il mio piano →</button>
   </section>
 
-  <section class="ob-step" data-ob="4" hidden>
+  <section class="ob-step" data-ob="5" hidden>
     <h2 class="ob-h">Il tuo piano è pronto</h2>
     <div class="card" style="margin-bottom:10px">
       <div class="grid2">
@@ -2027,7 +2038,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.14.1";
+const APP_VERSION="2.15.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2950,7 +2961,7 @@ $("#scanAdd").onclick=()=>{
     meal:$("#scanMeal").value,src:"scan"});
   save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); toast("Prodotto registrato 🛒"); };
 /* --- onboarding --- */
-const OB={step:0,sesso:"M",ritmo:"sostenuto",veg:2,escl:[]};
+const OB={step:0,sesso:"M",ritmo:"sostenuto",veg:2,escl:[],scopo:"dimagrire"};
 function obWarn(msg){ const s=document.querySelector('.ob-step:not([hidden]) .ob-err');
   if(s) s.textContent=msg; toast(msg); }
 function obShow(n){ OB.step=n;
@@ -2963,10 +2974,20 @@ function obEscRender(){ $("#obEsclList").innerHTML=OB.escl.map((e,i)=>
   $$("#obEsclList [data-esc]").forEach(c=>c.onclick=()=>{ OB.escl.splice(+c.dataset.esc,1); obEscRender(); }); }
 function startOnboarding(){
   $("#onboard").hidden=false; obShow(0); obEscRender();
+  $$("[data-scopo]").forEach(b=>b.onclick=()=>{ OB.scopo=b.dataset.scopo;
+    $$("[data-scopo]").forEach(x=>x.classList.toggle("on",x===b));
+    $("#obPrehabNote").hidden=OB.scopo!=="prehab"; });
   $$("#onboard [data-obnext]").forEach(b=>b.onclick=()=>{
-    if(OB.step===1){ const e=+$("#obEta").value, a=+$("#obAlt").value;
-      if(e<18||e>90||a<120||a>220){ obWarn("Controlla età e altezza"); return; } }
-    if(OB.step===2){ const p=+$("#obPeso").value, g=+$("#obGoal").value;
+    if(OB.step===3&&OB.scopo!=="dimagrire"){ const p=+$("#obPeso").value;
+      if(!p||p<40||p>250){ obWarn("Inserisci il tuo peso attuale"); return; }
+      obShow(4); return; }
+    if(OB.step===2){ const e=+$("#obEta").value, a=+$("#obAlt").value;
+      if(e<18||e>90||a<120||a>220){ obWarn("Controlla età e altezza"); return; }
+      /* per diario/prehab niente obiettivo né ritmo */
+      const dim=OB.scopo==="dimagrire";
+      $("#obGoalCell").style.display=dim?"":"none";
+      $("#obRitmoWrap").style.display=dim?"":"none"; }
+    if(OB.step===3){ const p=+$("#obPeso").value, g=+$("#obGoal").value;
       const alt=+$("#obAlt").value; const minSano=Math.round(18.5*Math.pow(alt/100,2));
       if(!p||!g){ obWarn("Inserisci peso attuale e obiettivo"); return; }
       if(p<=minSano){ obWarn("Per "+alt+" cm sei già al peso ideale: qui non serve dimagrire 💚");
@@ -3008,7 +3029,9 @@ function startOnboarding(){
 }
 function obApply(){
   U.sesso=OB.sesso; U.eta=+$("#obEta").value; U.alt=+$("#obAlt").value;
-  if(OB.mode==="tonifica"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento";
+  U.mode=OB.scopo;
+  if(OB.scopo!=="dimagrire"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento"; }
+  else if(OB.mode==="tonifica"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento";
     U.protKg=Math.max(U.protKg||1.8,2); }
   else { U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo; }
   U.passiBase=+$("#obPassi").value;
@@ -3021,7 +3044,11 @@ function obApply(){
 function obReveal(){
   const dom0=todayKey(new Date(Date.now()+864e5));
   $("#obKcal").textContent=kcalDay(dom0)+" kcal";
-  if(U.ritmo==="mantenimento"){
+  if(U.mode==="diario"||U.mode==="prehab"){
+    $("#obKcalLbl").textContent="Le tue calorie di riferimento";
+    $("#obEtaLbl").textContent="Modalità";
+    $("#obEta2").textContent=U.mode==="prehab"?"Diario · prehab in arrivo 🏥":"Diario alimentare 📓";
+  } else if(U.ritmo==="mantenimento"){
     $("#obKcalLbl").textContent="Le tue calorie di mantenimento";
     $("#obEtaLbl").textContent="Obiettivo";
     $("#obEta2").textContent="Tonificare 💪";
