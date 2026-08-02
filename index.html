@@ -2038,7 +2038,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.15.0";
+const APP_VERSION="2.16.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3273,6 +3273,15 @@ function buildSpesa(){
   }
   if(albume) agg["Albume d'uovo (in brick o da uova)"]={g:albume,cat:"uova"};
   if(uovaG) agg["Uova fresche"]={g:uovaG,cat:"uova",pezzi:Math.ceil(uovaG/60)};
+  /* max 2 pani a settimana: unifica le varianti di pane semplice */
+  const PANE_RE=/^pane($| )/i, PANE_NO=/marmellata|ricotta|burro|miele|olio/i;
+  const pani=Object.keys(agg).filter(n=>PANE_RE.test(n)&&!PANE_NO.test(n));
+  if(pani.length>2){
+    pani.sort((a,b)=>agg[b].g-agg[a].g);
+    const extra=pani.slice(2).reduce((s,n)=>{const g=agg[n].g; delete agg[n]; return s+g;},0);
+    const top=pani[0], nome=top+" (o altro pane a scelta)";
+    agg[nome]={g:agg[top].g+extra,cat:"cereali"}; delete agg[top];
+  }
   U.spesaCk=U.spesaCk||{};
   const html=REPARTI.map(([lab,cats])=>{
     const rows=Object.entries(agg).filter(([n,v])=>cats.includes(v.cat))
@@ -3287,8 +3296,12 @@ function buildSpesa(){
           <input type="checkbox" style="width:auto" data-spesa="${n.replace(/"/g,"&quot;")}" ${ck}>
           <span style="flex:1;${ck?"text-decoration:line-through;opacity:.55":""}">${n}</span><span class="small">${q}</span></label></li>`; }).join("");
     return rows?`<div style="margin-top:8px"><b style="font-size:.82rem">${lab}</b><ul>${rows}</ul></div>`:""; }).join("");
-  const basHtml=basici.size?`<div style="margin-top:10px"><b style="font-size:.82rem">🧂 Basici di casa (spunta se mancano)</b>
-    <div class="small" style="margin-top:2px">${[...basici].sort().join(" · ")}</div></div>`:"";
+  const basHtml=basici.size?`<div style="margin-top:10px"><b style="font-size:.82rem">🧂 Basici di casa (spunta quelli che ti mancano)</b><ul>${
+    [...basici].sort().map(n=>{ const key="🧂 "+n, ck=U.spesaCk[key]?"checked":"";
+      return `<li style="list-style:none"><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
+        <input type="checkbox" style="width:auto" data-spesa="${key.replace(/"/g,"&quot;")}" ${ck}>
+        <span style="flex:1;${ck?"font-weight:600":"opacity:.65"}">${n}</span></label></li>`; }).join("")
+  }</ul></div>`:"";
   $("#spesaList").innerHTML=(html||"Nessun ingrediente.")+basHtml;
   $("#btnSpesaCopy").hidden=false;
   $$("#spesaList [data-spesa]").forEach(cb=>cb.onchange=()=>{
@@ -3298,7 +3311,8 @@ function buildSpesa(){
     const rows=Object.entries(agg).filter(([n,v])=>cats.includes(v.cat))
       .sort((a,b)=>a[0].localeCompare(b[0]))
       .map(([n,v])=>"- "+n+" · "+(v.g>=1000?(v.g/1000).toFixed(1)+" kg":Math.round(v.g/5)*5+" g"));
-    return rows.length?lab+"\n"+rows.join("\n"):""; }).filter(Boolean).join("\n\n");
+    return rows.length?lab+"\n"+rows.join("\n"):""; }).filter(Boolean).join("\n\n")
+    +(basici.size?"\n\n🧂 Basici da controllare\n"+[...basici].sort().map(n=>"- "+n+(U.spesaCk["🧂 "+n]?" ← MANCA":"")).join("\n"):"");
 }
 $("#btnSpesa").onclick=()=>{ buildSpesa(); toast("Lista generata sui prossimi 7 giorni"); };
 $("#btnSpesaCopy").onclick=()=>{ 

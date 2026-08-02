@@ -39,6 +39,11 @@ setTimeout(()=>{
       const off=Math.abs(tot-m.target.kcal)/m.target.kcal;
       if(off>0.10) r.kcalOff.push(k+" "+Math.round(off*100)+"%");
     }
+    /* lista spesa 2.0: max 2 pani semplici, basici spuntabili */
+    buildSpesa();
+    const sHtml=document.getElementById('spesaList').innerHTML;
+    r.spesaPani=(sHtml.match(/data-spesa="Pane[^"]*"/gi)||[]).filter(s=>!/marmellata|ricotta|burro|miele|olio/i.test(s)).length;
+    r.spesaBasici=[...document.querySelectorAll('#spesaList [data-spesa]')].filter(cb=>cb.dataset.spesa.startsWith('\u{1F9C2}')).length;
     return JSON.stringify(r);
   })()`);
   const r=JSON.parse(out);
@@ -47,7 +52,8 @@ setTimeout(()=>{
   console.log('violazioni esclusioni:',r.esclViol,'| stagionalità:',r.stagViol,'| limiti porzione:',r.capViol);
   console.log('doppie uova:',r.eggDouble,'| doppioni stesso giorno:',r.sameDayDup,'| giorni >2 frutti:',r.fruttaViol);
   console.log('giorni oltre ±10% kcal:',r.kcalOff.length,r.kcalOff.slice(0,3).join(' · '));
-  const fail=!r.det||r.vegViol||r.esclViol||r.stagViol||r.capViol||r.eggDouble;
+  console.log('spesa: pani semplici in lista:',r.spesaPani,'(max 2) | basici spuntabili:',r.spesaBasici);
+  const fail=!r.det||r.vegViol||r.esclViol||r.stagViol||r.capViol||r.eggDouble||r.spesaPani>2||!r.spesaBasici;
   console.log(fail?'❌ REGRESSIONE':'✅ tutto verde');
   process.exit(fail?1:0);
 },700);
