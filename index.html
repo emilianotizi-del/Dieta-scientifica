@@ -2027,7 +2027,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.14.0";
+const APP_VERSION="2.14.1";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2252,10 +2252,11 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     if(c) addFit(c.f,kcalTarget*0.45,25,90);
     const p=pick(bProt.length?bProt:hiP,r); if(p) addFit(p.f,kcalTarget*0.35,100,250);
     addFruit(0.20,0.7);
-  } else if(name==="Spuntino"){
+  } else if(mealCode==="s"){
     if(r()<0.6&&bProt.length){ const p=pick(bProt,r); addFit(p.f,kcalTarget*0.6,100,200);
       addFruit(0.4,0.8); }
-    else { const s=pick(Sn,r); if(s) addFit(s.f,kcalTarget*0.7,15,60);
+    else { const s=pick(Sn,r);
+      if(s) addFit(s.f,kcalTarget*0.7,15,/yogurt|skyr|porridge|latte/i.test(s.f[0])?250:60);
       addFruit(0.3,0.8); }
   } else { /* Pranzo o Cena */
     const style=r();
@@ -2301,6 +2302,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   }
   /* proteine ancora corte → aggiungi una fonte magra dedicata */
   for(let t=0;t<2;t++){
+    if(mealCode!=="p"&&mealCode!=="e") break; /* solo pasti principali: gli spuntini restano semplici */
     const pNow=raw.reduce((s,x)=>s+x.f[3]*x.g/100,0);
     if(!protTarget||pNow>=protTarget*0.85||!hiP.length) break;
     /* prima prova ad allargare la porzione della fonte già nel piatto */
@@ -2324,6 +2326,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   }
   /* kcal ancora corte → integra con alimenti densi non proteici */
   for(let t=0;t<2;t++){
+    if(mealCode==="s") break; /* spuntini: 1-2 voci vere, niente riempitivi */
     const cur=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0);
     const gap=kcalTarget-cur; if(gap<kcalTarget*0.08) break;
     const NEUTRI=/^pane|friselle|carasau|grissini|taralli|mandorle|^noci|nocciole|pistacchi|olio extravergine|parmigiano|grana/i;
@@ -2339,7 +2342,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
     /* 1) prima gli alimenti non proteici (minimi dimezzabili) */
     const rNP=Math.max(kcalTarget/kT,0.5);
     raw.filter(x=>!isPitem(x)).forEach(x=>{
-      const mn=x.f[7]==="fr"?x.min:Math.max(10,Math.round(x.min*0.5/x.st)*x.st);
+      const mn=(x.f[7]==="fr"||x.f[7]==="s"||mealCode==="s")?x.min:Math.max(10,Math.round(x.min*0.5/x.st)*x.st);
       x.g=clamp(x.g*rNP,Math.min(mn,x.max),x.max,x.st); });
     kT=raw.reduce((s,x)=>s+x.f[2]*x.g/100,0)||1;
     if(kT<=kcalTarget*1.06) break;
@@ -2357,7 +2360,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
-const MENU_V=6;
+const MENU_V=7;
 function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey] && U.menuCache[dateKey].mv===MENU_V) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
@@ -2379,7 +2382,16 @@ function genMenu(dateKey,force){
     : schema==="if168"
     ? [["Pranzo",0.46],["Spuntino",0.10],["Cena",0.44]]
     : [["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]];
-  const meals=split.map(([n,q])=>buildMeal(n,m.kcal*q,m.p*q,r,ctx));
+  let meals=split.map(([n,q])=>buildMeal(n,m.kcal*q,m.p*q,r,ctx));
+  /* secondo passaggio: se i minimi delle porzioni hanno gonfiato il giorno (>6%), 
+     ricostruisci con lo stesso seme (stessi piatti) ma target ridotto dell'eccesso */
+  const tot0=meals.reduce((s,me)=>s+me.tot.kcal,0);
+  if(tot0>m.kcal*1.06){
+    const k2=Math.max(Math.round(m.kcal-(tot0-m.kcal)),Math.round(m.kcal*0.86));
+    const r2=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
+    const ctx2={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2,dateKey};
+    meals=split.map(([n,q])=>buildMeal(n,k2*q,m.p*q,r2,ctx2));
+  }
   const menu={mv:MENU_V,schema,veg,dayType:dayType(dateKey),target:m,meals,eaten:(U.menuCache[dateKey]&&U.menuCache[dateKey].eaten)||{},comp};
   U.menuCache[dateKey]=menu;
   /* mantieni cache leggera */
@@ -2611,6 +2623,11 @@ function minOf(f){
     if(/pizza|calzone|panzerotto/.test(n)) return 250;
     return 150; }
   if(FAM.pane.test(f[0])) return 30;
+  if(f[7]==="s"){
+    if(/yogurt|porridge|skyr|latte|smoothie|pancake|pane e ricotta|toast/i.test(f[0])) return 125;
+    if(/mandorle|noci|nocciole|pistacchi|anacardi|arachidi|pecan|brasile|macadamia|mix frutta|frutta secca|cioccolat|datteri|uvetta|prugne secche|albicocche secche|fichi secchi/i.test(f[0])) return 15;
+    if(/biscott|cantucci|amarett|frollini|gallette|cracker|fette|taralli|grissini/i.test(f[0])) return 20;
+    return 30; }
   if(f[7]==="fr") return frMin(f);
   if(f[1]==="latticini"&&f[7]==="p") return 40;
   if((f[1]==="carne"||f[1]==="pesce")&&f[7]==="p") return 60;
@@ -3017,7 +3034,7 @@ function obReveal(){
   const dom=todayKey(new Date(Date.now()+864e5));
   const menu=genMenu(dom);
   $("#obMenu").innerHTML=menu.meals.map(me=>
-    `<div style="margin-bottom:6px"><b>${me.nome} · ${me.items.reduce((s,i)=>s+i.kcal,0)} kcal</b><br>
+    `<div style="margin-bottom:6px"><b>${me.name} · ${me.items.reduce((s,i)=>s+i.kcal,0)} kcal</b><br>
      <span class="small">${me.items.slice(0,3).map(i=>i.name).join(" · ")}${me.items.length>3?"…":""}</span></div>`).join("");
 }
 if(FIRST_RUN){ startOnboarding(); }
