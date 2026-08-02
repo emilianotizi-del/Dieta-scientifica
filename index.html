@@ -2021,7 +2021,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.10.0";
+const APP_VERSION="2.11.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2165,7 +2165,9 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const mealCode=MEAL_CODE[name]||"p";
   const inSlot=o=>slotsOf(o.f).includes(mealCode);
   const noEgg=o=>!(ctx.eggUsed&&FAM.uova.test(o.f[0]));
-  const P=pool("p",ctx).filter(inSlot).filter(noEgg), C=pool("c",ctx).filter(inSlot), V=pool("v",ctx).filter(inSlot),
+  const wb2=weekBreads(ctx.dateKey||todayKey());
+  const breadOK=o=>!FAM.pane.test(o.f[0])||wb2.includes(o.f[0]);
+  const P=pool("p",ctx).filter(inSlot).filter(noEgg), C=pool("c",ctx).filter(inSlot).filter(breadOK), V=pool("v",ctx).filter(inSlot),
         G=pool("g",ctx).filter(inSlot), X=pool("x",ctx).filter(inSlot).filter(noEgg), FR=pool("fr",ctx).filter(inSlot),
         Sn=pool("s",ctx).filter(inSlot), A=pool("a",ctx).filter(inSlot);
   const byName=(arr,re)=>arr.filter(o=>re.test(o.f[0]));
@@ -2309,7 +2311,7 @@ function genMenu(dateKey,force){
   if(yl&&yl.pasti.length){ const yt=totalsOf(yk).kcal, ytg=macros(yk).kcal;
     if(yt>ytg*1.05) comp=Math.min(Math.round((yt-ytg)*0.5),Math.round(m.kcal*0.15)); }
   if(comp){ m.kcal-=comp; m.c=Math.max(m.c-Math.round(comp/4),40); }
-  const ctx={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2};
+  const ctx={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2,dateKey};
   const SPLITS={"2":[["Pranzo",0.52],["Cena",0.48]],
     "3":[["Colazione",0.20],["Pranzo",0.42],["Cena",0.38]],
     "4":[["Colazione",0.15],["Pranzo",0.40],["Spuntino",0.07],["Cena",0.38]],
@@ -2992,25 +2994,69 @@ function openDayEditor(k){
 
 const REPARTI=[["🥬 Ortofrutta",["verdura","frutta"]],["🧊 Banco frigo",["latticini","uova","carne","salumi","pesce"]],
  ["🏺 Dispensa",["cereali","legumi","fruttasecca","condimenti","colazione","bevande","dolci"]],["🍲 Piatti da preparare",["piatti"]]];
+/* aromi e basici di casa: non si pesano, si spuntano se mancano */
+const BASICI_RE=/^olio |^aceto|^sale$|limone$|succo di limone|parmigiano|grana padano|pepe|origano|basilico|prezzemolo|salvia|rosmarino|menta|alloro|timo|aglio|peperoncin|erba cipollina|capperi|colatura|lievito/i;
+/* frutta e verdura che si comprano a pezzi: peso medio del pezzo */
+const PEZZI={mela:180,mele:180,pera:160,pere:160,banana:120,arancia:200,arance:200,kiwi:100,pesca:150,pesche:150,
+ peschenoci:150,albicocc:45,susin:50,prugn:50,fico:45,fichi:45,mandarin:80,clementin:70,limone:100,papaia:900,
+ avocado:200,melagrana:250,cachi:180,mango:350,cetriol:250,zucchin:200,melanzan:300,peperone:180,carciof:250,
+ finocch:250,pomodoro:120,cipolla:120,uovo:60,uova:60};
+function pezzoDi(n){ const l=n.toLowerCase(); for(const k in PEZZI) if(l.includes(k)) return PEZZI[k]; return 0; }
+function repartoIng(ing){
+  const l=ing.toLowerCase();
+  if(/pomodor|zucchin|melanzan|verdur|cipoll|carot|sedano|insalat|rucol|radicchio|spinac|bietol|verza|patat|funghi|peperon|zucca|carciof|fagiolin|piselli|cavol|porro|scarola|catalogna|lattug/.test(l)) return "verdura";
+  if(/mela|pera|pesc|frutt|limone|arancia|uvetta|fichi/.test(l)) return "frutta";
+  if(/pasta|riso|farro|orzo|pane|farina|couscous|semola|polenta|mais|pangrattato|sfoglia|impasto|gnocchi|bulgur|quinoa|avena/.test(l)) return "cereali";
+  if(/pesce|alici|sarde|tonno|merluzz|baccal|vongol|cozze|calamar|seppi|gamber|polpo|astice|frutti di mare|branzino|orata|sogliola|spada|salmone|moscardin/.test(l)) return "pesce";
+  if(/pollo|manzo|vitell|maiale|tacchin|agnell|salsicc|carne|lonza|bovino|coniglio|speck|prosciutt|pancetta|guanciale|bresaola|salame|lardo/.test(l)) return "carne";
+  if(/mozzarell|ricott|parmigian|formagg|latte|burro|panna|besciamell|provol|pecorin|gorgonzol|stracchin|casera|fontina|yogurt|mascarpone/.test(l)) return "latticini";
+  if(/uov|albume/.test(l)) return "uova";
+  if(/fagiol|lenticch|ceci|legum|lupin/.test(l)) return "legumi";
+  if(/mandorl|noci|nocciol|pinol|pistacch|sesamo|uvetta/.test(l)) return "fruttasecca";
+  return "condimenti";
+}
 function buildSpesa(){
-  const agg={}; const start=dateFromKey(todayKey());
+  const agg={}; const basici=new Set(); const start=dateFromKey(todayKey());
+  const addG=(n,g,cat)=>{ if(BASICI_RE.test(n)){ basici.add(n.replace(/^olio extravergine.*/i,"Olio extravergine d'oliva")); return; }
+    if(!agg[n]) agg[n]={g:0,cat}; agg[n].g+=g; };
   for(let i=0;i<7;i++){ const k=todayKey(new Date(+start+i*864e5));
     const m=genMenu(k);
     m.meals.forEach(me=>me.items.forEach(it=>{ if(it.id==null) return;
       const f=FOOD_DB[it.id]; const n=f[0];
-      if(!agg[n]) agg[n]={g:0,cat:f[1]};
-      agg[n].g+=it.g; })); }
+      const rec=f[7]==="x"&&RECIPES[n];
+      if(rec){ /* i piatti si comprano per ingredienti */
+        rec.i.forEach(([ing,g100])=>{
+          const g=it.g*g100/100;
+          if(BASICI_RE.test(ing)||/olio|aglio|sale|prezzemolo|basilico|salvia|rosmarino|erbe|odori|aromi|pepe|spezie|vino|brodo|acqua/i.test(ing)){ 
+            if(/vino|brodo/i.test(ing)) basici.add(ing.split(",")[0]); return; }
+          addG(ing.charAt(0).toUpperCase()+ing.slice(1), g, repartoIng(ing));
+        }); return; }
+      addG(n,it.g,f[1]); })); }
+  /* uova unificate */
+  let albume=0, uovaG=0;
+  for(const n of Object.keys(agg)){
+    if(/albume/i.test(n)){ albume+=agg[n].g; delete agg[n]; }
+    else if(/^uov|frittata|strapazzat/i.test(n)){ uovaG+=agg[n].g; delete agg[n]; }
+  }
+  if(albume) agg["Albume d'uovo (in brick o da uova)"]={g:albume,cat:"uova"};
+  if(uovaG) agg["Uova fresche"]={g:uovaG,cat:"uova",pezzi:Math.ceil(uovaG/60)};
   U.spesaCk=U.spesaCk||{};
   const html=REPARTI.map(([lab,cats])=>{
     const rows=Object.entries(agg).filter(([n,v])=>cats.includes(v.cat))
       .sort((a,b)=>a[0].localeCompare(b[0]))
       .map(([n,v])=>{ const ck=U.spesaCk[n]?"checked":"";
-        const q=v.g>=1000?(v.g/1000).toFixed(1).replace(".",",")+" kg":Math.round(v.g/5)*5+" g";
+        let q;
+        const pz=v.pezzi||( ["verdura","frutta"].includes(v.cat)&&pezzoDi(n)?Math.ceil(v.g/pezzoDi(n)):0 );
+        if(pz) q=pz+(pz===1?" pezzo":" pezzi")+" (≈"+(Math.round(v.g/50)*50)+" g)";
+        else if(["verdura","frutta"].includes(v.cat)) q="≈ "+Math.max(100,Math.ceil(v.g/100)*100)+" g";
+        else q=v.g>=1000?(v.g/1000).toFixed(1).replace(".",",")+" kg":Math.max(50,Math.round(v.g/50)*50)+" g";
         return `<li style="list-style:none"><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
           <input type="checkbox" style="width:auto" data-spesa="${n.replace(/"/g,"&quot;")}" ${ck}>
           <span style="flex:1;${ck?"text-decoration:line-through;opacity:.55":""}">${n}</span><span class="small">${q}</span></label></li>`; }).join("");
     return rows?`<div style="margin-top:8px"><b style="font-size:.82rem">${lab}</b><ul>${rows}</ul></div>`:""; }).join("");
-  $("#spesaList").innerHTML=html||"Nessun ingrediente.";
+  const basHtml=basici.size?`<div style="margin-top:10px"><b style="font-size:.82rem">🧂 Basici di casa (spunta se mancano)</b>
+    <div class="small" style="margin-top:2px">${[...basici].sort().join(" · ")}</div></div>`:"";
+  $("#spesaList").innerHTML=(html||"Nessun ingrediente.")+basHtml;
   $("#btnSpesaCopy").hidden=false;
   $$("#spesaList [data-spesa]").forEach(cb=>cb.onchange=()=>{
     if(cb.checked) U.spesaCk[cb.dataset.spesa]=1; else delete U.spesaCk[cb.dataset.spesa];
