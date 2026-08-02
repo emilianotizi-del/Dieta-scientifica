@@ -8,6 +8,8 @@
 <title>Rotta 80 · Coach dieta e allenamento</title>
 <style>
 :root{
+  --sem-a:#3E8E41; --sem-b:#8DB600; --sem-c:#E8A13C; --sem-d:#E06A2B; --sem-e:#C63F2E;
+  --risk2:#F8DCD3; --risk1:#FAEBC4; --risk0:#E8EDD2; --btxt:#fff;
   --r-s:8px; --r-m:12px; --r-pill:999px;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
   --bg:#F6F4EC; --card:#FFFFFF; --ink:#22333B; --ink2:#5C6B72; --line:#E4E0D3;
@@ -95,6 +97,10 @@ input[type="checkbox"]{width:22px!important;height:22px;min-width:22px;accent-co
 .ckrow{display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0}
 .scorebadge{color:#fff;border-radius:var(--r-m);padding:8px 14px;text-align:center;line-height:1.1}
 .bsez{font-size:.82rem}
+.skel{position:relative;overflow:hidden;background:var(--line);border-radius:var(--r-s);height:14px;margin:var(--sp-2) 0}
+.skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.30),transparent);animation:skel 1.1s infinite}
+@keyframes skel{to{transform:translateX(100%)}}
 /* allenamento */
 .ex{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.87rem}
 .ex:last-child{border-bottom:none}
@@ -191,6 +197,8 @@ body.t-vivo .card h2::before{height:16px;width:5px}
 body.t-vivo nav{background:#233324}
 /* ---- tema: Notturno ---- */
 body.t-notte{--bg:#11171B;--card:#1B2328;--ink:#EAE6DA;--ink2:#98A6AD;--line:#2A343B;
+  --sem-a:#4FA75B;--sem-b:#9FBC50;--sem-c:#DA9F3F;--sem-d:#D1793F;--sem-e:#D45848;
+  --risk2:#4A2A24;--risk1:#463B1E;--risk0:#2B3626;
   --oliva:#A9C077;--oliva-s:#242E1C;--grano:#E3B04B;--grano-s:#332A14;
   --mare:#7FBCD2;--mare-s:#1B2E37;--pomodoro:#E37A66;--pomodoro-s:#38211C;
   --ok:#7CB98A;--shadow:0 1px 3px rgba(0,0,0,.5)}
@@ -2120,7 +2128,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.36.0";
+const APP_VERSION="2.37.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2608,6 +2616,7 @@ const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmt=n=>n.toLocaleString("it-IT");
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); t.classList.remove("act");
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
+function vib(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} } /* silenzioso dove l'API manca */
 function toastUndo(msg,fn){ /* 5 secondi per ripensarci */
   const t=$("#toast");
   t.innerHTML=msg+' <span class="undo" role="button" tabindex="0">Annulla</span>';
@@ -2643,7 +2652,7 @@ function renderToday(){
   $("#kcalTarget").textContent=fmt(m.kcal);
   const pct=Math.min(tot.kcal/m.kcal,1.15);
   $("#dialArc").style.strokeDashoffset=257.6*(1-Math.min(pct,1));
-  $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"#B23A2B":"url(#dialGrad)";
+  $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"var(--pomodoro)":"url(#dialGrad)";
   $("#dialPct").textContent=Math.round(tot.kcal/m.kcal*100)+"%";
   const chip=$("#dayTypeChip"); chip.className="chip "+menu.dayType;
   chip.textContent={basso:"Giorno basso",pieno:"Giorno pieno",ricarica:"Ricarica"}[menu.dayType];
@@ -2685,13 +2694,14 @@ function renderToday(){
     const i=+b.dataset.eat; if(menu.eaten[i]) return;
     menu.eaten[i]=true;
     menu.meals[i].items.forEach(it=>dayLog().pasti.push({...it,meal:menu.meals[i].name,src:"menu"}));
-    save(); render(); toast(menu.meals[i].name+" registrato"); });
+    save(); render(); vib(15); toast(menu.meals[i].name+" registrato"); });
   /* passi */
   const log=dayLog(); const goal=stepsGoalToday();
   $("#stepsNow").textContent=fmt(log.passi); $("#stepsGoal").textContent=fmt(goal);
   $("#stepsBar").style.width=Math.min(log.passi/goal*100,100)+"%";
   /* streak e punteggio aderenza */
   const sc=scoreOf(k); const st=streak();
+  const lgV=dayLog(); if(sc!=null&&sc>=60&&!lgV.vday){ lgV.vday=1; save(); vib([20,60,20]); } /* giorno completato, una volta sola */
   $("#streakLine").innerHTML=(st>0?`🔥 <b>${st}</b> giorn${st===1?"o":"i"} in rotta`:"🧭 Inizia oggi la tua serie")+
     (sc!=null?` · punteggio di oggi <b>${sc}/100</b>`:"")+
     ` <span style="opacity:.6">(kcal, proteine, passi, acqua, allenamento)</span>`;
@@ -3074,7 +3084,7 @@ function rottaScore(p){
   if(p.ns==="E") s=Math.min(s,29);
   return s;
 }
-function scoreBand(s){ return s>=75?["Eccellente","#3E8E41"]:s>=50?["Buono","#8DB600"]:s>=25?["Mediocre","#E8A13C"]:["Scarso","#C63F2E"]; }
+function scoreBand(s){ return s>=75?["Eccellente","var(--sem-a)"]:s>=50?["Buono","var(--sem-b)"]:s>=25?["Mediocre","var(--sem-c)"]:["Scarso","var(--sem-e)"]; }
 const ALT_MAP=[[/biscuit|cookie|merendin|snack dolc/i,"fette biscottate integrali con un velo di marmellata"],
  [/chocolat|cioccolato al latte/i,"cioccolato fondente ≥85% (2 quadretti)"],
  [/soda|soft-drink|cola|aranciata|bibite/i,"acqua frizzante con limone, o tè freddo senza zucchero"],
@@ -3105,7 +3115,7 @@ function renderCompare(a,b){
   const head=(p,s,bd,cl,w)=>`<div style="border:2px solid ${w?cl:"var(--line)"};border-radius:var(--r-m);padding:6px;text-align:center">
     ${p.img?`<img src="${p.img}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:var(--r-s);display:block;margin:0 auto 4px">`:""}
     ${w?"🏆 ":""}<b style="font-size:.78rem">${p.name}</b>
-    <div style="margin-top:3px"><span style="background:${cl};color:#fff;border-radius:var(--r-s);padding:2px 8px;font-weight:800">${s}</span> <span class="small">${bd}</span></div></div>`;
+    <div style="margin-top:3px"><span style="background:${cl};color:var(--btxt);border-radius:var(--r-s);padding:2px 8px;font-weight:800">${s}</span> <span class="small">${bd}</span></div></div>`;
   let h=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${head(a,sa,bda,cla,win==="a")}${head(b,sb,bdb,clb,win==="b")}</div>`;
   h+=`<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 8px;font-size:.78rem;margin-top:6px">`
     +M.map(([lab,fn])=>`<div class="small">${lab}</div><div style="text-align:center">${fn(a)}</div><div style="text-align:center">${fn(b)}</div>`).join("")+`</div>`;
@@ -3120,7 +3130,7 @@ function showScanned(prod,fromCache){
   $("#scanKcal").value=prod.kcal||""; $("#scanP").value=prod.p||""; $("#scanC").value=prod.c||""; $("#scanF").value=prod.f||"";
   const hasDati=NS_OK(prod.ns); /* senza Nutri-Score valido (A-E) niente punteggio: "NOT-APPLICABLE" degli alcolici non è un dato */
   const score=hasDati?rottaScore(prod):null; const [band,col]=hasDati?scoreBand(score):["",""];
-  const NS_COL={A:"#3E8E41",B:"#8DB600",C:"#E8A13C",D:"#E06A2B",E:"#C63F2E"};
+  const NS_COL={A:"var(--sem-a)",B:"var(--sem-b)",C:"var(--sem-c)",D:"var(--sem-d)",E:"var(--sem-e)"};
   const NS_TXT={A:"ottima qualità nutrizionale",B:"buona qualità",C:"qualità media: ogni tanto",D:"qualità scarsa: di rado",E:"da limitare il più possibile"};
   let scoreHtml=hasDati?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     ${prod.img?`<img src="${prod.img}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r-m);background:var(--line)">`:""}
@@ -3130,7 +3140,7 @@ function showScanned(prod,fromCache){
     :(prod.ns&&!NS_OK(prod.ns)
       ?`<div class="small">ℹ️ Il Nutri-Score <b>non si applica</b> a questo prodotto (es. bevande alcoliche): punteggio non disponibile. Puoi comunque registrarlo nel diario.</div>`
       :`<div class="small">ℹ️ Prodotto non in archivio: <b>punteggio non disponibile</b>. Se hai l'etichetta puoi comunque inserire i valori e registrarlo nel diario.</div>`);
-  if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:#fff;font-weight:800;border-radius:var(--r-s);padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
+  if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:var(--btxt);font-weight:800;border-radius:var(--r-s);padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
   /* semafori nutrizionali per 100 g */
   const dot=(v,lo,hi,inv)=>{ const good=inv?v>=hi:v<lo, bad=inv?v<lo:v>hi;
     return bad?"🔴":good?"🟢":"🟡"; };
@@ -3144,7 +3154,7 @@ function showScanned(prod,fromCache){
   /* additivi con livello di rischio */
   if(prod.adds&&prod.adds.length){
     const chips=prod.adds.slice(0,8).map(a=>{ const r=addRisk(a);
-      return `<span style="border-radius:var(--r-s);padding:1px 6px;margin:1px;display:inline-block;font-size:.72rem;background:${r===2?"#F8DCD3":r===1?"#FAEBC4":"#E8EDD2"}">${a}${r===2?" ⚠️":r===1?" ·":""}</span>`; }).join("");
+      return `<span style="border-radius:var(--r-s);padding:1px 6px;margin:1px;display:inline-block;font-size:.72rem;background:${r===2?"var(--risk2)":r===1?"var(--risk1)":"var(--risk0)"}">${a}${r===2?" ⚠️":r===1?" ·":""}</span>`; }).join("");
     const worst=Math.max(...prod.adds.map(addRisk));
     scoreHtml+=`<div class="small" style="margin-top:6px"><b>${prod.adds.length} additiv${prod.adds.length===1?"o":"i"}</b>${worst===2?" — almeno uno da evitare":worst===1?" — qualcuno controverso":" — nessuno preoccupante"}<br>${chips}</div>`;
   } else if(prod.adds) scoreHtml+=`<div class="small" style="margin-top:6px">🟢 Senza additivi segnalati</div>`;
@@ -3290,7 +3300,7 @@ async function startZX(v){
 }
 function onScanHit(code){
   $("#scanOk").hidden=false; $("#scanPulse").textContent="✓ Letto!";
-  if(navigator.vibrate) try{navigator.vibrate(80);}catch(e){}
+  vib(80); /* scansione riuscita */
   setTimeout(()=>{ stopScanVideoOnly(); $("#scanOk").hidden=true;
     $("#scanPulse").textContent="🔎 In ascolto…"; lookupEan(code); },450);
 }
@@ -3345,7 +3355,7 @@ $("#scanAdd").onclick=()=>{
   dayLog().pasti.push({id:null,name:"🛒 "+name.split(" · ")[0],g,
     kcal:Math.round(kcal*k),p:+(p*k).toFixed(1),c:+(c*k).toFixed(1),fat:+(f*k).toFixed(1),
     meal:$("#scanMeal").value,src:"scan"});
-  save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); toast("Prodotto registrato 🛒"); };
+  save(); stopScanVideoOnly(); $("#dlgScan").close(); render(); vib(15); toast("Prodotto registrato 🛒"); };
 /* --- onboarding --- */
 const OB={step:0,sesso:"M",ritmo:"sostenuto",veg:2,escl:[],scopo:"dimagrire",grav:"no"};
 function obScopoEffettivo(o){ /* CLINICO-DA-VALIDARE: in gravidanza/allattamento niente percorso di dimagrimento */
@@ -3643,7 +3653,7 @@ $("#outAdd").onclick=()=>{
     dayLog().pasti.push({id:null,name:"Fuori casa"+(desc?": "+desc:""),g:0,kcal,p,c,fat:f,
       meal:$("#outMeal").value,src:"out"});
   }
-  save(); $("#dlgOut").close(); render(); toast("Pasto fuori registrato"); };
+  save(); $("#dlgOut").close(); render(); vib(15); toast("Pasto fuori registrato"); };
 /* --- SETTIMANA --- */
 function renderWeek(){
   const days=[]; const now=dateFromKey(todayKey());
@@ -3799,7 +3809,9 @@ function buildSpesa(){
     +(basici.size?"\n\n🧂 Basici da controllare\n"+[...basici].sort().map(n=>"- "+n+(U.spesaCk["🧂 "+n]?" ← MANCA":"")).join("\n"):"")
     +((U.carrello||[]).length?"\n\n🛍 Dal supermercato\n"+U.carrello.map(x=>"- "+x.name).join("\n"):"");
 }
-$("#btnSpesa").onclick=()=>{ buildSpesa(); toast("Lista generata sui prossimi 7 giorni"); };
+function skelHtml(n){ let h=""; for(let i=0;i<n;i++) h+=`<div class="skel" style="width:${60+((i*17)%35)}%"></div>`; return h; }
+$("#btnSpesa").onclick=()=>{ $("#spesaList").innerHTML=skelHtml(8);
+  setTimeout(()=>{ buildSpesa(); toast("Lista generata sui prossimi 7 giorni"); },30); };
 $("#btnSpesaCopy").onclick=()=>{ 
   const t=window._spesaTxt||""; 
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(()=>toast("Lista copiata")); }
@@ -3854,8 +3866,8 @@ function renderSpesaPagella(){
   const mCur=Math.round(avg(cur)); const [band,col]=scoreBand(mCur);
   let trend="";
   if(prev.length>=5){ const d=mCur-Math.round(avg(prev));
-    trend=d>2?`<span style="color:#3E8E41">▲ +${d}</span> <span class="small">vs mese precedente</span>`
-      :d<-2?`<span style="color:#C63F2E">▼ ${d}</span> <span class="small">vs mese precedente</span>`
+    trend=d>2?`<span style="color:var(--sem-a)">▲ +${d}</span> <span class="small">vs mese precedente</span>`
+      :d<-2?`<span style="color:var(--sem-e)">▼ ${d}</span> <span class="small">vs mese precedente</span>`
       :`<span class="small">≈ stabile vs mese precedente</span>`; }
   else trend=`<span class="small">primo mese di dati</span>`;
   let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
@@ -3871,12 +3883,15 @@ function renderSpesaPagella(){
       for(const[re,a]of ALT_MAP){ if(re.test(nm)){ alt=a; break; } }
       const [,c2]=scoreBand(x.s);
       return `<div style="padding:4px 0;border-bottom:1px dashed var(--line)">
-        <span style="background:${c2};color:#fff;border-radius:var(--r-s);padding:1px 7px;font-weight:700;font-size:.75rem">${x.s}</span>
+        <span style="background:${c2};color:var(--btxt);border-radius:var(--r-s);padding:1px 7px;font-weight:700;font-size:.75rem">${x.s}</span>
         ${x.name}<div class="small">💡 Meglio: ${alt}</div></div>`; }).join("")+`</div>`; }
   box.innerHTML=h;
 }
 /* ============ MENU 7 GIORNI STAMPABILE ============ */
 $("#btnMenuPrint").onclick=()=>{
+  $("#reportView").innerHTML=`<div style="max-width:640px;margin:40px auto">${skelHtml(12)}</div>`;
+  $("#reportView").classList.add("on");
+  setTimeout(()=>{
   const days=[]; for(let i=0;i<7;i++) days.push(todayKey(new Date(Date.now()+i*864e5)));
   const html=days.map(k=>{ const m=genMenu(k); const d=dateFromKey(k);
     return `<div style="margin-bottom:10px;page-break-inside:avoid">
@@ -3893,6 +3908,7 @@ $("#btnMenuPrint").onclick=()=>{
     <div class="small" style="margin-bottom:var(--sp-3)">${U.nome} · generato il ${new Date().toLocaleDateString("it-IT")}</div>${html}
     <div class="small">Le quantità dei cereali sono a crudo. Sostituzioni equivalenti: usa ⇄ nell'app.</div>`;
   $("#reportView").classList.add("on");
+  },30);
 };
 /* ============ EXPORT CSV ============ */
 function dlCsv(name,txt){ const b=new Blob(["\ufeff"+txt],{type:"text/csv;charset=utf-8"});
@@ -4110,23 +4126,24 @@ function drawChart(){
   const maxY=Math.max(95,...data.map(d=>d.kg))+1;
   const y=v=>H-pad-(v-minY)/(maxY-minY)*(H-2*pad);
   /* linea obiettivo */
-  ctx.strokeStyle="#C9932A"; ctx.setLineDash([6,5]); ctx.lineWidth=2;
+  const cvar=n=>getComputedStyle(document.body).getPropertyValue(n).trim()||"#888";
+  ctx.strokeStyle=cvar("--grano"); ctx.setLineDash([6,5]); ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(pad,y(U.goal)); ctx.lineTo(W-8,y(U.goal)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle="#C9932A"; ctx.font="600 13px sans-serif"; ctx.fillText("obiettivo "+U.goal+" kg",pad,y(U.goal)-6);
-  if(!data.length){ ctx.fillStyle="#5C6B72"; ctx.fillText("Nessuna pesata ancora registrata",pad,H/2); return; }
+  ctx.fillStyle=cvar("--grano"); ctx.font="600 13px sans-serif"; ctx.fillText("obiettivo "+U.goal+" kg",pad,y(U.goal)-6);
+  if(!data.length){ ctx.fillStyle=cvar("--ink2"); ctx.fillText("Nessuna pesata ancora registrata",pad,H/2); return; }
   const t0=dateFromKey(data[0].d).getTime(), t1=Math.max(dateFromKey(data[data.length-1].d).getTime(),t0+864e5);
   const x=t=>pad+(t-t0)/(t1-t0)*(W-pad-14);
   /* assi */
-  ctx.strokeStyle="#E4E0D3"; ctx.lineWidth=1; ctx.fillStyle="#5C6B72"; ctx.font="11px sans-serif";
+  ctx.strokeStyle=cvar("--line"); ctx.lineWidth=1; ctx.fillStyle=cvar("--ink2"); ctx.font="11px sans-serif";
   for(let v=Math.ceil(minY/2)*2;v<=maxY;v+=2){ ctx.beginPath(); ctx.moveTo(pad,y(v)); ctx.lineTo(W-8,y(v)); ctx.stroke(); ctx.fillText(v,4,y(v)+4); }
   /* trend EMA */
   let ema=data[0].kg; const emaPts=data.map(d=>({t:dateFromKey(d.d).getTime(),v:(ema=ema*0.7+d.kg*0.3)}));
-  ctx.strokeStyle="#B23A2B"; ctx.lineWidth=2; ctx.beginPath();
+  ctx.strokeStyle=cvar("--pomodoro"); ctx.lineWidth=2; ctx.beginPath();
   emaPts.forEach((p,i)=>i?ctx.lineTo(x(p.t),y(p.v)):ctx.moveTo(x(p.t),y(p.v))); ctx.stroke();
   /* punti reali */
-  ctx.strokeStyle="#2E5E6E"; ctx.lineWidth=2.5; ctx.beginPath();
+  ctx.strokeStyle=cvar("--mare"); ctx.lineWidth=2.5; ctx.beginPath();
   data.forEach((d,i)=>{const px=x(dateFromKey(d.d).getTime()),py=y(d.kg); i?ctx.lineTo(px,py):ctx.moveTo(px,py);}); ctx.stroke();
-  ctx.fillStyle="#2E5E6E";
+  ctx.fillStyle=cvar("--mare");
   data.forEach(d=>{ctx.beginPath();ctx.arc(x(dateFromKey(d.d).getTime()),y(d.kg),4,0,7);ctx.fill();});
 }
 $("#btnWeight").onclick=()=>{
