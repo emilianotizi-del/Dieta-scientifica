@@ -85,7 +85,10 @@ label{font-size:.78rem;font-weight:600;color:var(--ink2);display:block;margin:8p
 .fooditem .fk{color:var(--ink2);font-size:.75rem}
 .loglist li{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:6px 0;border-bottom:1px dashed var(--line)}
 .loglist li:last-child{border-bottom:none}
-.del{background:none;color:var(--pomodoro);font-size:1rem;padding:2px 6px}
+.del{background:none;color:var(--pomodoro);font-size:1rem;min-width:44px;min-height:44px;padding:0;margin:-10px -6px;display:inline-flex;align-items:center;justify-content:center}
+/* WCAG 2.2 / EAA: checkbox più grandi e righe con area toccabile >=44px (la label intera è il target) */
+input[type="checkbox"]{width:22px!important;height:22px;min-width:22px;accent-color:var(--oliva);margin:0}
+#spesaList label,#femmBox label,#outVoci>div{min-height:44px}
 /* allenamento */
 .ex{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.87rem}
 .ex:last-child{border-bottom:none}
@@ -133,7 +136,9 @@ dialog::backdrop{background:rgba(34,51,59,.45)}
 .toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
   padding:9px 16px;border-radius:999px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
 .toast.show{opacity:1}
-.mini{background:none;padding:0 6px;font-size:1.05rem;opacity:.55}
+.toast.act{pointer-events:auto}
+.toast .undo{color:#FFD9A0;font-weight:700;text-decoration:underline;cursor:pointer;display:inline-block;padding:10px 8px;margin:-10px -4px -10px 2px}
+.mini{background:none;font-size:1.05rem;opacity:.75;min-width:44px;min-height:44px;padding:0;margin:-8px -4px;display:inline-flex;align-items:center;justify-content:center}
 .mini:active{opacity:1}
 .ptag.cont{background:transparent;color:var(--ink2);min-width:14px;text-align:center}
 .ptag{display:inline-block;font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;
@@ -2099,7 +2104,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.30.0";
+const APP_VERSION="2.31.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2585,8 +2590,16 @@ function totalsOf(k){ const l=U.log[k];
    ============================================================ */
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmt=n=>n.toLocaleString("it-IT");
-function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); t.classList.remove("act");
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
+function toastUndo(msg,fn){ /* 5 secondi per ripensarci */
+  const t=$("#toast");
+  t.innerHTML=msg+' <span class="undo" role="button" tabindex="0">Annulla</span>';
+  t.classList.add("show","act");
+  clearTimeout(t._h);
+  const done=()=>t.classList.remove("show","act");
+  t.querySelector(".undo").onclick=()=>{ done(); fn(); };
+  t._h=setTimeout(done,5000); }
 /* --- navigazione --- */
 $$("nav button").forEach(b=>b.onclick=()=>{
   $$("nav button").forEach(x=>x.classList.toggle("on",x===b));
@@ -2680,7 +2693,9 @@ function renderLogList(){
     `<li><span>${it.meal?it.meal+" · ":""}${it.name} <span class="small">${it.g} g</span></span>
      <span>${it.kcal} kcal <button class="del" data-del="${i}" aria-label="Elimina">✕</button></span></li>`).join("")
     :`<li class="small">Nessun alimento registrato oggi.</li>`;
-  $$("#logList [data-del]").forEach(b=>b.onclick=()=>{ dayLog().pasti.splice(+b.dataset.del,1); save(); render(); });
+  $$("#logList [data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
+    const rm=dayLog().pasti.splice(i,1)[0]; save(); render();
+    toastUndo("Pasto eliminato",()=>{ dayLog().pasti.splice(i,0,rm); save(); render(); }); });
 }
 function qtyLabel(it){
   const f=it.id!=null?FOOD_DB[it.id]:null;
@@ -2728,8 +2743,8 @@ function openItemActions(dateKey,mi,ii){
     toast("Fatto 🍲 Domani a "+(tgt.meal==="Pranzo"?"pranzo":"cena")+": avanzi di "+f[0]); };
   $("#actSwap").onclick=()=>{ $("#dlgAct").close(); swapItem(dateKey,mi,ii); };
   $("#actSkip").onclick=()=>{ $("#dlgAct").close();
-    menu.meals[mi].items.splice(ii,1); save(); render();
-    toast("Tolto dal pasto: ora puoi premere Mangiato per il resto"); };
+    const rm=menu.meals[mi].items.splice(ii,1)[0]; save(); render();
+    toastUndo("Tolto dal pasto",()=>{ menu.meals[mi].items.splice(ii,0,rm); save(); render(); }); };
   $("#actBan").onclick=()=>{ $("#dlgAct").close();
     if(f&&!U.gusti.ban.includes(f[0])) U.gusti.ban.push(f[0]);
     let famMsg="";
@@ -3051,6 +3066,7 @@ function renderCompare(a,b){
     ["Proteine",p=>cdot(p.p||null,4,8,true)],
     ["Additivi",p=>Array.isArray(p.adds)?(p.adds.length+(p.adds.some(x=>addRisk(x)===2)?" ⚠️":p.adds.some(x=>addRisk(x)===1)?" ·":"")):"–"]];
   const head=(p,s,bd,cl,w)=>`<div style="border:2px solid ${w?cl:"var(--line)"};border-radius:10px;padding:6px;text-align:center">
+    ${p.img?`<img src="${p.img}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;display:block;margin:0 auto 4px">`:""}
     ${w?"🏆 ":""}<b style="font-size:.78rem">${p.name}</b>
     <div style="margin-top:3px"><span style="background:${cl};color:#fff;border-radius:8px;padding:2px 8px;font-weight:800">${s}</span> <span class="small">${bd}</span></div></div>`;
   let h=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${head(a,sa,bda,cla,win==="a")}${head(b,sb,bdb,clb,win==="b")}</div>`;
@@ -3070,6 +3086,7 @@ function showScanned(prod,fromCache){
   const NS_COL={A:"#3E8E41",B:"#8DB600",C:"#E8A13C",D:"#E06A2B",E:"#C63F2E"};
   const NS_TXT={A:"ottima qualità nutrizionale",B:"buona qualità",C:"qualità media: ogni tanto",D:"qualità scarsa: di rado",E:"da limitare il più possibile"};
   let scoreHtml=hasDati?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    ${prod.img?`<img src="${prod.img}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--line)">`:""}
     <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
       <div style="font-size:1.3rem;font-weight:800">${score}</div><div style="font-size:.6rem">/100</div></div>
     <div><b>${band}</b><div class="small">55% nutrizione · 20% additivi · 15% lavorazione (NOVA) · 10% bio${prod.bio?" 🌱":""}</div></div></div>`
@@ -3134,13 +3151,14 @@ async function lookupEan(ean){
   if(U.prodotti[ean]&&U.prodotti[ean].kcal){ showScanned({...U.prodotti[ean],ean},true); return; }
   $("#scanStatus").textContent="Cerco su Open Food Facts…";
   try{
-    const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments,nutriscore_grade,nova_group,additives_tags,labels_tags,allergens_tags,ingredients_analysis_tags");
+    const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments,nutriscore_grade,nova_group,additives_tags,labels_tags,allergens_tags,ingredients_analysis_tags,image_front_small_url");
     const j=await r.json();
     if(j.status!==1||!j.product){ $("#scanStatus").textContent="Prodotto non trovato: inserisci i valori dall'etichetta."; 
       showScanned({ean,name:"Prodotto "+ean,kcal:"",p:"",c:"",f:""}); return; }
     const n=j.product.nutriments||{};
     const nut=j.product.nutriments||{};
     const prod={ean,ns:(j.product.nutriscore_grade||"").toUpperCase(),nova:j.product.nova_group||0,
+      img:j.product.image_front_small_url||"",
       adds:(j.product.additives_tags||[]).map(t=>t.replace(/^en:/,"").toUpperCase()),
       bio:(j.product.labels_tags||[]).some(t=>/organic|biologic/.test(t)),
       palm:(j.product.ingredients_analysis_tags||[]).includes("en:palm-oil"),
@@ -3614,7 +3632,9 @@ function openDayEditor(k){
       `<div class="fooditem"><span>${p.meal?p.meal+" · ":""}${p.name}<br><span class="small">${p.g?p.g+" g · ":""}${p.kcal} kcal</span></span>
        <button class="mini" data-del="${i}" aria-label="Elimina">🗑</button></div>`).join("")
     :'<div class="small">Nessun pasto registrato in questo giorno.</div>';
-    $$("#dayEdList [data-del]").forEach(b=>b.onclick=()=>{ l.pasti.splice(+b.dataset.del,1); save(); draw(); render(); }); };
+    $$("#dayEdList [data-del]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.del;
+      const rm=l.pasti.splice(i,1)[0]; save(); draw(); render();
+      toastUndo("Voce eliminata",()=>{ l.pasti.splice(i,0,rm); save(); draw(); render(); }); }); };
   draw();
   $("#dayEdPassi").value=l.passi||0; $("#dayEdAcqua").value=l.acqua||0;
   $("#dayEdSave").onclick=()=>{ l.passi=Math.max(0,+$("#dayEdPassi").value||0);
