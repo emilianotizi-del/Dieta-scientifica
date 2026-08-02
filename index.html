@@ -2022,7 +2022,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.11.2";
+const APP_VERSION="2.12.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2617,14 +2617,71 @@ let scanStream=null, scanLoop=null, zxReader=null;
 function coherent(kcal,p,c,f){ const calc=4*(p||0)+4*(c||0)+9*(f||0);
   if(!kcal) return {ok:false,calc};
   return {ok:Math.abs(calc-kcal)/kcal<=0.12||Math.abs(calc-kcal)<=15,calc}; }
+const ADDITIVI={
+  alto:["E249","E250","E251","E252","E320","E321","E171","E102","E110","E122","E124","E129","E924"],
+  moderato:["E621","E627","E631","E951","E950","E952","E954","E955","E407","E466","E338","E339","E340","E341","E450","E451","E452","E220","E221","E222","E223","E224","E228","E150D"]};
+function addRisk(code){ const c=code.replace(/[A-Z]$/,"").toUpperCase();
+  if(ADDITIVI.alto.includes(code)||ADDITIVI.alto.includes(c)) return 2;
+  if(ADDITIVI.moderato.includes(code)||ADDITIVI.moderato.includes(c)) return 1; return 0; }
+function rottaScore(p){
+  const NS={A:95,B:80,C:60,D:40,E:20};
+  const nutri=NS[p.ns]??55;
+  let addPen=0; (p.adds||[]).forEach(a=>{ const r=addRisk(a); addPen+=r===2?30:r===1?15:2; });
+  const addScore=Math.max(0,100-addPen);
+  const bio=p.bio?100:0;
+  return Math.round(0.6*nutri+0.3*addScore+0.1*bio);
+}
+function scoreBand(s){ return s>=75?["Eccellente","#3E8E41"]:s>=50?["Buono","#8DB600"]:s>=25?["Mediocre","#E8A13C"]:["Scarso","#C63F2E"]; }
+const ALT_MAP=[[/biscuit|cookie|merendin|snack dolc/i,"fette biscottate integrali con un velo di marmellata"],
+ [/chocolat|cioccolato al latte/i,"cioccolato fondente ≥85% (2 quadretti)"],
+ [/soda|soft-drink|cola|aranciata|bibite/i,"acqua frizzante con limone, o tè freddo senza zucchero"],
+ [/yogurt|yaourt/i,"yogurt greco 2% con frutta fresca"],
+ [/cereal|muesli/i,"fiocchi d'avena con frutta"],
+ [/chips|crisps|patatine/i,"una manciata di frutta secca, o peperoni cruschi"],
+ [/spread|crema spalmabile|nutella/i,"ricotta con miele e cacao"],
+ [/charcuterie|salami|wurst|processed meat|salume/i,"bresaola o fesa di tacchino al naturale"],
+ [/ice-cream|gelat/i,"yogurt greco freddo con frutta e miele"],
+ [/juice|succo/i,"frutta intera di stagione"],
+ [/pizza/i,"la pizza del sabato è già nel tuo piano 😉"]];
 function showScanned(prod,fromCache){
   $("#scanResult").hidden=false;
   $("#scanName").textContent=prod.name+(prod.brand?" · "+prod.brand:"")+(fromCache?" (archivio)":"");
   $("#scanKcal").value=prod.kcal||""; $("#scanP").value=prod.p||""; $("#scanC").value=prod.c||""; $("#scanF").value=prod.f||"";
+  const score=rottaScore(prod); const [band,col]=scoreBand(score);
   const NS_COL={A:"#3E8E41",B:"#8DB600",C:"#E8A13C",D:"#E06A2B",E:"#C63F2E"};
   const NS_TXT={A:"ottima qualità nutrizionale",B:"buona qualità",C:"qualità media: ogni tanto",D:"qualità scarsa: di rado",E:"da limitare il più possibile"};
-  let scoreHtml="";
+  let scoreHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
+      <div style="font-size:1.3rem;font-weight:800">${score}</div><div style="font-size:.6rem">/100</div></div>
+    <div><b>${band}</b><div class="small">60% nutrizione · 30% additivi · 10% bio${prod.bio?" 🌱":""}</div></div></div>`;
   if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:#fff;font-weight:800;border-radius:8px;padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
+  /* semafori nutrizionali per 100 g */
+  const dot=(v,lo,hi,inv)=>{ const good=inv?v>=hi:v<lo, bad=inv?v<lo:v>hi;
+    return bad?"🔴":good?"🟢":"🟡"; };
+  const rows=[];
+  if(prod.zucch!=null) rows.push(dot(prod.zucch,5,22.5)+" zuccheri "+prod.zucch+"g");
+  if(prod.sat!=null) rows.push(dot(prod.sat,1.5,5)+" grassi sat. "+prod.sat+"g");
+  if(prod.sale!=null) rows.push(dot(prod.sale,0.3,1.5)+" sale "+prod.sale+"g");
+  if(prod.fibre) rows.push(dot(prod.fibre,3,6,true)+" fibre "+prod.fibre+"g");
+  if(prod.p) rows.push(dot(prod.p,4,8,true)+" proteine "+prod.p+"g");
+  if(rows.length) scoreHtml+=`<div class="small" style="margin-top:6px">${rows.join(" · ")}</div>`;
+  /* additivi con livello di rischio */
+  if(prod.adds&&prod.adds.length){
+    const chips=prod.adds.slice(0,8).map(a=>{ const r=addRisk(a);
+      return `<span style="border-radius:6px;padding:1px 6px;margin:1px;display:inline-block;font-size:.72rem;background:${r===2?"#F8DCD3":r===1?"#FAEBC4":"#E8EDD2"}">${a}${r===2?" ⚠️":r===1?" ·":""}</span>`; }).join("");
+    const worst=Math.max(...prod.adds.map(addRisk));
+    scoreHtml+=`<div class="small" style="margin-top:6px"><b>${prod.adds.length} additiv${prod.adds.length===1?"o":"i"}</b>${worst===2?" — almeno uno da evitare":worst===1?" — qualcuno controverso":" — nessuno preoccupante"}<br>${chips}</div>`;
+  } else if(prod.adds) scoreHtml+=`<div class="small" style="margin-top:6px">🟢 Senza additivi segnalati</div>`;
+  /* avvisi personali: olio di palma + esclusioni dell'utente */
+  const warns=[];
+  if(prod.palm) warns.push("olio di palma");
+  (U.esclusioni||[]).forEach(e=>{ if((prod.allerg||[]).some(a=>a.includes(e.slice(0,5)))) warns.push(e); });
+  if(warns.length) scoreHtml+=`<div class="small" style="margin-top:6px;color:var(--pomodoro)">⚠️ Contiene: <b>${warns.join(", ")}</b></div>`;
+  /* alternativa più sana */
+  if(score<50){ let alt="cerca nella barra di Rotta un equivalente fresco e semplice";
+    const nm=(prod.name||"").toLowerCase();
+    for(const[re,a]of ALT_MAP){ if(re.test(nm)){ alt=a; break; } }
+    scoreHtml+=`<div style="margin-top:8px;padding:8px;background:var(--oliva-s);border-radius:10px;font-size:.83rem">💡 <b>Meglio:</b> ${alt}</div>`; }
   if(prod.nova>=4) scoreHtml+=`<div class="small" style="margin-top:4px">⚠️ <b>Ultra-processato</b> (NOVA 4): tanti additivi e lavorazione industriale spinta.</div>`;
   else if(prod.nova===3) scoreHtml+=`<div class="small" style="margin-top:4px">Alimento processato (NOVA 3).</div>`;
   $("#scanScore").innerHTML=scoreHtml; $("#scanScore").hidden=!scoreHtml;
@@ -2643,12 +2700,19 @@ async function lookupEan(ean){
   if(U.prodotti[ean]&&U.prodotti[ean].kcal){ showScanned({...U.prodotti[ean],ean},true); return; }
   $("#scanStatus").textContent="Cerco su Open Food Facts…";
   try{
-    const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments,nutriscore_grade,nova_group");
+    const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments,nutriscore_grade,nova_group,additives_tags,labels_tags,allergens_tags,ingredients_analysis_tags");
     const j=await r.json();
     if(j.status!==1||!j.product){ $("#scanStatus").textContent="Prodotto non trovato: inserisci i valori dall'etichetta."; 
       showScanned({ean,name:"Prodotto "+ean,kcal:"",p:"",c:"",f:""}); return; }
     const n=j.product.nutriments||{};
+    const nut=j.product.nutriments||{};
     const prod={ean,ns:(j.product.nutriscore_grade||"").toUpperCase(),nova:j.product.nova_group||0,
+      adds:(j.product.additives_tags||[]).map(t=>t.replace(/^en:/,"").toUpperCase()),
+      bio:(j.product.labels_tags||[]).some(t=>/organic|biologic/.test(t)),
+      palm:(j.product.ingredients_analysis_tags||[]).includes("en:palm-oil"),
+      allerg:(j.product.allergens_tags||[]).map(t=>t.replace(/^en:/,"")),
+      zucch:+nut.sugars_100g||0, sat:+nut["saturated-fat_100g"]||0,
+      sale:+nut.salt_100g||0, fibre:+nut.fiber_100g||0,
       name:j.product.product_name_it||j.product.product_name||("Prodotto "+ean),
       brand:(j.product.brands||"").split(",")[0],
       kcal:Math.round(n["energy-kcal_100g"]||((n.energy_100g||0)/4.184))||"",
