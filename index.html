@@ -332,6 +332,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <h2>Calorie della settimana</h2>
     <div class="weekbars" id="weekBars"></div>
     <div class="small" id="weekKcalSummary"></div>
+    <div class="small" id="smartSave" hidden style="margin-top:var(--sp-1)"></div>
   </div>
   <div class="card">
     <h2>Macro: totali settimanali</h2>
@@ -432,6 +433,8 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="explain" id="protExplain"></div>
     <label style="display:flex;align-items:center;gap:8px;margin-top:var(--sp-3)"><input type="checkbox" id="pMed" style="width:auto"> Solo cucina mediterranea nei menu</label>
     <div class="small">Esclude dai menu proposti tofu, tempeh, soia, poke, salse industriali ecc. Restano cercabili nel log libero.</div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:var(--sp-3)"><input type="checkbox" id="pSmart" style="width:auto"> 💶 Spesa smart: preferisci alimenti economici</label>
+    <div class="small">A parità di ruolo nutrizionale il menu sceglie più spesso gli alimenti che costano meno (legumi, uova, stagione). I piatti più cari restano nei menu, solo più raramente.</div>
     <label>Giorni vegetariani a settimana (casuali)</label>
     <select id="pVeg"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option value="7">7 · vegetariano 🌿</option></select>
     <label>Pasti al giorno</label>
@@ -2144,7 +2147,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.38.0";
+const APP_VERSION="2.39.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2349,7 +2352,100 @@ function pool(role,{veg=false,month,recent,ferro=false,calcio=false,folati=false
   if(calcio) boost=boost.concat(use.filter(o=>CALCIO_IDS.has(o.i)));
   if(folati) boost=boost.concat(use.filter(o=>FOLATI_IDS.has(o.i)));
   return use.concat(favd,favd,boost); /* i preferiti pesano x3 */ }
-function pick(arr,r){ return arr[Math.floor(r()*arr.length)]; }
+/* ---- 💶 Prezzi indicativi supermercato italiano 2026, €/kg (uova ~0,30 €/pezzo ≈ 5 €/kg).
+   Stime oneste e dichiarate come tali. Nomi ESATTI (minuscoli) + fallback per categoria: niente regex. ---- */
+const PREZZI={
+ /* legumi e proteine vegetali */
+ "ceci secchi":3.0,"ceci lessati":2.2,"lenticchie secche":3.2,"lenticchie lessate":2.2,
+ "fagioli borlotti lessati":2.2,"fagioli cannellini lessati":2.2,"fagioli neri lessati":2.5,
+ "fave secche":3.5,"lupini ammollati":4,"soia edamame":6,"tofu al naturale":8.5,"tofu affumicato":9.5,
+ "tempeh":11,"lenticchie rosse decorticate (secche)":3.5,"burger di legumi":9,"falafel":8,"azuki lessati":3,
+ /* carne */
+ "petto di pollo":10.5,"fusi di pollo senza pelle":6.5,"pollo intero arrosto":8,"pollo a pezzi":7,
+ "fesa di tacchino":10,"coscia di tacchino":7,"petto di tacchino intero":9.5,"tacchino macinato":9,
+ "vitello magro":18,"fettine di vitello":18,"scaloppina di vitello (cruda)":18,"bovino adulto magro":15,
+ "hamburger di manzo magro":11,"tagliata di manzo":22,"spezzatino di manzo (crudo)":13,"roast beef":20,
+ "filetto di maiale":11,"lonza di maiale":9,"braciola di maiale":8.5,"arista di maiale":9,
+ "agnello magro":16,"coniglio":12,"salsiccia di suino":8,"salsiccia di pollo":9,"salsiccia":8,
+ "macinato magro 5%":10,"straccetti di pollo":11,"polpette di carne (crude)":10,
+ /* salumi */
+ "prosciutto crudo sgrassato":24,"prosciutto cotto sgrassato":16,"bresaola":30,
+ "fesa di tacchino al forno (affettato)":18,"petto di pollo arrosto (affettato)":18,"speck":22,
+ "salame milano":16,"mortadella":11,"guanciale":16,
+ /* pesce */
+ "orata":16,"branzino (spigola)":16,"merluzzo/nasello":14,"sogliola":22,"platessa":12,
+ "salmone fresco":20,"salmone affumicato":35,"tonno fresco":24,"tonno in scatola al naturale":14,
+ "tonno al naturale":14,"sgombro":9,"alici (acciughe) fresche":9,"acciughe":22,"gamberi":18,"gamberetti":18,
+ "polpo":15,"calamari":14,"cozze":4,"vongole":9,"pesce spada":22,"trota":11,"seppie":13,"baccalà ammollato":15,
+ /* uova e latticini */
+ "uova":5,"uova fresche":5,"uovo":5,"albume d'uovo":6,"latte":1.7,"latte parzialmente scremato":1.6,
+ "yogurt bianco intero":3.5,"yogurt greco 0%":6,"yogurt greco 2%":6,"skyr":7,"ricotta":7,"ricotta di mucca":7,
+ "mozzarella":9,"fiordilatte":9,"mozzarella di bufala":13,"parmigiano":18,"parmigiano reggiano":18,
+ "grana padano":16,"pecorino":16,"feta":11,"primosale":11,"stracchino":9,"formaggio spalmabile light":9,"burro":10,
+ /* cereali e pane */
+ "pasta di semola (secca)":1.8,"pasta":1.8,"pasta corta":1.8,"pasta mista":1.8,"spaghetti (secchi)":1.8,"spaghetti":1.8,
+ "pasta integrale (secca)":2.2,"pasta di legumi (secca)":5,"orecchiette":2.5,"orecchiette fresche":3.5,
+ "riso bianco (crudo)":2.6,"riso":2.6,"riso integrale (crudo)":3,"riso basmati (crudo)":3.2,"riso venere (crudo)":4.5,
+ "farro perlato (crudo)":3.2,"farro":3.2,"orzo perlato (crudo)":2.8,"quinoa (cruda)":6.5,"couscous (secco)":3,
+ "bulgur (secco)":3.5,"polenta (farina di mais)":1.8,"pane bianco":3.8,"pane":3.8,"pane raffermo":3.8,
+ "pane integrale":4.5,"pane di segale":5,"pane di altamura":5,"pane casereccio":4,"piadina":5,
+ "focaccia genovese":8,"pane carasau":7,"friselle integrali":5,"grissini":6,"pancarré integrale":3.5,
+ "gnocchi di patate":3,"pasta fresca all'uovo":5,"ravioli ricotta e spinaci":8,"tortellini freschi":9,
+ "patate":1.3,"patata":1.3,"patate dolci":2.8,"castagne bollite":7,"impasto":3.5,"farina":1.2,"farina (velo)":1.2,
+ "pangrattato":2.5,"pizza base (impasto crudo)":3.5,
+ /* verdure */
+ "pomodoro ramato":2.4,"pomodoro":2.4,"pomodori":2.4,"pomodorini ciliegino":3.2,"pomodorini":3.2,
+ "zucchine":2.2,"melanzane":2.2,"peperoni":2.8,"cetrioli":1.8,"lattuga":2.5,"rucola":8,"radicchio rosso":3.2,
+ "indivia belga":2.5,"spinaci":2.8,"bietola":2.2,"cicoria":2.5,"broccoli":2.4,"cavolfiore":2,"cavolo nero":3,
+ "cavolo cappuccio":1.5,"cavoletti di bruxelles":3.5,"verza":1.6,"carciofi":4,"asparagi":6,"fagiolini":3.5,
+ "carote":1.3,"sedano":2,"sedano-carota-cipolla":1.8,"sedano e cipolla":1.8,"finocchio":2.2,"cipolla":1.4,
+ "cipolle":1.4,"cipollotto":2.5,"porro":2.8,"zucca":1.8,"funghi champignon":3.5,"funghi porcini":25,
+ "verdure miste di stagione":2.5,
+ /* frutta */
+ "mela":2,"pera":2.4,"arancia":1.8,"mandarino":2.2,"clementine":2.2,"pompelmo":2,"banana":1.7,"kiwi":3,
+ "fragole":5,"ciliegie":7,"albicocche":3.5,"pesca":2.5,"pesca noce":2.5,"susine":2.8,"uva bianca":3,"uva nera":3,
+ "fichi":5,"melone":1.8,"anguria":0.9,"cachi":3,"melagrana":3.5,"mirtilli":12,"lamponi":16,"more":14,
+ /* condimenti e ingredienti ricette */
+ "olio evo":9,"olio":9,"olio extravergine d'oliva":9,"passata":1.8,"passata di pomodoro":1.8,"pelati":1.6,
+ "brodo":1,"brodo di carne":1.5,"aglio":8,"prezzemolo":10,"basilico":12,"limone":2.5,"olive":7,
+ "olive e capperi":9,"capperi":12,"vino bianco":4,"mandorle":13,"noci":14,"nocciole":15,"pinoli":45};
+const PREZZI_CAT={piatti:8,verdura:2.4,frutta:2.5,pesce:16,latticini:7,cereali:2.5,carne:11,
+ daclassificare:5,condimenti:8,dolci:9,colazione:5,salumi:18,legumi:2.8,bevande:1.5,fruttasecca:13,
+ uova:5,dispensa:3};
+function prezzoNome(n,cat){ return PREZZI[(n||"").toLowerCase()]??PREZZI_CAT[cat]??6; }
+const _dishPrice={};
+function prezzoAlKg(x){ const f=x&&x.f?x.f:x; if(!f) return 6;
+  const n=f[0];
+  if(f[7]==="x"&&RECIPES[n]){ /* il prezzo di un piatto è la somma dei suoi ingredienti */
+    if(!(n in _dishPrice)){
+      let e=0; RECIPES[n].i.forEach(([ing,g100])=>{ e+=g100*prezzoNome(ing,"condimenti")/100; });
+      _dishPrice[n]=Math.max(1.5,e); }
+    return _dishPrice[n]; }
+  return prezzoNome(n,f[1]); }
+function pick(arr,r){
+  if(!U.spesaSmart||arr.length<2) return arr[Math.floor(r()*arr.length)];
+  /* 💶 Spesa smart: peso inversamente proporzionale al prezzo, MAI esclusione.
+     Un solo prelievo dal generatore in entrambi i rami: il determinismo regge. */
+  const ws=arr.map(f=>1/Math.pow(Math.max(prezzoAlKg(f),0.8),1.8));
+  const tot=ws.reduce((a,b)=>a+b,0); let x=r()*tot;
+  for(let i=0;i<arr.length;i++){ x-=ws[i]; if(x<=0) return arr[i]; }
+  return arr[arr.length-1];
+}
+function costoMenu(m){ let c=0; m.meals.forEach(me=>me.items.forEach(it=>{
+  if(it.id==null) return; c+=it.g/1000*prezzoAlKg(FOOD_DB[it.id]); })); return c; }
+let _smartMemo=null;
+function risparmioSett(){
+  const key=todayKey()+"|"+MENU_V+"|"+U.salt+"|"+(U.vegDays||0)+"|"+(U.mealsPref||"");
+  if(_smartMemo&&_smartMemo.key===key) return _smartMemo.v;
+  const cacheSave=U.menuCache, flagSave=U.spesaSmart;
+  const start=dateFromKey(todayKey()); let cOn=0,cOff=0;
+  U.menuCache={}; U.spesaSmart=true;
+  for(let i=0;i<7;i++) cOn+=costoMenu(genMenu(todayKey(new Date(+start+i*864e5))));
+  U.menuCache={}; U.spesaSmart=false;
+  for(let i=0;i<7;i++) cOff+=costoMenu(genMenu(todayKey(new Date(+start+i*864e5))));
+  U.menuCache=cacheSave; U.spesaSmart=flagSave; /* nessun save(): stato utente intatto */
+  const v=Math.max(0,cOff-cOn); _smartMemo={key,v}; return v;
+}
 function weekBreads(dateKey){
   /* la settimana ha 2 pani, non otto: scelti dal seme settimanale */
   const ban=U.gusti&&U.gusti.ban||[];
@@ -2537,7 +2633,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
-const MENU_V=9;
+const MENU_V=10;
 function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey] && U.menuCache[dateKey].mv===MENU_V) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
@@ -3791,6 +3887,11 @@ $("#outAdd").onclick=()=>{
   save(); $("#dlgOut").close(); render(); vib(15); toast("Pasto fuori registrato"); };
 /* --- SETTIMANA --- */
 function renderWeek(){
+  const sv=$("#smartSave");
+  if(sv){ if(U.spesaSmart){ const ris=risparmioSett();
+      sv.hidden=false;
+      sv.innerHTML=`💶 Spesa smart attiva: <b>~${Math.round(ris)} €</b> risparmiati a settimana rispetto ai menu senza opzione (stima indicativa).`;
+    } else sv.hidden=true; }
   const days=[]; const now=dateFromKey(todayKey());
   for(let i=6;i>=0;i--){ const k=todayKey(new Date(now-i*864e5)); days.push(k); }
   const data=days.map(k=>({k,tot:totalsOf(k),target:macros(k)}));
@@ -3929,7 +4030,12 @@ function buildSpesa(){
         <input type="checkbox" style="width:auto" data-spesa="${key.replace(/"/g,"&quot;")}" ${ckc}>
         <span style="flex:1;${ckc?"text-decoration:line-through;opacity:.55":""}">${x.name}${x.s!=null?` <span class="small">(${x.s}/100)</span>`:""}</span>
         <button type="button" class="mini" data-carrm="${x.ean}">✕</button></label></li>`; }).join("")}</ul></div>`:"";
-  $("#spesaList").innerHTML=(html||"Nessun ingrediente.")+basHtml+carHtml;
+  let costo=0;
+  for(const [n,v] of Object.entries(agg)) costo+=v.g/1000*prezzoNome(n,v.cat);
+  const costHtml=`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:var(--sp-2)">
+    <b>💶 Spesa stimata: ~${Math.round(costo)} €</b>
+    <div class="small">Stima indicativa, i prezzi variano per negozio e zona.${U.spesaSmart?" Spesa smart attiva.":""}</div></div>`;
+  $("#spesaList").innerHTML=(html||"Nessun ingrediente.")+basHtml+carHtml+costHtml;
   $$("#spesaList [data-carrm]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation();
     U.carrello=U.carrello.filter(x=>x.ean!==b.dataset.carrm); save(); buildSpesa(); });
   $("#btnSpesaCopy").hidden=false;
@@ -4297,7 +4403,7 @@ function renderProf(){
   $("#pNome").value=U.nome; $("#pSesso").value=U.sesso; $("#pEta").value=U.eta;
   $("#pAlt").value=U.alt; $("#pGoal").value=U.goal; $("#pSteps").value=U.passiBase;
   $("#pRitmo").value=U.ritmo; $("#pRicarica").value=U.ricaricaDay??"auto";
-  $("#pMed").checked=U.soloMed!==false;
+  $("#pMed").checked=U.soloMed!==false; $("#pSmart").checked=!!U.spesaSmart;
   $("#pProt").value=U.protKg; $("#pVeg").value=U.vegDays;
   $("#pMeals").value=U.mealsPref||"auto"; $("#pCarico").value=U.maxCarico??16;
   $("#pSchema").value=U.schema; $("#pEscl").value=(U.esclusioni||[]).join(", ");
@@ -4328,6 +4434,7 @@ $("#btnSaveProf").onclick=()=>{
   U.nome=$("#pNome").value||U.nome; U.sesso=$("#pSesso").value; U.eta=+$("#pEta").value||U.eta;
   U.alt=+$("#pAlt").value||U.alt; U.goal=+$("#pGoal").value||U.goal; U.passiBase=+$("#pSteps").value||U.passiBase;
   U.ritmo=$("#pRitmo").value; U.ricaricaDay=$("#pRicarica").value; U.soloMed=$("#pMed").checked;
+  U.spesaSmart=$("#pSmart").checked;
   U.protKg=+$("#pProt").value; U.vegDays=Math.max(0,Math.min(7,+$("#pVeg").value));
   U.mealsPref=$("#pMeals").value; U.maxCarico=Math.max(0,+$("#pCarico").value||0);
   { const minSano=Math.round(18.5*Math.pow(U.alt/100,2));
