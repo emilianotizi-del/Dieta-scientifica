@@ -573,6 +573,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="small" id="actSub" style="margin-bottom:12px"></div>
   <button class="sheetbtn" id="actRec">📖 Vedi la ricetta</button>
   <button class="sheetbtn" id="actSwap">⇄ Sostituisci con un equivalente</button>
+  <button class="sheetbtn" id="actSkip">🙅 Oggi non l'ho mangiato (togli dal pasto)</button>
   <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
   <button class="sheetbtn" onclick="this.closest('dialog').close()">Annulla</button>
 </dialog>
@@ -2021,7 +2022,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.11.1";
+const APP_VERSION="2.11.2";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2476,6 +2477,9 @@ function openItemActions(dateKey,mi,ii){
   $("#actRec").hidden=!hasRec;
   $("#actRec").onclick=()=>{ $("#dlgAct").close(); openRecipe(f[0],it); };
   $("#actSwap").onclick=()=>{ $("#dlgAct").close(); swapItem(dateKey,mi,ii); };
+  $("#actSkip").onclick=()=>{ $("#dlgAct").close();
+    menu.meals[mi].items.splice(ii,1); save(); render();
+    toast("Tolto dal pasto: ora puoi premere Mangiato per il resto"); };
   $("#actBan").onclick=()=>{ $("#dlgAct").close();
     if(f&&!U.gusti.ban.includes(f[0])) U.gusti.ban.push(f[0]);
     let famMsg="";
@@ -3032,7 +3036,9 @@ function buildSpesa(){
     const m=genMenu(k);
     m.meals.forEach(me=>me.items.forEach(it=>{ if(it.id==null) return;
       const f=FOOD_DB[it.id]; const n=f[0];
-      const rec=f[7]==="x"&&RECIPES[n];
+      const NO_EXPLODE=/^pizza|^calzone|^panzerotto|^piadina|^toast|^tramezzino/i;
+      const rec=(f[7]==="x"&&!NO_EXPLODE.test(n))?RECIPES[n]:null;
+      if(NO_EXPLODE.test(n)){ addG(n+" (pronta: pizzeria o surgelato)",it.g,"piatti"); return; }
       if(rec){ /* i piatti si comprano per ingredienti */
         rec.i.forEach(([ing,g100])=>{
           const g=it.g*g100/100;
