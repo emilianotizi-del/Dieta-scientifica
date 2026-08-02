@@ -812,7 +812,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <div class="small" style="margin-top:6px">Con 2 giorni leggeri, una ricarica a settimana e la compensazione automatica degli sgarri.</div>
     </div>
     <div class="card" style="margin-bottom:10px">
-      <div class="small" style="margin-bottom:6px">🎁 Il tuo primo menu — domani:</div>
+      <div class="small" style="margin-bottom:6px" id="obMenuTitle">🎁 Il tuo primo menu — domani:</div>
       <div id="obMenu" style="font-size:.88rem"></div>
     </div>
     <label>Come ti chiami?</label>
@@ -2114,7 +2114,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.33.0";
+const APP_VERSION="2.34.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3439,10 +3439,21 @@ function obReveal(){
     $("#obEta2").textContent=eta.toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"});
   }
   const dom=todayKey(new Date(Date.now()+864e5));
-  const menu=genMenu(dom);
-  $("#obMenu").innerHTML=menu.meals.map(me=>
-    `<div style="margin-bottom:6px"><b>${me.name} · ${me.items.reduce((s,i)=>s+i.kcal,0)} kcal</b><br>
-     <span class="small">${me.items.slice(0,3).map(i=>i.name).join(" · ")}${me.items.length>3?"…":""}</span></div>`).join("");
+  if(U.mode==="diario"||U.mode==="prehab"||U.gravidanza){
+    /* CLINICO-DA-VALIDARE: testo gravidanza/allattamento */
+    $("#obMenuTitle").textContent="I tuoi strumenti di ogni giorno";
+    $("#obMenu").innerHTML=`<div style="margin-bottom:6px">📷 <b>Scanner</b> — inquadra un codice a barre e scopri quanto vale davvero un prodotto. Scansiona il primo quando vuoi.</div>
+      <div style="margin-bottom:6px">📓 <b>Diario</b> — registra pasti, acqua e passi: i tuoi numeri, senza giudizio.</div>
+      <div class="small">${U.gravidanza?"In gravidanza e allattamento niente obiettivi di peso: solo consapevolezza, con il supporto del tuo medico. 💛":"Quando vorrai un piano completo, potrai attivarlo dal Profilo."}</div>`;
+  } else {
+    /* stesso salt e stessa cache: domani l'utente troverà ESATTAMENTE questo menu */
+    const menu=genMenu(dom);
+    $("#obMenuTitle").textContent="🎁 Ecco la tua prima giornata — domani:";
+    $("#obMenu").innerHTML=menu.meals.map(me=>
+      `<div style="margin-bottom:6px"><b>${me.name} · ${me.items.reduce((s,i)=>s+i.kcal,0)} kcal</b><br>
+       <span class="small">${me.items.slice(0,3).map(i=>i.name).join(" · ")}${me.items.length>3?"…":""}</span></div>`).join("")
+      +`<div class="small" style="margin-top:4px;font-style:italic">Cambia ogni giorno, resta nei tuoi numeri ogni settimana.</div>`;
+  }
 }
 if(FIRST_RUN){ startOnboarding(); }
 
