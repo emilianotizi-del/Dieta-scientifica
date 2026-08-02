@@ -2021,7 +2021,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.11.0";
+const APP_VERSION="2.11.1";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2131,6 +2131,15 @@ function pool(role,{veg=false,month,recent}){
   const favd=use.filter(o=>fav.includes(o.f[0]));
   return use.concat(favd,favd); /* i preferiti pesano x3 */ }
 function pick(arr,r){ return arr[Math.floor(r()*arr.length)]; }
+function weekBreads(dateKey){
+  /* la settimana ha 2 pani, non otto: scelti dal seme settimanale */
+  const ban=U.gusti&&U.gusti.ban||[];
+  const cands=FOOD_DB.filter(f=>f[7]==="c"&&FAM.pane.test(f[0])&&!ban.includes(f[0])&&!bannedByFam(f[0],ban)&&!excluded(f[0]));
+  if(cands.length<=2) return cands.map(f=>f[0]);
+  const seed=Math.abs(weekSeed(dateKey)+(U.salt||0));
+  const i1=seed%cands.length; let i2=(seed*7+3)%cands.length; if(i2===i1) i2=(i2+1)%cands.length;
+  return [cands[i1][0],cands[i2][0]];
+}
 function recentFoodIds(dateKey){ const set=new Set();
   const d=dateFromKey(dateKey);
   for(let i=1;i<=4;i++){ const k=todayKey(new Date(d-i*864e5));
