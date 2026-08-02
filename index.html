@@ -637,6 +637,11 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <h3 style="margin-bottom:6px">Pasto fuori casa</h3>
   <label>Pasto</label>
   <select id="outMeal"><option>Pranzo</option><option>Cena</option><option>Colazione</option><option>Spuntino</option></select>
+  <div class="btnrow" style="margin:8px 0 4px">
+    <button class="btn sm" id="outTabQuick" type="button">⚡ Rapido</button>
+    <button class="btn ghost sm" id="outTabLoc" type="button">🍽 Per locale</button>
+  </div>
+  <div id="outQuick">
   <label>Quanto era abbondante?</label>
   <select id="outSize">
     <option value="leggero">Leggero · ~600 kcal (insalatona, poke, panino semplice)</option>
@@ -645,6 +650,19 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   </select>
   <label>Descrizione (facoltativa)</label>
   <input id="outDesc" placeholder="es. pizza margherita e birra">
+  </div>
+  <div id="outLoc" hidden>
+    <label>Tipo di locale</label>
+    <select id="outLocale">
+      <option value="pizzeria">🍕 Pizzeria</option>
+      <option value="trattoria">🍝 Trattoria / ristorante</option>
+      <option value="sushi">🍣 Sushi</option>
+      <option value="fastfood">🍔 Fast food</option>
+      <option value="aperitivo">🥂 Aperitivo</option>
+    </select>
+    <div id="outVoci" style="margin-top:6px"></div>
+    <div id="outTot" class="small" style="margin-top:8px"><b>Totale: 0 kcal</b></div>
+  </div>
   <div class="btnrow" style="margin-top:12px">
     <button class="btn" id="outAdd">Registra</button>
     <button class="btn ghost" id="outCancel">Annulla</button>
@@ -2061,7 +2079,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.23.0";
+const APP_VERSION="2.24.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3368,15 +3386,71 @@ $("#presetSave").onclick=()=>{
   U.preset=U.preset||[]; U.preset.push({name,items}); save(); openPreset(); toast("Preset salvato ★"); };
 
 const OUT_SIZES={leggero:[600,25,65,25],normale:[900,35,100,38],abbondante:[1300,45,140,58]};
+/* Voci tipiche per locale: [nome, kcal, P, C, G] per porzione media italiana.
+   Fonti delle stime: CREA "Tabelle di composizione degli alimenti" (rev. 2019) per la
+   composizione per 100 g; porzioni standard SINU/LARN 2014; BDA-IEO per i piatti composti;
+   grammature medie della ristorazione italiana. Valori arrotondati e volutamente prudenti
+   (stime "oneste", non ottimistiche). Nota: per le bevande alcoliche le kcal includono
+   l'alcol (7 kcal/g), quindi P/C/G da soli non ricostruiscono le kcal. */
+const OUT_LOCALI={
+ pizzeria:[["Pizza margherita (intera)",800,30,110,25],["Pizza diavola / salame",950,38,108,38],
+  ["Pizza quattro formaggi",1000,42,100,45],["Pizza alle verdure",750,26,105,22],
+  ["Supplì o crocchetta (1 pezzo)",220,6,28,9],["Bruschette al pomodoro (2)",180,4,26,6],
+  ["Fritto misto (patatine e olive ascolane)",450,10,40,26],["Birra media (0,4 L)",140,1,12,0],
+  ["Bibita (0,33 L)",140,0,35,0],["Tiramisù (fetta)",400,7,40,22]],
+ trattoria:[["Antipasto misto salumi e formaggi",450,22,8,36],["Primo al pomodoro",500,14,80,12],
+  ["Primo ricco (carbonara, amatriciana)",650,22,75,28],["Lasagne (porzione)",600,28,55,30],
+  ["Secondo di carne con contorno",550,40,15,35],["Secondo di pesce con contorno",450,38,10,26],
+  ["Patate al forno (contorno)",250,4,40,8],["Vino (2 calici)",170,0,5,0],
+  ["Dolce della casa",400,6,45,20],["Pane e coperto",200,6,38,2]],
+ sushi:[["Nigiri (6 pezzi)",280,14,42,5],["Hosomaki (8 pezzi)",250,8,48,2],
+  ["Uramaki California (8 pezzi)",400,12,50,16],["Roll fritto in tempura (8 pezzi)",520,14,55,26],
+  ["Sashimi (9 fette)",180,30,0,6],["Edamame (ciotola)",130,11,10,5],
+  ["Riso gohan / saltato",300,6,60,3],["Tempura di gamberi (porzione)",420,16,35,24],
+  ["Zuppa di miso",60,4,7,2],["Birra giapponese (0,33 L)",130,1,10,0]],
+ fastfood:[["Cheeseburger semplice",300,16,30,13],["Burger doppio con salse",550,30,40,30],
+  ["Patatine medie",340,4,42,17],["Nuggets di pollo (6 pezzi)",260,14,16,16],
+  ["Wrap o piadina al pollo",450,25,45,18],["Insalata con pollo",250,22,10,13],
+  ["Bibita media (0,4 L)",170,0,42,0],["Gelato / sundae",280,6,40,10],["Frappè / shake",320,8,50,10]],
+ aperitivo:[["Spritz",180,0,15,0],["Calice di vino",85,0,3,0],["Birra piccola (0,33 L)",120,1,10,0],
+  ["Analcolico alla frutta",120,0,28,0],["Patatine e salatini (ciotolina)",250,4,25,15],
+  ["Olive e stuzzichini (ciotolina)",150,2,6,12],["Tagliere piccolo salumi e formaggi",400,20,6,32],
+  ["Focaccine o pizzette (2)",300,8,40,12],["Tramezzino",220,9,24,10],["Mini burger da aperitivo",280,12,26,14]]};
+function drawOutVoci(){
+  const L=OUT_LOCALI[$("#outLocale").value];
+  $("#outVoci").innerHTML=L.map((v,i)=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:.85rem;margin:0;padding:3px 0">
+    <input type="checkbox" style="width:auto" data-oi="${i}"><span style="flex:1">${v[0]}</span><span class="small">${v[1]} kcal</span></label>`).join("");
+  $$("#outVoci [data-oi]").forEach(cb=>cb.onchange=outTotLive); outTotLive(); }
+function outSelItems(){ const L=OUT_LOCALI[$("#outLocale").value];
+  return [...$$("#outVoci [data-oi]")].filter(cb=>cb.checked).map(cb=>L[+cb.dataset.oi]); }
+function outTotLive(){
+  const s=outSelItems().reduce((a,v)=>({k:a.k+v[1],p:a.p+v[2],c:a.c+v[3],f:a.f+v[4]}),{k:0,p:0,c:0,f:0});
+  $("#outTot").innerHTML=`<b>Totale: ${s.k} kcal</b> · P${s.p} · C${s.c} · G${s.f}`; }
+function outTab(loc){
+  $("#outLoc").hidden=!loc; $("#outQuick").hidden=loc;
+  $("#outTabLoc").className="btn "+(loc?"":"ghost ")+"sm"; $("#outTabQuick").className="btn "+(loc?"ghost ":"")+"sm";
+  if(loc) drawOutVoci(); }
+$("#outTabQuick").onclick=()=>outTab(false);
+$("#outTabLoc").onclick=()=>outTab(true);
+$("#outLocale").onchange=drawOutVoci;
 $("#btnOut").onclick=()=>{ const h=new Date().getHours();
   $("#outMeal").value=h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";
-  $("#outDesc").value=""; $("#dlgOut").showModal(); };
+  $("#outDesc").value=""; outTab(false); $("#dlgOut").showModal(); };
 $("#outCancel").onclick=()=>$("#dlgOut").close();
 $("#outAdd").onclick=()=>{
-  const [kcal,p,c,f]=OUT_SIZES[$("#outSize").value];
-  const desc=$("#outDesc").value.trim();
-  dayLog().pasti.push({id:null,name:"Fuori casa"+(desc?": "+desc:""),g:0,kcal,p,c,fat:f,
-    meal:$("#outMeal").value,src:"out"});
+  if(!$("#outLoc").hidden){ /* guidato per locale */
+    const sel=outSelItems();
+    if(!sel.length){ toast("Scegli almeno una voce"); return; }
+    const s=sel.reduce((a,v)=>({k:a.k+v[1],p:a.p+v[2],c:a.c+v[3],f:a.f+v[4]}),{k:0,p:0,c:0,f:0});
+    const lab=$("#outLocale").selectedOptions[0].textContent.replace(/^[^ ]+ /,"");
+    dayLog().pasti.push({id:null,name:"Fuori casa ("+lab+"): "+sel.map(v=>v[0]).join(" + "),g:0,
+      kcal:s.k,p:s.p,c:s.c,fat:s.f,meal:$("#outMeal").value,src:"out"});
+  } else {
+    const [kcal,p,c,f]=OUT_SIZES[$("#outSize").value];
+    const desc=$("#outDesc").value.trim();
+    dayLog().pasti.push({id:null,name:"Fuori casa"+(desc?": "+desc:""),g:0,kcal,p,c,fat:f,
+      meal:$("#outMeal").value,src:"out"});
+  }
   save(); $("#dlgOut").close(); render(); toast("Pasto fuori registrato"); };
 /* --- SETTIMANA --- */
 function renderWeek(){
