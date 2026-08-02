@@ -1544,7 +1544,7 @@ const FOOD_DB=[
 ["Spigola d'allevamento filetti","pesce",149,21.3,0.8,6.8,0,"p"],
 ["Sugo di pomodoro","verdura",74,1.3,3.6,5.7,[6,7,8,9],"v"],
 ["Tabulè","daclassificare",95,3,14,2.4,0,"n"],
-["Tinca","pesce",79,17.9,0.9,0.5,0,"p"],
+["Tinca","pesce",79,17.9,0.9,0.5,0,"n"],
 ["Torta di mele","frutta",300,5,46.3,11.5,0,"d"],
 ["Tè foglie","bevande",108,19.6,3,2,0,"b"],
 ["Uova di anatra intero","carne",190,12.2,0.7,15.4,0,"p"],
@@ -2026,7 +2026,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.13.2";
+const APP_VERSION="2.13.3";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2319,7 +2319,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
-const MENU_V=5;
+const MENU_V=6;
 function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey] && U.menuCache[dateKey].mv===MENU_V) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
