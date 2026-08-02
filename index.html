@@ -2026,7 +2026,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.13.1";
+const APP_VERSION="2.13.2";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2160,8 +2160,14 @@ const CAPS=[[/cipolla|cipollotto/i,80],[/cipollin/i,150],[/^peperoncin/i,3],[/pa
  [/mozzarella|feta|primo sale|caprino|stracchino|crescenza|ricotta/i,125],
  [/^uovo|uova strapazzate|frittata/i,180],[/yogurt|skyr/i,250]];
 function capOf(f){ for(const [re,g] of CAPS) if(re.test(f[0])) return g; return 500; }
-function stepOf(f){ if(f[7]==="a") return 1; return f[7]!=="fr"?5:(/anguria|melone|ananas|macedonia/i.test(f[0])?50:25); }
-function frMin(f){ return /anguria|melone|ananas|macedonia/i.test(f[0])?200
+function stepOf(f){ if(f[7]==="a") return 1;
+  if(f[7]==="fr"){ const pz=pezzoDi(f[0]);
+    if(pz>=80&&!/anguria|melone|ananas|macedonia/i.test(f[0])) return pz;
+    return /anguria|melone|ananas|macedonia/i.test(f[0])?50:25; }
+  return 5; }
+function frMin(f){ const pz=pezzoDi(f[0]);
+  if(pz>=80&&f[7]==="fr"&&!/anguria|melone|ananas|macedonia/i.test(f[0])) return pz;
+  return /anguria|melone|ananas|macedonia/i.test(f[0])?200
   :/mirtilli|lamponi|ribes|more|fragole|ciliegie|uva|frutti di bosco/i.test(f[0])?100:125; }
 function scale(f,grams){ const k=grams/100;
   const nm=f[0].replace(/\((secc\w+|crud\w+)\)/i,"(peso a crudo)");
@@ -2222,11 +2228,12 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
       const c=pick(byName(C,/pasta|spaghetti|riso|farro|orzo|couscous|bulgur|quinoa|gnocchi|orecchiette/i),r)||pick(C,r);
       if(c) addFit(c.f,kcalTarget*0.42,50,120,"Primo");
       const sugo=pick(byName([...V,...G],/^(passata|pelati|sugo|pesto|salsa|rag\u00f9|pomodorini)/i),r);
-      if(sugo) addFit(sugo.f,kcalTarget*0.08,80,200,"Condimento");
+      if(sugo) addFit(sugo.f,kcalTarget*0.08,80,200,"Per il primo");
       let prPool=byName(Pbase,/lenticchie|ceci|fagioli|tonno|gamber|macinato|pollo|tofu|vongole/i).filter(o=>o.f[3]>=7);
       if(needLean&&prPool.filter(lean).length) prPool=prPool.filter(lean);
       const pr=pick(prPool.length?prPool:hiP,r);
-      if(pr) addFit(pr.f,kcalTarget*0.30,60,220,"Primo");
+      if(pr){ const daPasta=/vongol|cozz|gamber|scamp|calamar|sepp|moscardin|tonno|alic|acciug|sgombro|salmone|baccal|merluzz|ceci|fagiol|lenticch|pisell|ricotta|salsicc|speck|guancial|pancett|nduja|uova|zucca|funghi|pesto/i.test(pr.f[0]);
+        addFit(pr.f,kcalTarget*0.30,60,220,daPasta?"Primo":"Secondo"); }
       if(olio) addFit(olio,kcalTarget*0.12,5,25,"Condimento");
       const v=pick(V.filter(o=>capOf(o.f)>=100),r); if(v) addFit(v.f,kcalTarget*0.12,150,320,"Contorno");
     } else { /* secondo + contorno + pane + olio */
@@ -2306,13 +2313,13 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   }
   if(raw.some(x=>FAM.uova.test(x.f[0]))) ctx.eggUsed=true;
   raw.forEach(x=>{ const id=FOOD_DB.indexOf(x.f); if(id>=0) ctx.recent.add(id); });
-  const ORD={Piatto:0,Primo:1,Secondo:2,Contorno:3,Pane:4,Condimento:5,Extra:6,Frutta:7};
+  const ORD={Piatto:0,Primo:1,"Per il primo":2,Secondo:3,Contorno:4,Pane:5,Condimento:6,Extra:7,Frutta:8};
   raw.sort((a,b)=>(ORD[a.tag]??8)-(ORD[b.tag]??8));
   raw.forEach(x=>{ const it=scale(x.f,x.g); if(x.tag) it.tag=x.tag; items.push(it); });
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
-const MENU_V=4;
+const MENU_V=5;
 function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey] && U.menuCache[dateKey].mv===MENU_V) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
@@ -2414,7 +2421,7 @@ function renderToday(){
       <div class="mhead"><span class="mname">${me.name} · ${fmt(me.tot.kcal)} kcal</span>
         <button class="btn ${menu.eaten[i]?"ghost":""} sm" data-eat="${i}">${menu.eaten[i]?"✓ Registrato":"Mangiato"}</button></div>
       <ul>${me.items.map((it,j)=>{const prev=me.items[j-1];const cont=it.tag&&prev&&prev.tag===it.tag;
-        return `<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag${cont?" cont":""}">${cont?"+":it.tag}</span>`:""}${it.name}</span><span class="q">${it.id!=null&&FOOD_DB[it.id][7]==="a"?"q.b.":(it.g?it.g+" g · ":"")+it.kcal+" kcal"}${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`}).join("")}</ul>
+        return `<li data-act="${i}:${j}"><span>${it.tag?`<span class="ptag${cont?" cont":""}">${cont?"+":it.tag}</span>`:""}${it.name}</span><span class="q">${qtyLabel(it)}${!menu.eaten[i]?` <button class="mini" aria-label="Azioni">⋯</button>`:""}</span></li>`}).join("")}</ul>
     </div>`).join("");
   $$("#menuList [data-act]").forEach(row=>row.onclick=()=>{
     const [mi,ii]=row.dataset.act.split(":").map(Number);
@@ -2470,6 +2477,18 @@ function renderLogList(){
      <span>${it.kcal} kcal <button class="del" data-del="${i}" aria-label="Elimina">✕</button></span></li>`).join("")
     :`<li class="small">Nessun alimento registrato oggi.</li>`;
   $$("#logList [data-del]").forEach(b=>b.onclick=()=>{ dayLog().pasti.splice(+b.dataset.del,1); save(); render(); });
+}
+function qtyLabel(it){
+  const f=it.id!=null?FOOD_DB[it.id]:null;
+  if(f&&f[7]==="a") return "q.b.";
+  if(f){
+    if(/albume/i.test(f[0])) return "\u2248"+Math.max(1,Math.round(it.g/33))+" albumi \u00b7 "+it.kcal+" kcal";
+    if(/^uov[oa]\b/i.test(f[0])) return "\u00d7"+Math.max(1,Math.round(it.g/60))+" \u00b7 "+it.kcal+" kcal";
+    const pz=pezzoDi(f[0]);
+    if(f[7]==="fr"&&pz>=80&&!/anguria|melone|ananas|macedonia/i.test(f[0]))
+      return "\u00d7"+Math.max(1,Math.round(it.g/pz))+" ("+it.g+" g) \u00b7 "+it.kcal+" kcal";
+  }
+  return (it.g?it.g+" g \u00b7 ":"")+it.kcal+" kcal";
 }
 function openItemActions(dateKey,mi,ii){
   const menu=U.menuCache[dateKey]; const it=menu.meals[mi].items[ii];
