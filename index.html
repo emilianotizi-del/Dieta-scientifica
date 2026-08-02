@@ -2093,7 +2093,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.27.0";
+const APP_VERSION="2.28.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3001,6 +3001,7 @@ const ADDITIVI={
 function addRisk(code){ const c=code.replace(/[A-Z]$/,"").toUpperCase();
   if(ADDITIVI.alto.includes(code)||ADDITIVI.alto.includes(c)) return 2;
   if(ADDITIVI.moderato.includes(code)||ADDITIVI.moderato.includes(c)) return 1; return 0; }
+const NS_OK=s=>["A","B","C","D","E"].includes(s); /* OFF può restituire "NOT-APPLICABLE" (alcolici) o "UNKNOWN" */
 function rottaScore(p){
   const NS={A:95,B:80,C:60,D:40,E:20};
   const nutri=NS[p.ns]??50;
@@ -3058,7 +3059,7 @@ function showScanned(prod,fromCache){
   $("#scanResult").hidden=false;
   $("#scanName").textContent=prod.name+(prod.brand?" · "+prod.brand:"")+(fromCache?" (archivio)":"");
   $("#scanKcal").value=prod.kcal||""; $("#scanP").value=prod.p||""; $("#scanC").value=prod.c||""; $("#scanF").value=prod.f||"";
-  const hasDati=!!prod.ns; /* senza Nutri-Score niente punteggio: mai "Buono" a scatola chiusa */
+  const hasDati=NS_OK(prod.ns); /* senza Nutri-Score valido (A-E) niente punteggio: "NOT-APPLICABLE" degli alcolici non è un dato */
   const score=hasDati?rottaScore(prod):null; const [band,col]=hasDati?scoreBand(score):["",""];
   const NS_COL={A:"#3E8E41",B:"#8DB600",C:"#E8A13C",D:"#E06A2B",E:"#C63F2E"};
   const NS_TXT={A:"ottima qualità nutrizionale",B:"buona qualità",C:"qualità media: ogni tanto",D:"qualità scarsa: di rado",E:"da limitare il più possibile"};
@@ -3066,7 +3067,9 @@ function showScanned(prod,fromCache){
     <div style="background:${col};color:#fff;border-radius:12px;padding:8px 14px;text-align:center;line-height:1.1">
       <div style="font-size:1.3rem;font-weight:800">${score}</div><div style="font-size:.6rem">/100</div></div>
     <div><b>${band}</b><div class="small">55% nutrizione · 20% additivi · 15% lavorazione (NOVA) · 10% bio${prod.bio?" 🌱":""}</div></div></div>`
-    :`<div class="small">ℹ️ Prodotto non in archivio: <b>punteggio non disponibile</b>. Se hai l'etichetta puoi comunque inserire i valori e registrarlo nel diario.</div>`;
+    :(prod.ns&&!NS_OK(prod.ns)
+      ?`<div class="small">ℹ️ Il Nutri-Score <b>non si applica</b> a questo prodotto (es. bevande alcoliche): punteggio non disponibile. Puoi comunque registrarlo nel diario.</div>`
+      :`<div class="small">ℹ️ Prodotto non in archivio: <b>punteggio non disponibile</b>. Se hai l'etichetta puoi comunque inserire i valori e registrarlo nel diario.</div>`);
   if(prod.ns&&NS_COL[prod.ns]) scoreHtml+=`<span style="display:inline-block;background:${NS_COL[prod.ns]};color:#fff;font-weight:800;border-radius:8px;padding:3px 10px;margin-right:6px">Nutri-Score ${prod.ns}</span><span class="small">${NS_TXT[prod.ns]}</span>`;
   /* semafori nutrizionali per 100 g */
   const dot=(v,lo,hi,inv)=>{ const good=inv?v>=hi:v<lo, bad=inv?v<lo:v>hi;
@@ -3136,8 +3139,8 @@ async function lookupEan(ean){
       bio:(j.product.labels_tags||[]).some(t=>/organic|biologic/.test(t)),
       palm:(j.product.ingredients_analysis_tags||[]).includes("en:palm-oil"),
       allerg:(j.product.allergens_tags||[]).map(t=>t.replace(/^en:/,"")),
-      zucch:+nut.sugars_100g||0, sat:+nut["saturated-fat_100g"]||0,
-      sale:+nut.salt_100g||0, fibre:+nut.fiber_100g||0,
+      zucch:(nut.sugars_100g!=null?+nut.sugars_100g:null), sat:(nut["saturated-fat_100g"]!=null?+nut["saturated-fat_100g"]:null),
+      sale:(nut.salt_100g!=null?+nut.salt_100g:null), fibre:(nut.fiber_100g!=null?+nut.fiber_100g:null),
       name:j.product.product_name_it||j.product.product_name||("Prodotto "+ean),
       brand:(j.product.brands||"").split(",")[0],
       kcal:Math.round(n["energy-kcal_100g"]||((n.energy_100g||0)/4.184))||"",
@@ -3241,7 +3244,7 @@ $("#scanBuy").onclick=()=>{
   e.c=1; save(); toast("Segnato come comprato 🛒 Conta nella qualità della spesa"); };
 $("#btnCmp").onclick=()=>{
   if(cmpProd){ cmpProd=null; updateCmpBar(); $("#scanStatus").textContent="Confronto annullato."; }
-  else{ const p=$("#dlgScan")._prod; if(!p||!p.ns) return;
+  else{ const p=$("#dlgScan")._prod; if(!p||!NS_OK(p.ns)) return;
     cmpProd=p; $("#scanCmpBox").hidden=true; updateCmpBar();
     toast("Confronto attivo: inquadra il 2° prodotto (o aprilo dalla ricerca 🛒)");
     $("#dlgScan").close(); startScan(); } };
