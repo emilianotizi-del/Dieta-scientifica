@@ -209,7 +209,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
 
 <!-- ============ OGGI ============ -->
 <section class="page on" id="pg-oggi">
-  <div class="card">
+  <div class="card" id="dialCard">
     <div class="eyebrow">Obiettivo di oggi</div>
     <div class="dial" style="margin-top:8px">
       <svg id="dialSvg" width="96" height="96" viewBox="0 0 96 96" aria-hidden="true">
@@ -249,7 +249,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="small">Tocca “Mangiato” per registrare il pasto così com’è, oppure registra liberamente qui sotto.</div>
   </div>
 
-  <div class="card">
+  <div class="card" id="regCard">
     <h2>Registra liberamente</h2>
     <input type="search" id="foodSearch" placeholder="Cerca tra ~1020 alimenti… (es. orata, farro)" autocomplete="off">
     <div class="btnrow" style="margin-top:8px">
@@ -2114,7 +2114,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.34.0";
+const APP_VERSION="2.35.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2645,7 +2645,15 @@ function renderToday(){
   $("#schemaLabel").textContent=(menu.schema==="if168"?"Schema 16:8 — oggi salti la colazione":"Colazione leggera + pranzo e cena")+" · media settimanale "+fmt(kcalMedia())+" kcal"+(menu.comp?" · compensazione −"+menu.comp+" kcal (ieri sopra target)":"")+(isLuteale(k)&&!U.gravidanza?" · 🌸 fase luteale: target +100 kcal (fabbisogno reale più alto in questi giorni)":"");
   const pz=pausaAttiva();
   $("#pausaBanner").hidden=!pz;
-  const mc=$("#menuCard"); if(mc) mc.style.display=pz?"none":"";
+  /* percorsi: in diario/prehab (e in gravidanza) il menu proposto non compare
+     e "Registra liberamente" sale subito sotto il quadrante; solo ordine e visibilità, zero logica */
+  const percorsoDiario=(U.mode==="diario"||U.mode==="prehab"||U.gravidanza);
+  const mc=$("#menuCard"); if(mc){ if(pz||percorsoDiario) mc.style.display="none"; else mc.removeAttribute("style"); }
+  const rc=$("#regCard"), dc=$("#dialCard");
+  if(rc&&mc&&dc){
+    if(percorsoDiario){ if(rc.previousElementSibling!==dc) dc.after(rc); }
+    else if(rc.previousElementSibling!==mc) mc.after(rc);
+  }
   if(pz){ const dpz=new Date(+dateFromKey(pz.until)-864e5);
     $("#pausaBanner").innerHTML=`✈️ <b>Piano in pausa</b> fino al ${dpz.getDate()} ${MESI[dpz.getMonth()]} · <button class="btn ghost sm" id="btnRiprendi">Riprendi ora</button>`;
     $("#btnRiprendi").onclick=()=>endPausa();
