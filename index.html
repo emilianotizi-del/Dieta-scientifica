@@ -2050,7 +2050,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.21.0";
+const APP_VERSION="2.22.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2064,6 +2064,12 @@ function dateFromKey(k){return new Date(k+"T12:00:00");}
 function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function rng(seed){let s=seed||1;return()=>{s=Math.imul(s^(s>>>15),s|1);s^=s+Math.imul(s^(s>>>7),s|61);return((s^(s>>>14))>>>0)/4294967296;};}
 
+function vegPostpone(tgtDay){
+  /* il giorno veg slitta al primo giorno non-veg successivo: il conto settimanale si conserva */
+  U.vegMove=U.vegMove||{}; U.vegMove[tgtDay]="no";
+  for(let i=1;i<=7;i++){ const d2=todayKey(new Date(+dateFromKey(tgtDay)+i*864e5));
+    if(!isVegDay(d2)){ U.vegMove[d2]="si"; delete U.menuCache[d2]; return {no:tgtDay,si:d2}; } }
+  return {no:tgtDay,si:null}; }
 function avanziTarget(dateKey,mealName){
   const nd=todayKey(new Date(+dateFromKey(dateKey)+864e5));
   if(mealName==="Cena") return {day:nd,meal:"Pranzo"};
@@ -2152,6 +2158,9 @@ function macros(dateKey){
   const c=Math.max(Math.round((kcal-p*4-f*9)/4),40);
   return {kcal,p,c,f}; }
 function isVegDay(dateKey){
+  const mv=U.vegMove||{};
+  if(mv[dateKey]==="no") return false;
+  if(mv[dateKey]==="si") return true;
   const r=rng(weekSeed(dateKey)+7); const idx=(dateFromKey(dateKey).getDay()+6)%7;
   const days=[0,1,2,3,4,5,6]; for(let i=6;i>0;i--){const j=Math.floor(r()*(i+1));[days[i],days[j]]=[days[j],days[i]];}
   return days.indexOf(idx)<(+U.vegDays||0); }
@@ -2608,12 +2617,20 @@ function openItemActions(dateKey,mi,ii){
   $("#actDouble").hidden=!isMain;
   $("#actDouble").textContent=already?"✕ Togli gli avanzi di domani":"🍲 Ne cucino il doppio";
   $("#actDouble").onclick=()=>{ $("#dlgAct").close(); if(!isMain) return;
-    if(already){ delete U.avanzi[tgt.day][tgt.meal];
+    if(already){ const e=U.avanzi[tgt.day][tgt.meal];
+      if(e.vegMove){ U.vegMove=U.vegMove||{}; delete U.vegMove[e.vegMove.no];
+        if(e.vegMove.si){ delete U.vegMove[e.vegMove.si]; delete U.menuCache[e.vegMove.si]; } }
+      delete U.avanzi[tgt.day][tgt.meal];
       if(!Object.keys(U.avanzi[tgt.day]).length) delete U.avanzi[tgt.day];
       delete U.menuCache[tgt.day]; save(); render(); toast("Avanzi tolti: domani torna il menu normale"); return; }
+    let vegMove=null;
+    if(isVegDay(tgt.day)&&!isVegFood(f)){
+      if(!confirm("Domani sarebbe un giorno 🌿 veg. Confermi gli avanzi di "+f[0]+"? Il giorno veg slitterà al primo giorno utile.")) return;
+      vegMove=vegPostpone(tgt.day); }
     U.avanzi=U.avanzi||{};
     const oggi=todayKey(); for(const dk of Object.keys(U.avanzi)) if(dk<oggi) delete U.avanzi[dk];
-    (U.avanzi[tgt.day]=U.avanzi[tgt.day]||{})[tgt.meal]={fid:it.id,da:dateKey};
+    if(U.vegMove) for(const dk of Object.keys(U.vegMove)) if(dk<oggi) delete U.vegMove[dk];
+    (U.avanzi[tgt.day]=U.avanzi[tgt.day]||{})[tgt.meal]={fid:it.id,da:dateKey,vegMove};
     delete U.menuCache[tgt.day]; save(); render();
     toast("Fatto 🍲 Domani a "+(tgt.meal==="Pranzo"?"pranzo":"cena")+": avanzi di "+f[0]); };
   $("#actSwap").onclick=()=>{ $("#dlgAct").close(); swapItem(dateKey,mi,ii); };
