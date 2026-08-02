@@ -370,6 +370,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <h2>Diario ultimi 7 giorni</h2>
     <table id="weekTable"></table>
   </div>
+  <button class="btn ghost" id="btnShareWeek" style="width:100%;margin-top:var(--sp-2)">📤 Condividi la tua settimana</button>
 </section>
 
 <!-- ============ PROGRESSI ============ -->
@@ -636,6 +637,15 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <button class="sheetbtn" id="actSkip">🙅 Oggi non l'ho mangiato (togli dal pasto)</button>
   <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
   <button class="sheetbtn" onclick="this.closest('dialog').close()">Annulla</button>
+</dialog>
+<dialog id="dlgShare">
+  <h3 style="margin-bottom:2px">📤 La tua settimana in un'immagine</h3>
+  <div class="small" style="margin-bottom:var(--sp-2)">Scegli cosa includere: condividi solo quello che vuoi tu. Le scelte vengono ricordate.</div>
+  <div id="shareToggles"></div>
+  <div class="btnrow" style="margin-top:var(--sp-2)">
+    <button class="btn" id="shareGen">Genera immagine</button>
+    <button class="btn ghost" onclick="this.closest('dialog').close()">Chiudi</button>
+  </div>
 </dialog>
 <dialog id="dlgDetta">
   <h3 style="margin-bottom:2px">🎤 Detta il tuo pasto</h3>
@@ -2149,7 +2159,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.40.0";
+const APP_VERSION="2.41.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3963,6 +3973,131 @@ $("#outAdd").onclick=()=>{
   }
   save(); $("#dlgOut").close(); render(); vib(15); toast("Pasto fuori registrato"); };
 /* --- SETTIMANA --- */
+/* ---- 📤 Recap settimanale condivisibile ---- */
+const SHARE_VOCI=[
+  ["ader","Aderenza % al piano",1],["passi","Passi totali della settimana",1],
+  ["diario","Giorni di diario completati",1],["spesa","Qualità media della spesa",1],
+  ["merito","Riga di merito",1],["trend","Tendenza peso (freccia)",0],
+  ["delta","Variazione peso della settimana",0],["peso","Peso attuale",0],
+  ["kcal","Kcal medie giornaliere",0]];
+function shareDefaults(){ const d={}; SHARE_VOCI.forEach(([k,,def])=>d[k]=!!def); return d; }
+function shareCardData(sel){
+  const giorni=[]; const now=dateFromKey(todayKey());
+  for(let i=6;i>=0;i--) giorni.push(todayKey(new Date(+now-i*864e5)));
+  const scores=giorni.map(k=>scoreOf(k));
+  const validi=scores.filter(s=>s!=null);
+  const x={};
+  x.ader=validi.length?Math.round(validi.reduce((a,b)=>a+b,0)/validi.length):null;
+  x.passi=giorni.reduce((a,k)=>a+((U.log[k]&&U.log[k].passi)||0),0)||null;
+  x.diarioN=scores.filter(s=>s!=null&&s>=60).length;
+  const scans=(U.scanLog||[]).filter(e=>e.c&&giorni.includes(e.d)&&e.s!=null);
+  x.spesa=scans.length?Math.round(scans.reduce((a,e)=>a+e.s,0)/scans.length):null;
+  const conPasti=giorni.filter(k=>U.log[k]&&U.log[k].pasti&&U.log[k].pasti.length);
+  x.kcal=conPasti.length?Math.round(conPasti.reduce((a,k)=>a+totalsOf(k).kcal,0)/conPasti.length):null;
+  const pes=(U.pesi||[]).filter(w=>giorni.includes(w.d)).sort((a,b)=>a.d<b.d?-1:1);
+  x.delta=pes.length>=2?+(pes[pes.length-1].kg-pes[0].kg).toFixed(1):null;
+  x.peso=(U.pesi||[]).length?pesoAttuale():null;
+  x.trend=x.delta==null?null:x.delta<=-0.2?"↓":x.delta>=0.2?"↑":"→";
+  const items=[];
+  if(sel.ader&&x.ader!=null) items.push({k:"ader",lab:"Aderenza al piano",val:x.ader+"%"});
+  if(sel.passi&&x.passi!=null) items.push({k:"passi",lab:"Passi in 7 giorni",val:fmt(x.passi)});
+  if(sel.diario) items.push({k:"diario",lab:"Giorni di diario completati",val:x.diarioN+"/7"});
+  if(sel.spesa&&x.spesa!=null) items.push({k:"spesa",lab:"Qualità della spesa",val:x.spesa+"/100"});
+  if(sel.trend&&x.trend!=null) items.push({k:"trend",lab:"Tendenza peso",val:x.trend});
+  if(sel.delta&&x.delta!=null) items.push({k:"delta",lab:"Peso questa settimana",val:(x.delta>0?"+":x.delta<0?"−":"")+String(Math.abs(x.delta)).replace(".",",")+" kg"});
+  if(sel.peso&&x.peso!=null) items.push({k:"peso",lab:"Peso attuale",val:String(x.peso).replace(".",",")+" kg"});
+  if(sel.kcal&&x.kcal!=null) items.push({k:"kcal",lab:"Kcal medie al giorno",val:fmt(x.kcal)});
+  const merito=sel.merito?rigaMerito(x):null;
+  const d0=new Date(+now-6*864e5);
+  const periodo=d0.getDate()+" "+MESI[d0.getMonth()].slice(0,3).toLowerCase()+" – "
+    +new Date(+now).getDate()+" "+MESI[new Date(+now).getMonth()].slice(0,3).toLowerCase()+" "+new Date(+now).getFullYear();
+  return {items,merito,periodo};
+}
+function rigaMerito(x){
+  if(x.diarioN>=6) return x.diarioN+" giorni su 7 di diario completo 💪";
+  if(x.passi!=null&&x.passi>=70000) return fmt(x.passi)+" passi in sette giorni 🚶";
+  if(x.ader!=null&&x.ader>=80) return "Aderenza al piano oltre l'80% 🎯";
+  if(x.spesa!=null&&x.spesa>=70) return "Spesa di qualità: "+x.spesa+"/100 🛒";
+  if(x.diarioN>=3) return x.diarioN+" giorni su 7 di diario completo 🌱";
+  return "Una settimana di consapevolezza, un passo alla volta 🌱";
+}
+function shareLayout(n){ return n<=3?{cols:1,vf:150,lf:40}:n<=6?{cols:2,vf:96,lf:34}:{cols:2,vf:76,lf:30}; }
+function drawShareCard(d){
+  const cv=document.createElement("canvas"); cv.width=1080; cv.height=1920;
+  const ctx=cv.getContext("2d"); if(!ctx) return cv;
+  const col=n=>getComputedStyle(document.body).getPropertyValue(n).trim()||"#333";
+  const BG=col("--bg"), CARD=col("--card"), INK=col("--ink"), INK2=col("--ink2"),
+        ACC=col("--grano"), OLIVA=col("--oliva");
+  ctx.fillStyle=BG; ctx.fillRect(0,0,1080,1920);
+  /* intestazione */
+  ctx.fillStyle=INK2; ctx.font="600 40px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("La mia settimana con",540,150);
+  ctx.fillStyle=INK; ctx.font="800 92px sans-serif"; ctx.fillText("ROTTA·80",540,260);
+  ctx.fillStyle=ACC; ctx.fillRect(440,290,200,8);
+  ctx.fillStyle=INK2; ctx.font="500 38px sans-serif"; ctx.fillText(d.periodo,540,360);
+  /* riquadri dati */
+  const L=shareLayout(d.items.length);
+  const top=440, bottomLim=d.merito?1560:1720;
+  const rows=Math.max(1,Math.ceil(d.items.length/L.cols));
+  const cellH=Math.min(300,(bottomLim-top)/rows), cellW=L.cols===1?900:470, gap=40;
+  d.items.forEach((it,i)=>{
+    const r=Math.floor(i/L.cols), c=i%L.cols;
+    const x=L.cols===1?90:(c===0?70:70+cellW+gap);
+    const y=top+r*cellH;
+    ctx.fillStyle=CARD; ctx.beginPath();
+    ctx.roundRect?ctx.roundRect(x,y,cellW,cellH-24,24):ctx.rect(x,y,cellW,cellH-24); ctx.fill();
+    ctx.fillStyle=INK; ctx.font="800 "+L.vf+"px sans-serif"; ctx.textAlign="center";
+    ctx.fillText(it.val,x+cellW/2,y+(cellH-24)/2+L.vf*0.30);
+    ctx.fillStyle=INK2; ctx.font="600 "+L.lf+"px sans-serif";
+    ctx.fillText(it.lab,x+cellW/2,y+(cellH-24)-30);
+  });
+  /* riga di merito */
+  if(d.merito){
+    ctx.fillStyle=OLIVA; ctx.beginPath();
+    ctx.roundRect?ctx.roundRect(70,1600,940,140,28):ctx.rect(70,1600,940,140); ctx.fill();
+    ctx.fillStyle="#fff"; ctx.font="700 44px sans-serif"; ctx.textAlign="center";
+    ctx.fillText(d.merito,540,1685);
+  }
+  /* footer per il passaparola */
+  ctx.fillStyle=INK2; ctx.font="500 34px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("Rotta 80 · il tuo strumento quotidiano di salute",540,1840);
+  return cv;
+}
+function condividiCanvas(cv){
+  try{
+    cv.toBlob(async b=>{
+      if(!b){ toast("Immagine non generata: riprova"); return; }
+      try{
+        const file=new File([b],"rotta80-settimana.png",{type:"image/png"});
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:"La mia settimana con Rotta 80"}); return; }
+      }catch(e){ /* condivisione annullata o non disponibile: si scarica */ }
+      try{ const a=document.createElement("a"); a.href=URL.createObjectURL(b);
+        a.download="rotta80-settimana.png"; a.click(); toast("Immagine scaricata 📥"); }catch(e){}
+    },"image/png");
+  }catch(e){ toast("Il tuo browser non supporta la generazione dell'immagine"); }
+}
+function openShare(){
+  U.shareCard=Object.assign(shareDefaults(),U.shareCard||{});
+  const giorni=[]; const now=dateFromKey(todayKey());
+  for(let i=6;i>=0;i--) giorni.push(todayKey(new Date(+now-i*864e5)));
+  const scans=(U.scanLog||[]).filter(e=>e.c&&giorni.includes(e.d)&&e.s!=null);
+  $("#shareToggles").innerHTML=SHARE_VOCI.map(([k,lab])=>{
+    const nota=k==="spesa"&&!scans.length?' <span class="small">(nessuna scansione questa settimana)</span>':"";
+    return `<label class="ckrow"><input type="checkbox" style="width:auto" data-sh="${k}" ${U.shareCard[k]?"checked":""}>
+      <span style="flex:1">${lab}${nota}</span></label>`; }).join("");
+  const upd=()=>{ $("#shareGen").disabled=![...$$("#shareToggles [data-sh]")].some(c=>c.checked); };
+  $$("#shareToggles [data-sh]").forEach(c=>c.onchange=()=>{ U.shareCard[c.dataset.sh]=c.checked; save(); upd(); });
+  upd(); $("#dlgShare").showModal();
+}
+$("#btnShareWeek").onclick=openShare;
+$("#shareGen").onclick=()=>{
+  const d=shareCardData(U.shareCard);
+  if(!d.items.length&&!d.merito){ toast("Seleziona almeno un dato"); return; }
+  const cv=drawShareCard(d);
+  $("#dlgShare").close(); vib(15);
+  condividiCanvas(cv);
+};
 function renderWeek(){
   const sv=$("#smartSave");
   if(sv){ if(U.spesaSmart){ const ris=risparmioSett();
