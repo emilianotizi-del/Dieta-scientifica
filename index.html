@@ -2099,7 +2099,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.29.0";
+const APP_VERSION="2.30.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -3256,11 +3256,20 @@ $("#btnScanSuper").onclick=()=>{ setScanMode("scelgo"); startScan(); };
 $("#scanCart").onclick=()=>{
   const p=$("#dlgScan")._prod, ean=$("#dlgScan")._ean;
   if(!ean){ toast("Scansiona prima un prodotto"); return; }
-  U.carrello=U.carrello||[];
-  if(!U.carrello.some(x=>x.ean===ean))
-    U.carrello.push({ean,name:(p&&p.name)||("Prodotto "+ean),s:(p&&NS_OK(p.ns))?rottaScore(p):null,d:todayKey()});
-  const e=(U.scanLog||[]).find(x=>x.ean===ean&&x.d===todayKey()); if(e) e.c=1; /* nel carrello = acquisto per la pagella */
-  save(); toast("Aggiunto al carrello 🛒 Lo trovi nella lista della spesa");
+  const e=(U.scanLog||[]).find(x=>x.ean===ean&&x.d===todayKey()); if(e) e.c=1; /* acquisto per la pagella */
+  U.spesaCk=U.spesaCk||{};
+  /* match col canonizzatore matchIng: se il prodotto corrisponde a una voce di lista, la spunta */
+  const nomeP=(p&&p.name)||""; const cand=nomeP?canonIng(nomeP):null;
+  let spuntato=null;
+  if(cand&&Array.isArray(U.spesaNames))
+    for(const n of U.spesaNames){ if(n===cand[0]||canonIng(n)===cand){ U.spesaCk[n]=1; spuntato=n; break; } }
+  if(!spuntato&&cand&&Array.isArray(U.spesaBasici))
+    for(const n of U.spesaBasici){ if(n===cand[0]||canonIng(n)===cand){ delete U.spesaCk["🧂 "+n]; spuntato=n; break; } }
+  if(!spuntato){ U.carrello=U.carrello||[];
+    if(!U.carrello.some(x=>x.ean===ean))
+      U.carrello.push({ean,name:nomeP||("Prodotto "+ean),s:(p&&NS_OK(p.ns))?rottaScore(p):null,d:todayKey()}); }
+  save(); if($("#spesaList").querySelector("[data-spesa]")) buildSpesa();
+  toast(spuntato?("Spuntato dalla lista ✓ "+spuntato):"Aggiunto al carrello 🛒 Lo trovi nella lista della spesa");
   $("#dlgScan").close(); startScan(); };
 $("#btnCmp").onclick=()=>{
   if(cmpProd){ cmpProd=null; updateCmpBar(); $("#scanStatus").textContent="Confronto annullato."; }
@@ -3680,6 +3689,7 @@ function buildSpesa(){
     agg[nome]={g:agg[top].g+extra,cat:"cereali"}; delete agg[top];
   }
   U.spesaCk=U.spesaCk||{};
+  U.spesaNames=Object.keys(agg); U.spesaBasici=[...basici]; /* per spuntare dalla scansione al supermercato */
   const html=REPARTI.map(([lab,cats])=>{
     const rows=Object.entries(agg).filter(([n,v])=>cats.includes(v.cat))
       .sort((a,b)=>a[0].localeCompare(b[0]))
