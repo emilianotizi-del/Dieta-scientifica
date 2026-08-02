@@ -219,6 +219,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="macro" id="macroBars"></div>
     <div class="small" id="streakLine" style="margin-top:8px"></div>
     <div class="notice" id="mantBanner" hidden></div>
+    <div class="notice" id="pausaBanner" hidden></div>
   </div>
 
   <div class="card" id="fastCard" hidden>
@@ -230,7 +231,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="menuCard">
     <h2>Menu proposto <button class="btn ghost sm" id="btnRegen">↻ Rigenera</button></h2>
     <div id="menuList"></div>
     <div class="small">Tocca “Mangiato” per registrare il pasto così com’è, oppure registra liberamente qui sotto.</div>
@@ -421,6 +422,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <button class="btn" id="btnSaveProf">Salva profilo</button>
       <button class="btn ghost" id="btnAddUser">+ Nuovo utente</button>
     </div>
+  </div>
+  <div class="card">
+    <h2>✈️ Metti in pausa il piano</h2>
+    <div id="pausaBox" class="small"></div>
   </div>
   <div class="card">
     <h2>Gusti appresi</h2>
@@ -2044,7 +2049,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.19.0";
+const APP_VERSION="2.20.0";
 const FIRST_RUN=!Storage.load();
 let S=Storage.load()||{users:[defaultUser(1)],active:1};
 S.users.forEach(u=>{ u.gusti=u.gusti||{ban:[],fav:[]}; u.prog=u.prog||{}; if(u.soloMed==null) u.soloMed=true; });
@@ -2058,11 +2063,13 @@ function dateFromKey(k){return new Date(k+"T12:00:00");}
 function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function rng(seed){let s=seed||1;return()=>{s=Math.imul(s^(s>>>15),s|1);s^=s+Math.imul(s^(s>>>7),s|61);return((s^(s>>>14))>>>0)/4294967296;};}
 
+function inPause(k){ return (U.pause||[]).some(p=>k>=p.from&&k<p.until); }
+function pausaAttiva(){ const k=todayKey(); return (U.pause||[]).find(p=>k>=p.from&&k<p.until)||null; }
 function recalibrate(){
   /* confronta il dimagrimento reale con quello atteso e corregge il fabbisogno stimato */
   const WIN=21, MIN_DAYS=10, KCAL_KG=7700;
   const start=+dateFromKey(todayKey())-WIN*864e5;
-  const wpts=U.pesi.filter(w=>+dateFromKey(w.d)>=start);
+  const wpts=U.pesi.filter(w=>+dateFromKey(w.d)>=start&&!inPause(w.d));
   if(wpts.length<2) { U.tdeeAdjInfo={need:true}; return; }
   const t0=+dateFromKey(wpts[0].d);
   const span=(+dateFromKey(wpts[wpts.length-1].d)-t0)/864e5;
@@ -2074,6 +2081,7 @@ function recalibrate(){
   /* giorni con diario compilato (>=800 kcal registrate) */
   let sum=0,days=0;
   for(let i=1;i<=WIN;i++){ const k=todayKey(new Date(Date.now()-i*864e5));
+    if(inPause(k)) continue;
     const l=U.log[k]; if(!l||!l.pasti) continue;
     const kc=l.pasti.reduce((s,p)=>s+(p.kcal||0),0);
     if(kc>=800){ sum+=kc; days++; } }
@@ -2388,7 +2396,7 @@ function genMenu(dateKey,force){
   /* compensazione: se ieri hai chiuso sopra target, oggi il menu taglia metà dell'eccesso (max 15%) */
   let comp=0;
   const yk=todayKey(new Date(dateFromKey(dateKey)-864e5)); const yl=U.log[yk];
-  if(yl&&yl.pasti.length){ const yt=totalsOf(yk).kcal, ytg=macros(yk).kcal;
+  if(yl&&yl.pasti.length&&!inPause(yk)){ const yt=totalsOf(yk).kcal, ytg=macros(yk).kcal;
     if(yt>ytg*1.05) comp=Math.min(Math.round((yt-ytg)*0.5),Math.round(m.kcal*0.15)); }
   if(comp){ m.kcal-=comp; m.c=Math.max(m.c-Math.round(comp/4),40); }
   const ctx={veg,month,recent:recentFoodIds(dateKey),fruitLeft:2,dateKey};
@@ -2478,6 +2486,13 @@ function renderToday(){
   chip.textContent={basso:"Giorno basso",pieno:"Giorno pieno",ricarica:"Ricarica"}[menu.dayType];
   $("#vegChip").hidden=!menu.veg;
   $("#schemaLabel").textContent=(menu.schema==="if168"?"Schema 16:8 — oggi salti la colazione":"Colazione leggera + pranzo e cena")+" · media settimanale "+fmt(kcalMedia())+" kcal"+(menu.comp?" · compensazione −"+menu.comp+" kcal (ieri sopra target)":"");
+  const pz=pausaAttiva();
+  $("#pausaBanner").hidden=!pz;
+  const mc=$("#menuCard"); if(mc) mc.style.display=pz?"none":"";
+  if(pz){ const dpz=new Date(+dateFromKey(pz.until)-864e5);
+    $("#pausaBanner").innerHTML=`✈️ <b>Piano in pausa</b> fino al ${dpz.getDate()} ${MESI[dpz.getMonth()]} · <button class="btn ghost sm" id="btnRiprendi">Riprendi ora</button>`;
+    $("#btnRiprendi").onclick=()=>endPausa();
+    $("#schemaLabel").textContent="Piano in pausa: diario e scanner attivi, menu sospesi."; }
   /* barre macro */
   const bars=[["Proteine",tot.p,m.p,"p"],["Carboidrati",tot.c,m.c,"c"],["Grassi",tot.fat,m.f,"f"]];
   $("#macroBars").innerHTML=bars.map(([n,v,t,cl])=>`
@@ -2737,6 +2752,7 @@ function scoreOf(k){ const l=U.log[k]; if(!l||!l.pasti.length) return null;
   s+= l.wo?15:0; return s; }
 function streak(){ let n=0;
   for(let i=0;i<400;i++){ const k=todayKey(new Date(Date.now()-i*864e5));
+    if(inPause(k)) continue; /* pausa: la serie si congela, non si spezza */
     const s=scoreOf(k);
     if(i===0&&s===null) continue; /* oggi può essere ancora in corso */
     if(s!==null&&s>=60) n++; else break; }
@@ -3759,7 +3775,31 @@ $("#importFile").onchange=e=>{
     catch(err){ toast("File non valido"); } };
   r.readAsText(f); };
 /* --- render generale --- */
-function render(){ applyTheme(); renderToday(); renderWeek(); renderProg(); renderProf(); }
+function svuotaMenuFuturi(){ const today=todayKey();
+  for(const k of Object.keys(U.menuCache))
+    if(k>today||(k===today&&!Object.keys(U.menuCache[k].eaten||{}).length)) delete U.menuCache[k]; }
+function endPausa(){ const pz=pausaAttiva(); if(!pz) return;
+  pz.until=todayKey(); svuotaMenuFuturi(); save(); render(); toast("Piano riattivato 💪"); }
+function renderPausa(){
+  const box=$("#pausaBox"); if(!box) return;
+  const pz=pausaAttiva();
+  if(pz){ const d=new Date(+dateFromKey(pz.until)-864e5);
+    box.innerHTML=`Il piano è <b>in pausa fino al ${d.getDate()} ${MESI[d.getMonth()]}</b> compreso. Diario, scanner, passi e acqua restano attivi; menu e compensazioni sospesi, serie congelata.
+      <div class="btnrow" style="margin-top:8px"><button class="btn sm" id="btnPausaStop">▶ Riprendi ora</button></div>`;
+    $("#btnPausaStop").onclick=()=>endPausa();
+  } else {
+    box.innerHTML=`Vacanza, malattia, un periodo pieno: metti tutto in pausa senza perdere nulla. Diario e scanner restano attivi, la serie si congela e alla ripresa non ci sono compensazioni arretrate.
+      <div class="grid2" style="margin-top:8px"><div><label>Durata</label><select id="pausaDur">
+        <option value="3">3 giorni</option><option value="7" selected>7 giorni</option>
+        <option value="14">14 giorni</option><option value="21">21 giorni (massimo)</option></select></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn" id="btnPausaGo">✈️ Metti in pausa</button></div></div>
+      <div class="small" style="margin-top:4px">Puoi riprendere in anticipo quando vuoi, dalla Home o da qui.</div>`;
+    $("#btnPausaGo").onclick=()=>{ const n=Math.min(21,Math.max(1,+$("#pausaDur").value||7));
+      U.pause=U.pause||[]; U.pause.push({from:todayKey(),until:todayKey(new Date(Date.now()+n*864e5))});
+      svuotaMenuFuturi(); save(); render(); toast("Piano in pausa ✈️"); };
+  }
+}
+function render(){ applyTheme(); renderToday(); renderWeek(); renderProg(); renderProf(); renderPausa(); }
 /* passi in ingresso da Comando Rapido iOS: ...?passi=8543 */
 (function(){ try{
   const q=new URLSearchParams(location.search); const p=parseInt((q.get("passi")||"").replace(/\D/g,""));
