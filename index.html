@@ -115,6 +115,7 @@ input[type="checkbox"]{width:22px!important;height:22px;min-width:22px;accent-co
 .wb .col .tline{position:absolute;left:-3px;right:-3px;height:2px;background:var(--ink)}
 .wb .lbl{font-size:.68rem;color:var(--ink2)}
 canvas{width:100%;height:auto;display:block}
+.fielderr{color:var(--pomodoro);margin-top:var(--sp-1);min-height:0}
 #sysBanner:not([hidden]){display:flex} /* l'inline display batteva [hidden]: il flex si applica solo da visibile */
 /* tabelle settimanali */
 table{width:100%;border-collapse:collapse;font-size:.82rem}
@@ -269,18 +270,14 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <input type="search" id="foodSearch" placeholder="Cerca tra ~1020 alimenti… (es. orata, farro)" autocomplete="off">
     <div id="favBox" hidden style="margin-top:var(--sp-1)"></div>
     <div class="btnrow" style="margin-top:var(--sp-2)">
-      <button class="btn ghost sm" id="btnScan">📷 Scansiona barcode</button>
-      <button class="btn ghost sm" id="btnOut">🍕 Pasto fuori casa</button>
-      <button class="btn ghost sm" id="btnPreset">★ Pasti preset</button>
-      <button class="btn ghost sm" id="btnCucino">🍳 Cosa cucino?</button>
-      <button class="btn ghost sm" id="btnDetta">🎤 Detta</button>
+      <button class="btn" id="btnRegPiu" style="flex:1">➕ Registra</button>
     </div>
     <div class="foodresults" id="foodResults" hidden></div>
     <div id="ripetiRow" style="margin-top:var(--sp-1)"></div>
     <ul class="loglist" id="logList" style="margin-top:var(--sp-2)"></ul>
   </div>
 
-  <div class="card">
+  <div class="card" id="passiCard">
     <h2>Camminata</h2>
     <div class="stepgoal">
       <div><div class="big" id="stepsNow">0</div><div class="small">passi registrati</div></div>
@@ -297,7 +294,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="acquaCard">
     <h2>Acqua</h2>
     <div class="stepgoal">
       <div><div class="big" id="waterNow">0</div><div class="small">litri bevuti</div></div>
@@ -313,7 +310,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="woCard">
     <h2>Allenamento di oggi <span class="chip pieno" id="woBadge"></span></h2>
     <div id="woList"></div>
     <div class="btnrow" style="margin-top:10px">
@@ -323,9 +320,14 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="stagCard">
     <div class="eyebrow">Di stagione adesso</div>
     <div class="season" id="seasonStrip"></div>
+  </div>
+  <div class="card" id="altreCard">
+    <button id="altreBtn" style="all:unset;cursor:pointer;display:flex;width:100%;justify-content:space-between;align-items:center;font-weight:700" aria-expanded="false">
+      <span>Altre attività di oggi</span><span id="altreArrow" aria-hidden="true">⌄</span></button>
+    <div id="altreBody" hidden style="margin-top:var(--sp-2)"></div>
   </div>
 </section>
 
@@ -652,6 +654,17 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <button class="sheetbtn" id="actSkip">🙅 Oggi non l'ho mangiato (togli dal pasto)</button>
   <button class="sheetbtn" id="actBan">🚫 Non riproporre più</button>
   <button class="sheetbtn" onclick="this.closest('dialog').close()">Annulla</button>
+</dialog>
+<dialog id="dlgReg" style="max-width:420px">
+  <h3 style="margin-bottom:var(--sp-2)">Come vuoi registrare?</h3>
+  <div id="regSheet">
+    <button class="sheetbtn" id="btnScan">📷 Scansiona barcode</button>
+    <button class="sheetbtn" id="btnDetta">🎤 Detta a voce</button>
+    <button class="sheetbtn" id="btnOut">🍕 Pasto fuori casa</button>
+    <button class="sheetbtn" id="btnPreset">★ Pasti preset</button>
+    <button class="sheetbtn" id="btnCucino">🍳 Cosa cucino?</button>
+  </div>
+  <button class="btn ghost sm" style="margin-top:var(--sp-2)" onclick="this.closest('dialog').close()">Annulla</button>
 </dialog>
 <dialog id="dlgDiag">
   <h3 style="margin-bottom:2px">🩺 Diagnostica</h3>
@@ -2218,7 +2231,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.46.0";
+const APP_VERSION="2.47.0";
 function validateState(s){
   return !!(s&&typeof s==="object"&&Array.isArray(s.users)&&s.users.length>0
     &&s.users.every(u=>u&&typeof u==="object"
@@ -2992,6 +3005,20 @@ function renderToday(){
     if(percorsoDiario){ if(rc.previousElementSibling!==dc) dc.after(rc); }
     else if(rc.previousElementSibling!==mc) mc.after(rc);
   }
+  /* S4 · progressive disclosure: sotto il quadrante restano al massimo 3 card contestuali
+     (menu/registra + digiuno se attivo); il resto vive in "Altre attività di oggi".
+     Nessun elemento rimosso, solo orchestrato: id e handler restano identici. */
+  { const body=$("#altreBody"), fc=$("#fastCard");
+    if(body){
+      const fastAttivo=fc&&!fc.hidden;
+      const dentro=[["passiCard",1],["acquaCard",1],["woCard",1],["stagCard",1],["fastCard",!fastAttivo]]
+        .filter(([id,vai])=>vai&&$("#"+id)).map(([id])=>$("#"+id));
+      dentro.forEach(el=>{ if(el.parentElement!==body) body.appendChild(el); });
+      if(fastAttivo&&fc.parentElement===$("#altreBody")) $("#altreCard").before(fc);
+      $("#altreBody").hidden=!U.homeExp;
+      $("#altreArrow").textContent=U.homeExp?"⌃":"⌄";
+      $("#altreBtn").setAttribute("aria-expanded",U.homeExp?"true":"false");
+    } }
   if(pz){ const dpz=new Date(+dateFromKey(pz.until)-864e5);
     $("#pausaBanner").innerHTML=`✈️ <b>Piano in pausa</b> fino al ${dpz.getDate()} ${MESI[dpz.getMonth()]} · <button class="btn ghost sm" id="btnRiprendi">Riprendi ora</button>`;
     $("#btnRiprendi").onclick=()=>endPausa();
@@ -3233,7 +3260,7 @@ function openRecipe(nm,it,dateKey,mi,ii){
   $$("#recIng [data-ring]").forEach(inp=>inp.oninput=upd); upd();
   $("#recSave").hidden=!dateKey;
   $("#recSave").onclick=()=>{
-    const t=$("#recTot")._t; if(!t||!t.kcal){ toast("Metti le dosi"); return; }
+    const t=$("#recTot")._t; if(!t||!t.kcal){ inlineErr("#recTot","Metti le dosi degli ingredienti"); return; }
     if(mi!=null){
       const menu=U.menuCache[dateKey];
       dayLog(dateKey).pasti.push({id:null,name:nm+" (mia versione)",g:t.g,kcal:t.kcal,p:t.p,c:t.c,fat:t.f,
@@ -3319,7 +3346,7 @@ $("#cucSearch").oninput=e=>{
     if(f&&cucSel.length<7&&!cucSel.includes(f)) cucSel.push(f);
     $("#cucSearch").value=""; box.hidden=true; drawCucSel(); }); };
 $("#cucFind").onclick=()=>{
-  if(cucSel.length<2){ toast("Scegli almeno 2 ingredienti"); return; }
+  if(cucSel.length<2){ inlineErr("#cucSearch","Scegli almeno 2 ingredienti dalla lista"); return; }
   drawCucRisultati(); };
 /* ---- 🎤 Dettatura del diario: parser di frasi libere ---- */
 const DETTA_NUM={"un":1,"uno":1,"una":1,"due":2,"tre":3,"quattro":4,"cinque":5,"sei":6,"sette":7,"otto":8,"nove":9,"dieci":10,"mezzo":0.5,"mezza":0.5,"paio":2,"½":0.5};
@@ -3423,7 +3450,7 @@ $("#dettaMic").onclick=()=>{
   try{ r.start(); }catch(e){ _dettaRec=null; $("#dettaStato").textContent="Microfono non disponibile: scrivi nel campo."; } };
 $("#dettaGo").onclick=()=>{
   const t=$("#dettaTxt").value.trim();
-  if(!t){ toast("Detta o scrivi cosa hai mangiato"); return; }
+  if(!t){ inlineErr("#dettaTxt","Detta o scrivi cosa hai mangiato"); return; }
   _dettaRes=parseFreeMeal(t); dettaPreview();
   if(_dettaRes.items.some(x=>x.amb)) $("#dettaStato").textContent="❓ Su qualche voce non sono sicuro: scegli dall'elenco.";
   else if(_dettaRes.items.length) $("#dettaStato").textContent="Controlla l'anteprima e registra.";
@@ -3700,6 +3727,7 @@ async function lookupEan(ean){
   try{
     const r=await fetch("https://world.openfoodfacts.org/api/v2/product/"+ean+".json?fields=product_name_it,product_name,brands,nutriments,nutriscore_grade,nova_group,additives_tags,labels_tags,allergens_tags,ingredients_analysis_tags,image_front_small_url");
     const j=await r.json();
+    bannerReteVia(); /* la rete c'è: se il banner era su per un errore di rete, giù */
     if(j.status!==1||!j.product){ $("#scanStatus").textContent="Prodotto non trovato: inserisci i valori dall'etichetta."; 
       showScanned({ean,name:"Prodotto "+ean,kcal:"",p:"",c:"",f:""}); return; }
     const n=j.product.nutriments||{};
@@ -3718,6 +3746,7 @@ async function lookupEan(ean){
       p:+(n.proteins_100g??"")||"", c:+(n.carbohydrates_100g??"")||"", f:+(n.fat_100g??"")||""};
     showScanned(prod,false);
   }catch(e){ $("#scanStatus").textContent="Rete non disponibile: inserisci i valori a mano dall'etichetta.";
+    bannerRete("Rete non disponibile: lo scanner usa i valori manuali finché non torna."); /* S4: rete -> banner persistente */
     showScanned({ean,name:"Prodotto "+ean,kcal:"",p:"",c:"",f:""}); }
 }
 async function startScan(){
@@ -3845,7 +3874,7 @@ $("#btnCmp").onclick=()=>{
 $("#scanAdd").onclick=()=>{
   const kcal=+$("#scanKcal").value||0, p=+$("#scanP").value||0, c=+$("#scanC").value||0, f=+$("#scanF").value||0;
   const g=Math.max(1,+$("#scanG").value||100);
-  if(!kcal&&!p&&!c&&!f){ toast("Inserisci i valori dall'etichetta"); return; }
+  if(!kcal&&!p&&!c&&!f){ inlineErr("#scanKcal","Inserisci almeno le kcal dall'etichetta"); return; }
   const name=$("#scanName").textContent.replace(" (archivio)","");
   const ean=$("#dlgScan")._ean;
   if(ean){ U.prodotti=U.prodotti||{}; const old=U.prodotti[ean]||{}; const full=$("#dlgScan")._prod||{};
@@ -3860,6 +3889,16 @@ $("#scanAdd").onclick=()=>{
 const OB={step:0,sesso:"M",ritmo:"sostenuto",veg:2,escl:[],scopo:"dimagrire",grav:"no"};
 function obScopoEffettivo(o){ /* CLINICO-DA-VALIDARE: in gravidanza/allattamento niente percorso di dimagrimento */
   return (o.sesso==="F"&&o.grav==="si"&&o.scopo==="dimagrire")?"diario":o.scopo; }
+/* S4 · errori di INPUT: inline sotto il campo, non toast (i toast restano per le conferme) */
+function inlineErr(sel,msg){ const el=$(sel); if(!el){ toast(msg); return; }
+  let e=el.parentElement.querySelector(".fielderr");
+  if(!e){ e=document.createElement("div"); e.className="fielderr small"; el.after(e); }
+  e.textContent=msg;
+  el.addEventListener("input",()=>{ e.textContent=""; },{once:true});
+  el.focus&&el.focus(); }
+function bannerRete(msg){ const b=$("#sysBanner"); if(!b||b.dataset.lock) return;
+  b.hidden=false; b.querySelector("span").textContent="⚠️ "+msg; }
+function bannerReteVia(){ const b=$("#sysBanner"); if(b&&!b.dataset.lock) b.hidden=true; }
 function obWarn(msg){ const s=document.querySelector('.ob-step:not([hidden]) .ob-err');
   if(s) s.textContent=msg; toast(msg); }
 function obShow(n){ OB.step=n;
@@ -3998,6 +4037,23 @@ if(window._stateRecovered){ const b=$("#sysBanner"); if(b){ b.hidden=false; b.da
   b.querySelector("span").textContent="⚠️ I dati salvati non erano leggibili: ho conservato una copia di emergenza e sono ripartito pulito. Contatta l'assistenza dalla Diagnostica in Profilo."; } }
 
 /* --- diagnostica: wiring UI (le definizioni e i listener sono in testa al file) --- */
+$("#altreBtn").onclick=()=>{ U.homeExp=!U.homeExp; save();
+  $("#altreBody").hidden=!U.homeExp;
+  $("#altreArrow").textContent=U.homeExp?"⌃":"⌄";
+  $("#altreBtn").setAttribute("aria-expanded",U.homeExp?"true":"false"); };
+/* S4 · bottom sheet Registra: opzioni ordinate per uso recente (U.regLast) */
+$("#btnRegPiu").onclick=()=>{
+  const last=U.regLast||{};
+  const sheet=$("#regSheet");
+  [...sheet.children].sort((a,b)=>(last[b.id]||0)-(last[a.id]||0))
+    .forEach(el=>sheet.appendChild(el)); /* stabile: i mai usati restano in ordine di markup */
+  $("#dlgReg").showModal();
+};
+$("#regSheet").addEventListener("click",e=>{
+  const b=e.target.closest(".sheetbtn"); if(!b) return;
+  U.regLast=U.regLast||{}; U.regLast[b.id]=Date.now(); save();
+  $("#dlgReg").close();
+},true);
 $("#btnDiag").onclick=()=>{
   let q=[]; try{ q=JSON.parse(localStorage.getItem(DIAG_KEY)||"[]"); }catch(e){}
   $("#diagList").innerHTML=q.length?q.slice().reverse().map(x=>
