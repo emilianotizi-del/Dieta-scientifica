@@ -2187,6 +2187,16 @@ const PROT_EXPLAIN=[
    STORAGE ADAPTER — oggi localStorage, domani Supabase:
    basta reimplementare load()/save() mantenendo l'interfaccia.
    ============================================================ */
+/* --- diagnostica PRIMA di tutto: cattura anche gli errori del boot e dell'onboarding --- */
+const DIAG_KEY="rotta80_diag";
+function diagPush(m,st){ try{
+  const q=JSON.parse(localStorage.getItem(DIAG_KEY)||"[]");
+  q.push({t:new Date().toISOString(),v:(typeof APP_VERSION!=="undefined"?APP_VERSION:"boot"),m:String(m).slice(0,200),st:String(st||"").slice(0,300)});
+  while(q.length>50) q.shift();
+  localStorage.setItem(DIAG_KEY,JSON.stringify(q));
+}catch(e){} }
+window.addEventListener("error",e=>diagPush(e.message,(e.error&&e.error.stack||"")+" @"+(e.filename||"")+":"+(e.lineno||"")));
+window.addEventListener("unhandledrejection",e=>diagPush("promise: "+(e.reason&&e.reason.message||e.reason),e.reason&&e.reason.stack));
 /* ---- sicurezza DOM: ogni stringa non statica passa da qui prima di entrare in innerHTML ---- */
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl=u=>{ u=String(u??""); return /^(https?:|blob:|data:image\/)/i.test(u)?u.replace(/"/g,"%22"):""; };
@@ -2207,7 +2217,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.45.1";
+const APP_VERSION="2.45.2";
 function validateState(s){
   return !!(s&&typeof s==="object"&&Array.isArray(s.users)&&s.users.length>0
     &&s.users.every(u=>u&&typeof u==="object"
@@ -3848,11 +3858,14 @@ function startOnboarding(){
   $("#obImport").onclick=()=>{ $("#onboard").hidden=true; save();
     [...$$('nav button')].find(b=>b.dataset.pg==="prof")?.click();
     toast("Vai su Dati → Importa backup"); };
-  $("#obBuild").onclick=()=>{ try{ obApply(); obReveal(); obShow(4); }
+  $("#obBuild").onclick=()=>{ diagPush("obBuild: tap ricevuto","");
+    try{ obApply(); diagPush("obBuild: obApply ok","");
+      obReveal(); diagPush("obBuild: obReveal ok","");
+      obShow(4); }
     catch(e){ obWarn("Ops, qualcosa è andato storto ("+e.message+"). Riprova o scrivici.");
-      try{ toast("⚠️ "+e.message); diagPush("onboarding: "+e.message,e.stack); }catch(_){} } };
+      try{ toast("⚠️ "+e.message); diagPush("onboarding ERRORE: "+e.message,e.stack); }catch(_){} } };
   $("#obFinish").onclick=()=>{ const nm=$("#obNome").value.trim();
-    if(nm) U.nome=nm; save(); $("#onboard").hidden=true; render();
+    if(nm) U.nome=nm; delete S.obPending; save(); $("#onboard").hidden=true; render();
     toast("Benvenuto a bordo, "+(U.nome!=="Io"?U.nome:"")+" 🍅"); };
 }
 function obApply(){
@@ -3913,20 +3926,12 @@ function obReveal(){
       +`<div class="small" style="margin-top:var(--sp-1);font-style:italic">Cambia ogni giorno, resta nei tuoi numeri ogni settimana.</div>`;
   }
 }
-if(FIRST_RUN){ startOnboarding(); }
+if(FIRST_RUN){ S.obPending=true; save(); startOnboarding(); }
+else if(S.obPending){ startOnboarding(); } /* l'onboarding non ancora completato ricompare a ogni avvio: mai più "piano fantasma" */
 if(window._stateRecovered){ const b=$("#sysBanner"); if(b){ b.hidden=false; b.dataset.lock="1";
   b.querySelector("span").textContent="⚠️ I dati salvati non erano leggibili: ho conservato una copia di emergenza e sono ripartito pulito. Contatta l'assistenza dalla Diagnostica in Profilo."; } }
 
-/* --- diagnostica: errori in coda locale (max 50), zero invii in rete --- */
-const DIAG_KEY="rotta80_diag";
-function diagPush(m,st){ try{
-  const q=JSON.parse(localStorage.getItem(DIAG_KEY)||"[]");
-  q.push({t:new Date().toISOString(),v:APP_VERSION,m:String(m).slice(0,200),st:String(st||"").slice(0,300)});
-  while(q.length>50) q.shift();
-  localStorage.setItem(DIAG_KEY,JSON.stringify(q));
-}catch(e){} }
-window.addEventListener("error",e=>diagPush(e.message,e.error&&e.error.stack));
-window.addEventListener("unhandledrejection",e=>diagPush("promise: "+(e.reason&&e.reason.message||e.reason),e.reason&&e.reason.stack));
+/* --- diagnostica: wiring UI (le definizioni e i listener sono in testa al file) --- */
 $("#btnDiag").onclick=()=>{
   let q=[]; try{ q=JSON.parse(localStorage.getItem(DIAG_KEY)||"[]"); }catch(e){}
   $("#diagList").innerHTML=q.length?q.slice().reverse().map(x=>
