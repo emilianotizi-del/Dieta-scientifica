@@ -2218,7 +2218,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.45.3";
+const APP_VERSION="2.46.0";
 function validateState(s){
   return !!(s&&typeof s==="object"&&Array.isArray(s.users)&&s.users.length>0
     &&s.users.every(u=>u&&typeof u==="object"
@@ -2748,7 +2748,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
-const MENU_V=12;
+const MENU_V=13;
 function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey] && U.menuCache[dateKey].mv===MENU_V) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
@@ -2782,6 +2782,70 @@ function genMenu(dateKey,force){
       ferro:isMestruale(dateKey),calcio:calcioBoostOn(),folati:folatiBoostOn()};
     meals=split.map(([n,q])=>buildMeal(n,k2*q,m.p*q,r2,ctx2));
   }
+  const menuFlags={};
+  /* 🎯 S3 · presidio proteico (banda dal report esterno, in attesa di ratifica comitato):
+     mai sotto il 75% del target del giorno; il passaggio PUNTA al 95% per tenere la media settimanale ≥90%.
+     Deterministico (nessun rng): alza i grammi degli alimenti proteici entro capOf,
+     compensa sui non-proteici fino a metà del loro minimo, kcal sempre nel ±10% del target. */
+  {
+    const tgtP=m.p, floorP=0.75*tgtP, aimP=0.95*tgtP;
+    const totP=()=>meals.reduce((s,me)=>s+me.items.reduce((a,x)=>a+x.p,0),0);
+    const totK=()=>meals.reduce((s,me)=>s+me.items.reduce((a,x)=>a+x.kcal,0),0);
+    if(totP()<aimP||totK()<m.kcal*0.90){
+      /* candidati per DENSITÀ PROTEICA PER CALORIA (g di proteine per 100 kcal): è la metrica giusta
+         per alzare proteine dentro un budget kcal — e include i legumi cotti dei giorni veg
+         (8 g su 90 kcal ≈ 8,9/100kcal) che la densità per grammo scartava. Su: ≥6; giù: <4. */
+      const dens=f=>f[2]>0?f[3]*100/f[2]:0;
+      const su=[], giu=[];
+      meals.forEach(me=>me.items.forEach(it=>{
+        if(it.id==null) return; const f=FOOD_DB[it.id]; if(!f) return;
+        if(dens(f)>=5) su.push({me,it,f}); else if(dens(f)<4) giu.push({me,it,f}); }));
+      su.sort((a,b)=>dens(b.f)-dens(a.f)||a.it.id-b.it.id);     /* prima i più proteici per caloria; pareggi stabili */
+      giu.sort((a,b)=>dens(a.f)-dens(b.f)||a.it.id-b.it.id);    /* si riduce prima il meno proteico per caloria */
+      const kMax=m.kcal*1.10, kMin=m.kcal*0.90;
+      const sostituisci=(slot,g)=>{ const nuovo=scale(slot.f,g);
+        nuovo.tag=slot.it.tag; if(slot.it.prep) nuovo.prep=slot.it.prep;
+        const i=slot.me.items.indexOf(slot.it); slot.me.items[i]=nuovo; slot.it=nuovo; };
+      const floorG=s=>(s.it.tag==="Primo"||s.it.tag==="Piatto"||s.it.tag==="Secondo")?50
+        :Math.max(25,Math.round(minOf(s.f)/2/5)*5); /* metà minimo ma porzioni sempre realistiche */
+      let guardia=200;
+      while(totP()<aimP&&guardia-->0){
+        const slot=su.find(s=>s.it.g+10<=capOf(s.f));
+        if(!slot) break;
+        sostituisci(slot,slot.it.g+10);
+        /* compensazione kcal sui non-proteici, minimi dimezzabili (mai sotto metà minOf, passi da 5g) */
+        let g2=0;
+        while(totK()>kMax&&g2++<40){
+          const red=giu.find(s=>s.it.g-5>=floorG(s));
+          if(!red) break;
+          sostituisci(red,red.it.g-5);
+        }
+        if(totK()>kMax){ /* impossibile compensare: torna indietro di un passo e fermati */
+          sostituisci(slot,slot.it.g-10); break; }
+      }
+      /* mai sotto il 90% kcal (ripara anche giorni ereditati sotto target): pool = TUTTO il giorno,
+         proteici per primi — su/giù da soli non bastano, gli item a densità intermedia restavano fuori */
+      const tutti=[]; meals.forEach(me=>me.items.forEach(it=>{ if(it.id!=null&&FOOD_DB[it.id]) tutti.push({me,it,f:FOOD_DB[it.id]}); }));
+      tutti.sort((a,b)=>dens(b.f)-dens(a.f)||a.it.id-b.it.id);
+      let g3=0;
+      while(totK()<kMin&&g3++<80){
+        const slot=tutti.find(s=>s.it.g+10<=capOf(s.f));
+        if(!slot) break; sostituisci(slot,slot.it.g+10);
+      }
+      /* ramo simmetrico: giorni nati SOPRA il +10% (ereditati dai minimi porzione) si sgonfiano
+         dai non-proteici (pavimenti di realismo rispettati); dai proteici solo se sopra l'aim */
+      let g4=0;
+      while(totK()>kMax&&totP()>=floorP&&g4++<60){ /* si sgonfia solo a proteine salve: i giorni estremi restano flaggati */
+        const red=giu.find(s=>s.it.g-5>=floorG(s))
+          ||(totP()>aimP?su.find(s=>s.it.g-10>=Math.max(50,minOf(s.f))):null);
+        if(!red) break;
+        sostituisci(red,red.it.g-(giu.includes(red)?5:10));
+      }
+      meals.forEach(me=>{ me.tot=me.items.reduce((s,x)=>({kcal:s.kcal+x.kcal,p:s.p+x.p,c:s.c+x.c,fat:s.fat+x.fat}),{kcal:0,p:0,c:0,fat:0}); });
+      if(totP()<floorP) menuFlags.protFloor=1; /* diagnostico: floor non raggiungibile coi vincoli */
+      if(totK()>kMax||totK()<kMin) menuFlags.kcal=1; /* diagnostico: giorno estremo, ±10% non ottenibile coi pavimenti di realismo */
+    }
+  }
   /* 🍱 meal prep: nei giorni coperti, i pasti indicati usano il piatto preparato in anticipo.
      Guardato da U.prep: chi non usa la funzione passa di qui senza alcuna differenza (MENU_V invariato). */
   if(U.prep&&U.prep.days&&U.prep.days.includes(dateKey)){
@@ -2812,7 +2876,7 @@ function genMenu(dateKey,force){
         const pit=scale(pane,pg); pit.tag="Pane"; items.push(pit); } }
     const tot=items.reduce((s,x)=>({kcal:s.kcal+x.kcal,p:s.p+x.p,c:s.c+x.c,fat:s.fat+x.fat}),{kcal:0,p:0,c:0,fat:0});
     return {name:me.name,items,tot,avanzi:a.da}; }); }
-  const menu={mv:MENU_V,schema,veg,dayType:dayType(dateKey),target:m,meals,eaten:(U.menuCache[dateKey]&&U.menuCache[dateKey].eaten)||{},comp};
+  const menu={mv:MENU_V,schema,veg,dayType:dayType(dateKey),target:m,meals,eaten:(U.menuCache[dateKey]&&U.menuCache[dateKey].eaten)||{},comp,flags:menuFlags};
   U.menuCache[dateKey]=menu;
   /* mantieni cache leggera */
   const keys=Object.keys(U.menuCache).sort(); while(keys.length>21) delete U.menuCache[keys.shift()];
@@ -4266,7 +4330,9 @@ function prepConsolida(days){
   const liberi=slots.filter(s=>!s.veg); /* i giorni veg tengono il loro piatto: mai un ripetuto non-veg su un giorno veg */
   if(liberi.length<2) return {slots,subs:{}};
   const r=rng(hash(days.join("")+"|prep|"+U.salt+"|"+MENU_V));
-  const pool=[...new Set(liberi.map(s=>s.fid))].sort((a,b)=>FOOD_DB[a][0].localeCompare(FOOD_DB[b][0]));
+  const pool=[...new Set(liberi.map(s=>s.fid))]
+    .filter(fid=>{ const f=FOOD_DB[fid]; return capOf(f)*f[2]/100>=550; }) /* deve poter reggere ~un pasto intero */
+    .sort((a,b)=>FOOD_DB[a][0].localeCompare(FOOD_DB[b][0]));
   const nRep=Math.min(3,Math.max(2,Math.ceil(liberi.length/4)),pool.length);
   const scelti=[];
   while(scelti.length<nRep&&pool.length){ const i=Math.floor(r()*pool.length); scelti.push(pool.splice(i,1)[0]); }

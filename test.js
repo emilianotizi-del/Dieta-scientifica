@@ -38,8 +38,8 @@ setTimeout(()=>{
       const tot=m.meals.reduce((s,me)=>s+me.items.reduce((a,i)=>a+i.kcal,0),0);
       const off=Math.abs(tot-m.target.kcal)/m.target.kcal;
       if(off>0.10) r.kcalOff.push(k+" "+Math.round(off*100)+"%");
-      /* presidio proteico INFORMATIVO (finding v2.39: media ~83%, minimi ~65% del target giornaliero).
-         Diventerà bloccante quando il comitato fisserà target e banda, col motore v3. */
+      /* presidio proteico BLOCCANTE (S3, banda dal report esterno in attesa di ratifica comitato):
+         minimo giornaliero >=75% del target, media sui giorni simulati >=90%. */
       const pr=m.meals.reduce((s,me)=>s+me.items.reduce((a,i)=>a+i.p,0),0);
       r.protRatios=r.protRatios||[]; r.protRatios.push(pr/m.target.p);
     }
@@ -57,9 +57,10 @@ setTimeout(()=>{
   console.log('doppie uova:',r.eggDouble,'| doppioni stesso giorno:',r.sameDayDup,'| giorni >2 frutti:',r.fruttaViol);
   console.log('giorni oltre ±10% kcal:',r.kcalOff.length,r.kcalOff.slice(0,3).join(' · '));
   const pAvg=r.protRatios.reduce((a,b)=>a+b,0)/r.protRatios.length, pMin=Math.min(...r.protRatios);
-  console.log('proteine vs target giornaliero (informativo): media '+Math.round(pAvg*100)+'% | minimo '+Math.round(pMin*100)+'% — presidio dal motore v3');
+  console.log('proteine vs target giornaliero (BLOCCANTE): media '+Math.round(pAvg*100)+'% (soglia 90%) | minimo '+Math.round(pMin*100)+'% (soglia 75%)');
+  r.protBlocco=pMin>=0.75&&pAvg>=0.90;
   console.log('spesa: pani semplici in lista:',r.spesaPani,'(max 2) | basici spuntabili:',r.spesaBasici);
-  const fail=!r.det||r.vegViol||r.esclViol||r.stagViol||r.capViol||r.eggDouble||r.spesaPani>2||!r.spesaBasici;
+  const fail=!r.det||r.vegViol||r.esclViol||r.stagViol||r.capViol||r.eggDouble||r.spesaPani>2||!r.spesaBasici||!r.protBlocco;
   console.log(fail?'❌ REGRESSIONE':'✅ tutto verde');
   process.exit(fail?1:0);
 },700);
