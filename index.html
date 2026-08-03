@@ -2191,7 +2191,8 @@ const PROT_EXPLAIN=[
 const DIAG_KEY="rotta80_diag";
 function diagPush(m,st){ try{
   const q=JSON.parse(localStorage.getItem(DIAG_KEY)||"[]");
-  q.push({t:new Date().toISOString(),v:(typeof APP_VERSION!=="undefined"?APP_VERSION:"boot"),m:String(m).slice(0,200),st:String(st||"").slice(0,300)});
+  const d=new Date(), p2=n=>String(n).padStart(2,"0");
+  q.push({t:d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes()),v:(typeof APP_VERSION!=="undefined"?APP_VERSION:"boot"),m:String(m).slice(0,200),st:String(st||"").slice(0,300)});
   while(q.length>50) q.shift();
   localStorage.setItem(DIAG_KEY,JSON.stringify(q));
 }catch(e){} }
@@ -2217,7 +2218,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.45.2";
+const APP_VERSION="2.45.3";
 function validateState(s){
   return !!(s&&typeof s==="object"&&Array.isArray(s.users)&&s.users.length>0
     &&s.users.every(u=>u&&typeof u==="object"
@@ -3858,10 +3859,11 @@ function startOnboarding(){
   $("#obImport").onclick=()=>{ $("#onboard").hidden=true; save();
     [...$$('nav button')].find(b=>b.dataset.pg==="prof")?.click();
     toast("Vai su Dati → Importa backup"); };
-  $("#obBuild").onclick=()=>{ diagPush("obBuild: tap ricevuto","");
-    try{ obApply(); diagPush("obBuild: obApply ok","");
-      obReveal(); diagPush("obBuild: obReveal ok","");
-      obShow(4); }
+  $("#obBuild").onclick=()=>{
+    try{ obApply(); obReveal();
+      /* lo step del reveal si trova dal DOM: quando gli step slittano, questo non si rompe più
+         (bug storico: obShow(4) ri-mostrava lo step dei gusti, cioè sé stesso: "non succede niente") */
+      obShow(+$("#obFinish").closest(".ob-step").dataset.ob); }
     catch(e){ obWarn("Ops, qualcosa è andato storto ("+e.message+"). Riprova o scrivici.");
       try{ toast("⚠️ "+e.message); diagPush("onboarding ERRORE: "+e.message,e.stack); }catch(_){} } };
   $("#obFinish").onclick=()=>{ const nm=$("#obNome").value.trim();
@@ -3935,14 +3937,20 @@ if(window._stateRecovered){ const b=$("#sysBanner"); if(b){ b.hidden=false; b.da
 $("#btnDiag").onclick=()=>{
   let q=[]; try{ q=JSON.parse(localStorage.getItem(DIAG_KEY)||"[]"); }catch(e){}
   $("#diagList").innerHTML=q.length?q.slice().reverse().map(x=>
-    `<div style="margin-bottom:var(--sp-2)"><b class="bsez">${esc(x.t.slice(0,16).replace("T"," "))} · v${esc(x.v)}</b><br>
+    `<div style="margin-bottom:var(--sp-2)"><b class="bsez">${esc(x.t.slice(0,16))} · v${esc(x.v)}</b><br>
      <span class="small">${esc(x.m)}</span></div>`).join("")
     :'<span class="small">Nessun errore registrato: buon segno. 🙂</span>';
   $("#diagCopy").hidden=!q.length; $("#diagClear").hidden=!q.length;
-  $("#diagCopy").onclick=()=>{ const ta=document.createElement("textarea");
-    ta.value=JSON.stringify(q,null,1); document.body.appendChild(ta); ta.select();
-    try{ document.execCommand("copy"); toast("Copiato: incollalo all'assistenza"); }catch(e){}
-    ta.remove(); };
+  $("#diagCopy").onclick=()=>{ const testo=JSON.stringify(q,null,1);
+    const fallback=()=>{ const ta=document.createElement("textarea");
+      ta.value=testo; ta.readOnly=true; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.focus(); ta.setSelectionRange(0,testo.length); /* iOS: select() da solo non basta */
+      try{ document.execCommand("copy"); toast("Copiato: incollalo all'assistenza"); }
+      catch(e){ toast("Copia non riuscita: fai uno screenshot"); }
+      ta.remove(); };
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(testo).then(()=>toast("Copiato: incollalo all'assistenza")).catch(fallback);
+    else fallback(); };
   $("#diagClear").onclick=()=>{ try{ localStorage.removeItem(DIAG_KEY); }catch(e){} $("#btnDiag").onclick(); };
   $("#dlgDiag").showModal();
 };
