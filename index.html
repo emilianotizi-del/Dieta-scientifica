@@ -325,8 +325,8 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="season" id="seasonStrip"></div>
   </div>
   <div class="card" id="altreCard">
-    <button id="altreBtn" style="all:unset;cursor:pointer;display:flex;width:100%;justify-content:space-between;align-items:center;font-weight:700" aria-expanded="false">
-      <span>Altre attività di oggi</span><span id="altreArrow" aria-hidden="true">⌄</span></button>
+    <button id="altreBtn" style="all:unset;cursor:pointer;display:flex;width:100%;min-height:44px;padding:2px 0;justify-content:space-between;align-items:center;font-weight:700" aria-expanded="false">
+      <span>Altre attività di oggi <span class="small" id="altreSum" style="font-weight:400"></span></span><span id="altreArrow" aria-hidden="true">⌄</span></button>
     <div id="altreBody" hidden style="margin-top:var(--sp-2)"></div>
   </div>
 </section>
@@ -367,7 +367,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
   <div class="card">
     <h2>Varietà alimentare · fonti di micronutrienti · 7 giorni</h2>
     <div id="microList"></div>
-    <div class="small" style="margin-top:6px">Stima qualitativa basata sui gruppi alimentari che registri. Il conteggio puntuale in mg/µg arriverà con il database esteso della v2.</div>
+    <div class="small" style="margin-top:6px">Stima qualitativa basata sui gruppi alimentari che registri.</div>
   </div>
   <div class="card">
     <h2>Diario ultimi 7 giorni</h2>
@@ -2228,10 +2228,10 @@ const Storage={
    ============================================================ */
 function defaultUser(id){return{
   id, nome:"Io", sesso:"M", eta:46, alt:186, goal:80,
-  ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
+  ritmo:"sostenuto", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.47.0";
+const APP_VERSION="2.48.0";
 function validateState(s){
   return !!(s&&typeof s==="object"&&Array.isArray(s.users)&&s.users.length>0
     &&s.users.every(u=>u&&typeof u==="object"
@@ -2889,6 +2889,12 @@ function genMenu(dateKey,force){
         const pit=scale(pane,pg); pit.tag="Pane"; items.push(pit); } }
     const tot=items.reduce((s,x)=>({kcal:s.kcal+x.kcal,p:s.p+x.p,c:s.c+x.c,fat:s.fat+x.fat}),{kcal:0,p:0,c:0,fat:0});
     return {name:me.name,items,tot,avanzi:a.da}; }); }
+  /* i flag descrivono il menu CONSEGNATO: ricalcolo dopo prep e avanzi (che sostituiscono pasti a valle del presidio) */
+  { const fp=meals.reduce((s,me)=>s+me.items.reduce((a,x)=>a+x.p,0),0);
+    const fk=meals.reduce((s,me)=>s+me.items.reduce((a,x)=>a+x.kcal,0),0);
+    delete menuFlags.protFloor; delete menuFlags.kcal;
+    if(fp<0.75*m.p) menuFlags.protFloor=1;
+    if(fk>m.kcal*1.10||fk<m.kcal*0.90) menuFlags.kcal=1; }
   const menu={mv:MENU_V,schema,veg,dayType:dayType(dateKey),target:m,meals,eaten:(U.menuCache[dateKey]&&U.menuCache[dateKey].eaten)||{},comp,flags:menuFlags};
   U.menuCache[dateKey]=menu;
   /* mantieni cache leggera */
@@ -2988,7 +2994,9 @@ function renderToday(){
     $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"var(--pomodoro)":"url(#dialGrad)";
     $("#dialPct").textContent=Math.round(tot.kcal/m.kcal*100)+"%";
   }
-  const chip=$("#dayTypeChip"); chip.className="chip "+menu.dayType;
+  const chip=$("#dayTypeChip");
+  chip.hidden=!!U.gravidanza; const vch=$("#vegChip"); if(vch) vch.hidden=!!U.gravidanza||vch.hidden;
+  chip.className="chip "+menu.dayType;
   chip.textContent={basso:"Giorno basso",pieno:"Giorno pieno",ricarica:"Ricarica"}[menu.dayType];
   $("#vegChip").hidden=!menu.veg;
   $("#schemaLabel").textContent=U.gravidanza
@@ -3018,6 +3026,8 @@ function renderToday(){
       $("#altreBody").hidden=!U.homeExp;
       $("#altreArrow").textContent=U.homeExp?"⌃":"⌄";
       $("#altreBtn").setAttribute("aria-expanded",U.homeExp?"true":"false");
+      const lg0=dayLog(); const wg0=Math.round(pesoAttuale()*35/250)*250;
+      $("#altreSum").textContent=`· 👟 ${fmt(lg0.passi||0)} · 💧 ${((lg0.acqua||0)/1000).toFixed(1).replace(".",",")} L${(lg0.acqua||0)>=wg0?" ✓":""}${lg0.wo?" · 🏋️ ✓":""}`;
     } }
   if(pz){ const dpz=new Date(+dateFromKey(pz.until)-864e5);
     $("#pausaBanner").innerHTML=`✈️ <b>Piano in pausa</b> fino al ${dpz.getDate()} ${MESI[dpz.getMonth()]} · <button class="btn ghost sm" id="btnRiprendi">Riprendi ora</button>`;
@@ -3025,7 +3035,9 @@ function renderToday(){
     $("#schemaLabel").textContent="Piano in pausa: diario e scanner attivi, menu sospesi."; }
   /* barre macro */
   const bars=[["Proteine",tot.p,m.p,"p"],["Carboidrati",tot.c,m.c,"c"],["Grassi",tot.fat,m.f,"f"]];
-  $("#macroBars").innerHTML=bars.map(([n,v,t,cl])=>`
+  $("#macroBars").innerHTML=U.gravidanza
+    ? bars.map(([n,v])=>`<div class="row"><span>${n}</span><span><b>${Math.round(v)}</b> g</span></div>`).join("") /* CLINICO-DA-VALIDARE: niente target né barre in gravidanza */
+    : bars.map(([n,v,t,cl])=>`
     <div class="row"><span>${n}</span><span><b>${Math.round(v)}</b> / ${t} g</span></div>
     <div class="bar ${v>t*1.1?"over":""}"><i class="${cl}" style="width:${Math.min(v/t*100,100)}%"></i></div>`).join("");
   /* menu */
@@ -3053,8 +3065,8 @@ function renderToday(){
   const sc=scoreOf(k); const st=streak();
   const lgV=dayLog(); if(sc!=null&&sc>=60&&!lgV.vday){ lgV.vday=1; save(); vib([20,60,20]); } /* giorno completato, una volta sola */
   $("#streakLine").innerHTML=(st>0?`🔥 <b>${st}</b> giorn${st===1?"o":"i"} in rotta`:"🧭 Inizia oggi la tua serie")+
-    (sc!=null?` · punteggio di oggi <b>${sc}/100</b>`:"")+
-    ` <span style="opacity:.6">(kcal, proteine, passi, acqua, allenamento)</span>`;
+    (sc!=null&&!U.gravidanza?` · punteggio di oggi <b>${sc}/100</b>`:"")+
+    ` <span style="opacity:.6">${U.gravidanza?"(registrazione, passi, acqua)":"(kcal, proteine, passi, acqua, allenamento)"}</span>`;
   /* banner mantenimento al raggiungimento dell'obiettivo */
   const mb=$("#mantBanner");
   if(U.pesi.length&&pesoAttuale()<=U.goal&&U.ritmo!=="mantenimento"){
@@ -3558,8 +3570,11 @@ $("#btnWaterManual").onclick=()=>{ const v=prompt("Acqua di oggi in ml:",dayLog(
 
 function scoreOf(k){ const l=U.log[k]; if(!l||!l.pasti.length) return null;
   const t=totalsOf(k), m=macros(k); let s=0;
+  if(U.gravidanza){ /* CLINICO-DA-VALIDARE: in gravidanza la serie premia solo la costanza, mai kcal/proteine */
+    s+=50; /* hai registrato: la giornata conta */
+  } else {
   const e=Math.abs(t.kcal-m.kcal)/m.kcal; s+= e<=0.05?30:e<=0.12?20:0;
-  s+= t.p>=m.p*0.85?20:t.p>=m.p*0.7?10:0;
+  s+= t.p>=m.p*0.85?20:t.p>=m.p*0.7?10:0; }
   const sg=stepsGoalToday(k); s+= l.passi>=sg?20:l.passi>=sg*0.75?10:0;
   const wg=Math.round(pesoAttuale()*35/250)*250; s+= (l.acqua||0)>=wg?15:(l.acqua||0)>=wg*0.75?8:0;
   s+= l.wo?15:0; return s; }
@@ -3646,7 +3661,7 @@ function renderCompare(a,b){
   let h=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${head(a,sa,bda,cla,win==="a")}${head(b,sb,bdb,clb,win==="b")}</div>`;
   h+=`<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 8px;font-size:.78rem;margin-top:6px">`
     +M.map(([lab,fn])=>`<div class="small">${lab}</div><div style="text-align:center">${fn(a)}</div><div style="text-align:center">${fn(b)}</div>`).join("")+`</div>`;
-  h+=`<div class="small" style="margin-top:6px;text-align:center">${win?("Vince <b>"+(win==="a"?a.name:b.name)+"</b>"):"Pareggio"}</div>
+  h+=`<div class="small" style="margin-top:6px;text-align:center">${win?("Vince <b>"+esc(win==="a"?a.name:b.name)+"</b>"):"Pareggio"}</div>
   <div class="btnrow" style="margin-top:6px"><button class="btn ghost sm" id="btnCmpReset">🔄 Nuovo confronto</button></div>`;
   const box=$("#scanCmpBox"); box.innerHTML=h; box.hidden=false;
   $("#btnCmpReset").onclick=()=>{ cmpProd=null; box.hidden=true; updateCmpBar(); };
@@ -3689,7 +3704,7 @@ function showScanned(prod,fromCache){
   const warns=[];
   if(prod.palm) warns.push("olio di palma");
   (U.esclusioni||[]).forEach(e=>{ if((prod.allerg||[]).some(a=>a.includes(e.slice(0,5)))) warns.push(e); });
-  if(warns.length) scoreHtml+=`<div class="small" style="margin-top:6px;color:var(--pomodoro)">⚠️ Contiene: <b>${warns.join(", ")}</b></div>`;
+  if(warns.length) scoreHtml+=`<div class="small" style="margin-top:6px;color:var(--pomodoro)">⚠️ Contiene: <b>${esc(warns.join(", "))}</b></div>`;
   /* alternativa più sana */
   if(hasDati&&score<50){ let alt="cerca nella barra di Rotta un equivalente fresco e semplice";
     const nm=(prod.name||"").toLowerCase();
@@ -3892,9 +3907,10 @@ function obScopoEffettivo(o){ /* CLINICO-DA-VALIDARE: in gravidanza/allattamento
 /* S4 · errori di INPUT: inline sotto il campo, non toast (i toast restano per le conferme) */
 function inlineErr(sel,msg){ const el=$(sel); if(!el){ toast(msg); return; }
   let e=el.parentElement.querySelector(".fielderr");
-  if(!e){ e=document.createElement("div"); e.className="fielderr small"; el.after(e); }
+  if(!e){ e=document.createElement("div"); e.className="fielderr small"; e.id="err_"+sel.replace(/\W/g,""); e.setAttribute("role","alert"); el.after(e); }
   e.textContent=msg;
-  el.addEventListener("input",()=>{ e.textContent=""; },{once:true});
+  el.setAttribute("aria-invalid","true"); el.setAttribute("aria-describedby",e.id);
+  el.addEventListener("input",()=>{ e.textContent=""; el.removeAttribute("aria-invalid"); },{once:true});
   el.focus&&el.focus(); }
 function bannerRete(msg){ const b=$("#sysBanner"); if(!b||b.dataset.lock) return;
   b.hidden=false; b.querySelector("span").textContent="⚠️ "+msg; }
@@ -3907,7 +3923,7 @@ function obShow(n){ OB.step=n;
   $$("#onboard .ob-dots i").forEach((d,i)=>d.classList.toggle("on",i<=n));
   $("#onboard").scrollTop=0; }
 function obEscRender(){ $("#obEsclList").innerHTML=OB.escl.map((e,i)=>
-  `<span class="chip" data-esc="${i}" style="margin:2px">${e} ✕</span>`).join("")||'<span class="small">Nessuna esclusione — perfetto.</span>';
+  `<span class="chip" data-esc="${i}" style="margin:2px">${esc(e)} ✕</span>`).join("")||'<span class="small">Nessuna esclusione — perfetto.</span>';
   $$("#obEsclList [data-esc]").forEach(c=>c.onclick=()=>{ OB.escl.splice(+c.dataset.esc,1); obEscRender(); }); }
 function startOnboarding(){
   $("#onboard").hidden=false; obShow(0); obEscRender();
@@ -4612,6 +4628,7 @@ function renderWeek(){
       <div class="lbl">${GIORNI[dd.getDay()]}</div></div>`; }).join("");
   const sumT=data.reduce((a,d)=>a+d.tot.kcal,0), sumG=data.reduce((a,d)=>a+d.target.kcal,0);
   if(sumT===0){ $("#weekKcalSummary").innerHTML="Ancora nessun pasto registrato questa settimana: la linea nera su ogni barra è il tuo obiettivo del giorno. Registra da Oggi e questa pagina prende vita."; }
+  else if(U.gravidanza) $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> kcal registrate · in gravidanza nessun obiettivo: i riferimenti li dà il tuo medico`;
   else $("#weekKcalSummary").innerHTML=`Totale 7 giorni: <b>${fmt(Math.round(sumT))}</b> / ${fmt(sumG)} kcal
     (${sumT<=sumG?"nei limiti ✓":"sopra di "+fmt(Math.round(sumT-sumG))+" kcal"}). La linea nera indica l'obiettivo del giorno.`;
   renderMicro(days); renderInsights(); renderSpesaPagella();
@@ -4810,7 +4827,9 @@ function renderSpesaPagella(){
   /* la media usa SOLO punteggi della stessa formula (la più recente presente): mai mescolare scale */
   const svMax=Math.max(1,...L.filter(x=>x.c).map(x=>x.sv||1));
   const cur=L.filter(x=>x.c&&(x.sv||1)===svMax&&inWin(x,30,0)), prev=L.filter(x=>x.c&&(x.sv||1)===svMax&&inWin(x,60,30));
+  const vecchiV=L.filter(x=>x.c&&(x.sv||1)<svMax&&inWin(x,30,0)).length; /* per il messaggio di transizione formula */
   if(cur.length<5){
+    if(vecchiV>0){ box.innerHTML=`<div class="small">📊 La formula del punteggio è cambiata (v2): per la nuova pagella servono <b>${5-cur.length}</b> acquisti scansionati. I ${vecchiV} precedenti restano nello storico e non si mescolano alla nuova scala.</div>`; return; }
     box.innerHTML=`Hai segnato come comprati <b>${cur.length}</b> prodott${cur.length===1?"o":"i"} negli ultimi 30 giorni.
       Ne servono almeno 5 per la pagella: al supermercato usa <b>➕ Aggiungi al carrello</b> dopo la scansione, oppure registra il prodotto nel diario. Le scansioni "solo per curiosità" non contano.`; return; }
   const avg=a=>a.reduce((s,x)=>s+x.s,0)/a.length;
@@ -5166,7 +5185,7 @@ $("#btnWeight").onclick=()=>{
 /* --- PROFILO --- */
 function renderProf(){
   const sel=$("#userSel");
-  sel.innerHTML=S.users.map(u=>`<option value="${u.id}" ${u.id===S.active?"selected":""}>${u.nome}</option>`).join("");
+  sel.innerHTML=S.users.map(u=>`<option value="${u.id}" ${u.id===S.active?"selected":""}>${esc(u.nome)}</option>`).join("");
   $("#pNome").value=U.nome; $("#pSesso").value=U.sesso; $("#pEta").value=U.eta;
   $("#pAlt").value=U.alt; $("#pGoal").value=U.goal; $("#pSteps").value=U.passiBase;
   $("#pRitmo").value=U.ritmo; $("#pRicarica").value=U.ricaricaDay??"auto";
@@ -5180,8 +5199,8 @@ function renderProf(){
   updProtLabel();
   const gl=$("#gustiList"); const chips=[];
   (U.gusti.ban||[]).forEach(n=>{ const lbl=n.startsWith("fam:")?"tutto il "+n.slice(4):n;
-    chips.push(`<span class="chip no" style="margin:2px">🚫 ${lbl} <button class="mini" data-unban="${n.replace(/"/g,"&quot;")}">✕</button></span>`); });
-  (U.gusti.fav||[]).forEach(n=>chips.push(`<span class="chip pieno" style="margin:2px">❤ ${n} <button class="mini" data-unfav="${n.replace(/"/g,"&quot;")}">✕</button></span>`));
+    chips.push(`<span class="chip no" style="margin:2px">🚫 ${esc(lbl)} <button class="mini" data-unban="${esc(n)}">✕</button></span>`); });
+  (U.gusti.fav||[]).forEach(n=>chips.push(`<span class="chip pieno" style="margin:2px">❤ ${esc(n)} <button class="mini" data-unfav="${esc(n)}">✕</button></span>`));
   gl.innerHTML=chips.length?chips.join(" "):"Ancora niente: usa 🚫 su un alimento del menu per non vederlo più, ❤ nel dettaglio di un alimento cercato per vederlo più spesso.";
   $$("#gustiList [data-unban]").forEach(b=>b.onclick=()=>{ U.gusti.ban=U.gusti.ban.filter(x=>x!==b.dataset.unban); save(); render(); });
   $$("#gustiList [data-unfav]").forEach(b=>b.onclick=()=>{ U.gusti.fav=U.gusti.fav.filter(x=>x!==b.dataset.unfav); save(); render(); });
@@ -5193,7 +5212,7 @@ function updProtLabel(){
   const v=parseFloat($("#pProt").value); $("#protVal").textContent=v.toFixed(1).replace(".",",");
   $("#protWarn").hidden=v<=2.0;
   const ex=PROT_EXPLAIN.find(([a,b])=>v>=a&&v<=b)||PROT_EXPLAIN[2];
-  $("#protExplain").innerHTML=ex[2]+`<br><span class="small">Per te oggi: ~${Math.round(v*pesoAttuale())} g di proteine al giorno.</span>`;
+  $("#protExplain").innerHTML=ex[2]+`<br><span class="small">Per te oggi: ~${Math.round(v*pesoProt())} g di proteine al giorno${pesoProt()!==pesoAttuale()?" (calcolate sul peso aggiustato, non sul peso attuale)":""}.</span>`;
 }
 $("#pProt").oninput=updProtLabel;
 $("#userSel").onchange=e=>{ S.active=+e.target.value; U=S.users.find(u=>u.id===S.active); save(); render(); };
@@ -5204,7 +5223,11 @@ $("#btnAddUser").onclick=()=>{
 $("#btnSaveProf").onclick=()=>{
   U.nome=$("#pNome").value||U.nome; U.sesso=$("#pSesso").value; U.eta=+$("#pEta").value||U.eta;
   U.alt=+$("#pAlt").value||U.alt; U.goal=+$("#pGoal").value||U.goal; U.passiBase=+$("#pSteps").value||U.passiBase;
-  U.ritmo=$("#pRitmo").value; U.ricaricaDay=$("#pRicarica").value; U.soloMed=$("#pMed").checked;
+  { const nuovo=$("#pRitmo").value;
+    if(nuovo==="aggressivo"&&U.ritmo!=="aggressivo"&&!rapidoOk()){ U.ritmo="sostenuto";
+      toast("Il ritmo Rapido richiede fabbisogno ≥2.300 kcal e BMI ≥27: resto su Sostenuto"); }
+    else U.ritmo=nuovo; }
+  U.ricaricaDay=$("#pRicarica").value; U.soloMed=$("#pMed").checked;
   U.spesaSmart=$("#pSmart").checked;
   U.protKg=+$("#pProt").value; U.vegDays=Math.max(0,Math.min(7,+$("#pVeg").value));
   U.mealsPref=$("#pMeals").value; U.maxCarico=Math.max(0,+$("#pCarico").value||0);
