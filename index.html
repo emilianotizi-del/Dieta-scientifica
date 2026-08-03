@@ -237,7 +237,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
       <div>
         <div class="small" id="kcalResLbl">Ti restano</div>
         <div class="num"><b id="kcalRes">–</b> <span id="kcalResSuf">kcal</span></div>
-        <div class="small" style="margin-top:2px"><b id="kcalEaten">0</b> mangiate · <span id="kcalTgtWord">target</span> <b id="kcalTarget">–</b> kcal</div>
+        <div class="small" style="margin-top:2px" id="kcalSub"><b id="kcalEaten">0</b> mangiate · <span id="kcalTgtWord">target</span> <b id="kcalTarget">–</b> kcal</div>
         <div style="margin-top:6px"><span class="chip" id="dayTypeChip">–</span> <span class="chip veg" id="vegChip" hidden>🌿 veg</span></div>
         <div class="small" id="schemaLabel" style="margin-top:5px"></div>
       </div>
@@ -362,7 +362,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="small">Aderenza, peso, passi, acqua e micro-copertura degli ultimi 7 giorni: da stampare o salvare in PDF, anche per il tuo medico.</div>
   </div>
   <div class="card">
-    <h2>Copertura micronutrienti · 7 giorni</h2>
+    <h2>Varietà alimentare · fonti di micronutrienti · 7 giorni</h2>
     <div id="microList"></div>
     <div class="small" style="margin-top:6px">Stima qualitativa basata sui gruppi alimentari che registri. Il conteggio puntuale in mg/µg arriverà con il database esteso della v2.</div>
   </div>
@@ -431,9 +431,10 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <select id="pRitmo">
       <option value="moderato">Moderato · ~0,5 kg/settimana (−500 kcal)</option>
       <option value="sostenuto">Sostenuto · ~0,75 kg/settimana (−750 kcal)</option>
-      <option value="aggressivo">Aggressivo ma sicuro · ~1 kg/sett (−1000 kcal, con ricariche)</option>
+      <option value="aggressivo">Rapido · da valutare col medico · ~1 kg/sett (−1000 kcal, con ricariche)</option>
       <option value="mantenimento">Mantenimento · reverse diet (+150 kcal/sett fino al fabbisogno)</option>
     </select>
+    <div class="small" id="pRitmoNote" style="color:var(--pomodoro)"></div>
     <label>Giorno di ricarica (+22% kcal)</label>
     <select id="pRicarica">
       <option value="auto">Automatico · casuale ogni settimana</option>
@@ -444,6 +445,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <div class="notice">Il piano non scende mai sotto una soglia di sicurezza calcolata sul tuo metabolismo basale. Per deficit oltre ~1.000 kcal/die serve supervisione medica.</div>
     <label>Proteine: <b id="protVal"></b> g per kg di peso</label>
     <input type="range" id="pProt" min="1.2" max="2.4" step="0.1">
+    <div class="small" id="protWarn" hidden style="color:var(--pomodoro)">⚠️ Valori da atleti: verifica con un professionista, soprattutto se hai patologie renali.</div>
     <div class="explain" id="protExplain"></div>
     <label style="display:flex;align-items:center;gap:8px;margin-top:var(--sp-3)"><input type="checkbox" id="pMed" style="width:auto"> Solo cucina mediterranea nei menu</label>
     <div class="small">Esclude dai menu proposti tofu, tempeh, soia, poke, salse industriali ecc. Restano cercabili nel log libero.</div>
@@ -2179,7 +2181,7 @@ const PROT_EXPLAIN=[
 [1.2,1.4,"<b>1,2–1,4 g/kg</b> · Minimo raccomandato in deficit. Copre il fabbisogno base ma protegge poco la massa muscolare se il deficit è ampio."],
 [1.5,1.7,"<b>1,5–1,7 g/kg</b> · Buon compromesso: sazietà elevata e buona protezione muscolare per chi si allena 3–4 volte a settimana."],
 [1.8,2.0,"<b>1,8–2,0 g/kg</b> · Fascia consigliata dalle evidenze per dimagrimento aggressivo: massima conservazione della massa magra e forte effetto saziante."],
-[2.1,2.4,"<b>2,1–2,4 g/kg</b> · Utile con deficit molto ampi o allenamento intenso. Nessun vantaggio ulteriore oltre 2,4; controindicato solo con patologie renali."]];
+[2.1,2.4,"<b>2,1–2,4 g/kg</b> · Utile con deficit molto ampi o allenamento intenso. Nessun vantaggio ulteriore oltre 2,4; da valutare con un professionista in presenza di patologie renali."]];
 /* ============================================================
    STORAGE ADAPTER — oggi localStorage, domani Supabase:
    basta reimplementare load()/save() mantenendo l'interfaccia.
@@ -2204,7 +2206,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.44.0";
+const APP_VERSION="2.45.0";
 function validateState(s){
   return !!(s&&typeof s==="object"&&Array.isArray(s.users)&&s.users.length>0
     &&s.users.every(u=>u&&typeof u==="object"
@@ -2262,6 +2264,7 @@ function avanziTarget(dateKey,mealName){
 function inPause(k){ return (U.pause||[]).some(p=>k>=p.from&&k<p.until); }
 function pausaAttiva(){ const k=todayKey(); return (U.pause||[]).find(p=>k>=p.from&&k<p.until)||null; }
 function recalibrate(){
+  if(U.gravidanza){ U.tdeeAdj=0; return; } /* CLINICO-DA-VALIDARE: niente taratura in gravidanza */
   /* confronta il dimagrimento reale con quello atteso e corregge il fabbisogno stimato */
   const WIN=21, MIN_DAYS=10, KCAL_KG=7700;
   const start=+dateFromKey(todayKey())-WIN*864e5;
@@ -2304,11 +2307,18 @@ function recalibrate(){
     } }
 }
 function pesoAttuale(){ return U.pesi.length? U.pesi[U.pesi.length-1].kg : 94; }
+/* CLINICO-DA-VALIDARE: sopra BMI 30 le proteine si calcolano sul peso AGGIUSTATO
+   (peso ideale a BMI 22,5 + 40% dell'eccesso): il tessuto adiposo non chiede proteine come quello magro. */
+function pesoProt(){ const h2=Math.pow(U.alt/100,2); const peso=pesoAttuale();
+  if(peso/h2<=30) return peso;
+  const ideale=22.5*h2; return Math.round(ideale+0.4*(peso-ideale)); }
 function bmr(){ const p=pesoAttuale();
   return 10*p + 6.25*U.alt - 5*U.eta + (U.sesso==="M"?5:-161); }
 function tdeeBase(){ return Math.round(bmr()*1.2 + stepsGoalToday()*0.03); }
 function tdee(){ return tdeeBase() + (U.tdeeAdj||0); }
 function deficitTarget(){ return {moderato:500,sostenuto:750,aggressivo:1000,mantenimento:0}[U.ritmo]??750; }
+/* CLINICO-DA-VALIDARE: il ritmo Rapido (−1000) richiede margini: fabbisogno ≥2300 kcal e BMI ≥27 */
+function rapidoOk(){ return tdee()>=2300&&pesoAttuale()/Math.pow(U.alt/100,2)>=27; }
 function kcalMediaDeficit(){ const floor=Math.max(Math.round(bmr()*0.85),1400);
   const d=deficitTarget()||750; return Math.max(tdee()-d,floor); }
 function kcalMedia(){
@@ -2344,12 +2354,12 @@ function macros(dateKey){
   let kcal=kcalDay(dateKey);
   /* CLINICO-DA-VALIDARE: in fase luteale il dispendio energetico reale aumenta (~2,5-11% ≈ 100-300 kcal/die
      in letteratura); applichiamo il margine BASSO (+100 kcal) come tolleranza dichiarata, non un invito a mangiare di più. */
-  if(isLuteale(dateKey)&&!U.gravidanza) kcal+=100;
+  if(isLuteale(dateKey)&&!U.gravidanza&&U.femm&&U.femm.lutTol) kcal+=100; /* SOLO se la tolleranza è attiva: off di default */
   /* CLINICO-DA-VALIDARE: in gravidanza/allattamento nessun deficit: riferimento al mantenimento. */
   if(U.gravidanza) kcal=Math.max(kcal,tdee());
   /* CLINICO-DA-VALIDARE: over 50 o menopausa: +10% proteine per preservare la massa magra (SINU/LARN: 1,0-1,2 g/kg in età avanzata). */
   const pk=U.protKg*(calcioBoostOn()?1.1:1);
-  const p=Math.min(Math.round(pk*pesoAttuale()),Math.round(kcal*0.45/4));
+  const p=Math.min(Math.round(pk*pesoProt()),Math.round(kcal*0.45/4));
   const f=Math.max(Math.round(kcal*0.27/9), Math.round(0.6*pesoAttuale()));
   const c=Math.max(Math.round((kcal-p*4-f*9)/4),40);
   return {kcal,p,c,f}; }
@@ -2726,7 +2736,7 @@ function buildMeal(name,kcalTarget,protTarget,r,ctx){
   const tot=items.reduce((a,it)=>({kcal:a.kcal+it.kcal,p:a.p+it.p,c:a.c+it.c,fat:a.fat+it.fat}),{kcal:0,p:0,c:0,fat:0});
   return {name,items,tot};
 }
-const MENU_V=11;
+const MENU_V=12;
 function genMenu(dateKey,force){
   if(!force && U.menuCache[dateKey] && U.menuCache[dateKey].mv===MENU_V) return U.menuCache[dateKey];
   const r=rng(hash(dateKey+"m"+U.id+(U.salt||0)));
@@ -2860,8 +2870,14 @@ function renderToday(){
   $("#topdate").textContent=GIORNI[d.getDay()]+" "+d.getDate()+" "+MESI[d.getMonth()];
   const kcalRes=m.kcal-Math.round(tot.kcal);
   const wordT=(U.mode==="diario"||U.ritmo==="mantenimento")?"riferimento":"target";
-  if(kcalRes>=0){
-    $("#kcalResLbl").hidden=false;
+  /* CLINICO-DA-VALIDARE: in gravidanza SOLO diario neutro, nessun target mostrato */
+  if(U.gravidanza){
+    $("#kcalResLbl").hidden=false; $("#kcalResLbl").textContent="Oggi hai registrato";
+    $("#kcalRes").textContent=fmt(Math.round(tot.kcal)); $("#kcalRes").style.color="";
+    $("#kcalResSuf").textContent="kcal";
+    $("#kcalSub").hidden=true;
+  } else if(kcalRes>=0){
+    $("#kcalResLbl").hidden=false; $("#kcalResLbl").textContent="Ti restano"; /* ripristino dopo un passaggio in gravidanza */
     $("#kcalRes").textContent=fmt(kcalRes); $("#kcalRes").style.color="";
     $("#kcalResSuf").textContent="kcal";
   } else {
@@ -2869,17 +2885,26 @@ function renderToday(){
     $("#kcalRes").textContent="+"+fmt(-kcalRes); $("#kcalRes").style.color="var(--pomodoro)";
     $("#kcalResSuf").textContent="kcal oltre il "+wordT;
   }
+  if(!U.gravidanza) $("#kcalSub").hidden=false;
   $("#kcalTgtWord").textContent=wordT;
   $("#kcalEaten").textContent=fmt(Math.round(tot.kcal));
   $("#kcalTarget").textContent=fmt(m.kcal);
   const pct=Math.min(tot.kcal/m.kcal,1.15);
-  $("#dialArc").style.strokeDashoffset=257.6*(1-Math.min(pct,1));
-  $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"var(--pomodoro)":"url(#dialGrad)";
-  $("#dialPct").textContent=Math.round(tot.kcal/m.kcal*100)+"%";
+  if(U.gravidanza){
+    $("#dialArc").style.strokeDashoffset=257.6; /* nessun anello di avanzamento: non c'è un target */
+    $("#dialArc").style.stroke="url(#dialGrad)";
+    $("#dialPct").textContent="";
+  } else {
+    $("#dialArc").style.strokeDashoffset=257.6*(1-Math.min(pct,1));
+    $("#dialArc").style.stroke=tot.kcal>m.kcal*1.05?"var(--pomodoro)":"url(#dialGrad)";
+    $("#dialPct").textContent=Math.round(tot.kcal/m.kcal*100)+"%";
+  }
   const chip=$("#dayTypeChip"); chip.className="chip "+menu.dayType;
   chip.textContent={basso:"Giorno basso",pieno:"Giorno pieno",ricarica:"Ricarica"}[menu.dayType];
   $("#vegChip").hidden=!menu.veg;
-  $("#schemaLabel").textContent=(menu.schema==="if168"?"Schema 16:8 — oggi salti la colazione":"Colazione leggera + pranzo e cena")+" · media settimanale "+fmt(kcalMedia())+" kcal"+(menu.comp?" · compensazione −"+menu.comp+" kcal (ieri sopra target)":"")+(isLuteale(k)&&!U.gravidanza?" · 🌸 fase luteale: target +100 kcal (fabbisogno reale più alto in questi giorni)":"");
+  $("#schemaLabel").textContent=U.gravidanza
+    ?"In gravidanza i fabbisogni cambiano per trimestre e situazione: qui trovi solo il diario. Per i target, affidati al tuo medico o al nutrizionista." /* CLINICO-DA-VALIDARE */
+    :(menu.schema==="if168"?"Schema 16:8 — oggi salti la colazione":"Colazione leggera + pranzo e cena")+" · media settimanale "+fmt(kcalMedia())+" kcal"+(menu.comp?" · compensazione −"+menu.comp+" kcal (ieri sopra target)":"")+(isLuteale(k)&&!U.gravidanza&&U.femm&&U.femm.lutTol?" · 🌸 tolleranza luteale attiva: +100 kcal (fase stimata dal calendario)":"");
   const pz=pausaAttiva();
   $("#pausaBanner").hidden=!pz;
   /* percorsi: in diario/prehab (e in gravidanza) il menu proposto non compare
@@ -3469,15 +3494,15 @@ function addRisk(code){ const c=code.replace(/[A-Z]$/,"").toUpperCase();
   if(ADDITIVI.alto.includes(code)||ADDITIVI.alto.includes(c)) return 2;
   if(ADDITIVI.moderato.includes(code)||ADDITIVI.moderato.includes(c)) return 1; return 0; }
 const NS_OK=s=>["A","B","C","D","E"].includes(s); /* OFF può restituire "NOT-APPLICABLE" (alcolici) o "UNKNOWN" */
+const SCORE_V=2; /* formula v2: il biologico è un attributo informativo, NON entra più nel punteggio (CL-8) */
 function rottaScore(p){
   const NS={A:95,B:80,C:60,D:40,E:20};
   const nutri=NS[p.ns]??50;
   let addPen=0; (p.adds||[]).forEach(a=>{ const r=addRisk(a); addPen+=r===2?30:r===1?15:2; });
   const addScore=Math.max(0,100-addPen);
-  const NOVA_S={1:100,2:75,3:45,4:5}; /* il grado di lavorazione ora pesa: un ultra-processato senza additivi non è "pulito" */
+  const NOVA_S={1:100,2:75,3:45,4:5}; /* il grado di lavorazione pesa: un ultra-processato senza additivi non è "pulito" */
   const novaScore=NOVA_S[p.nova]??60;
-  const bio=p.bio?100:0;
-  let s=Math.round(0.55*nutri+0.20*addScore+0.15*novaScore+0.10*bio);
+  let s=Math.round(0.65*nutri+0.20*addScore+0.15*novaScore);
   /* paletti: Nutri-Score D non può uscire sopra "Mediocre", E non sopra "Scarso" */
   if(p.ns==="D") s=Math.min(s,49);
   if(p.ns==="E") s=Math.min(s,29);
@@ -3535,7 +3560,7 @@ function showScanned(prod,fromCache){
     ${safeUrl(prod.img)?`<img src="${safeUrl(prod.img)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r-m);background:var(--line)">`:""}
     <div class="scorebadge" style="background:${col}">
       <div style="font-size:1.3rem;font-weight:800">${score}</div><div style="font-size:.6rem">/100</div></div>
-    <div><b>${band}</b><div class="small">55% nutrizione · 20% additivi · 15% lavorazione (NOVA) · 10% bio${prod.bio?" 🌱":""}</div></div></div>`
+    <div><b>${band}</b><div class="small">65% nutrizione · 20% additivi · 15% lavorazione (NOVA) · formula v2</div>${prod.bio?`<div class="small">🌿 Da agricoltura biologica — attributo informativo, non incide sul punteggio</div>`:""}</div></div>`
     :(prod.ns&&!NS_OK(prod.ns)
       ?`<div class="small">ℹ️ Il Nutri-Score <b>non si applica</b> a questo prodotto (es. bevande alcoliche): punteggio non disponibile. Puoi comunque registrarlo nel diario.</div>`
       :`<div class="small">ℹ️ Prodotto non in archivio: <b>punteggio non disponibile</b>. Se hai l'etichetta puoi comunque inserire i valori e registrarlo nel diario.</div>`);
@@ -3555,7 +3580,7 @@ function showScanned(prod,fromCache){
     const chips=prod.adds.slice(0,8).map(a=>{ const r=addRisk(a);
       return `<span style="border-radius:var(--r-s);padding:1px 6px;margin:1px;display:inline-block;font-size:.72rem;background:${r===2?"var(--risk2)":r===1?"var(--risk1)":"var(--risk0)"}">${a}${r===2?" ⚠️":r===1?" ·":""}</span>`; }).join("");
     const worst=Math.max(...prod.adds.map(addRisk));
-    scoreHtml+=`<div class="small" style="margin-top:6px"><b>${prod.adds.length} additiv${prod.adds.length===1?"o":"i"}</b>${worst===2?" — almeno uno da evitare":worst===1?" — qualcuno controverso":" — nessuno preoccupante"}<br>${chips}</div>`;
+    scoreHtml+=`<div class="small" style="margin-top:6px"><b>${prod.adds.length} additiv${prod.adds.length===1?"o":"i"}</b>${worst===2?" — almeno uno con dibattito aperto (fonte EFSA in valutazione)":worst===1?" — qualcuno in discussione":" — nessuno segnalato"}<br>${chips}</div>`;
   } else if(prod.adds) scoreHtml+=`<div class="small" style="margin-top:6px">🟢 Senza additivi segnalati</div>`;
   /* avvisi personali: olio di palma + esclusioni dell'utente */
   const warns=[];
@@ -3582,7 +3607,7 @@ function showScanned(prod,fromCache){
   if(prod.ean&&hasDati){ U.scanLog=U.scanLog||[];
     const dk=todayKey();
     if(!U.scanLog.some(x=>x.ean===prod.ean&&x.d===dk)){
-      U.scanLog.push({d:dk,ean:prod.ean,name:prod.name,s:score,c:0}); save(); } }
+      U.scanLog.push({d:dk,ean:prod.ean,name:prod.name,s:score,c:0,sv:SCORE_V}); save(); } }
   if(cmpProd&&cmpProd.ean!==prod.ean&&hasDati){ renderCompare(cmpProd,prod); cmpProd=null; }
   else if(cmpProd&&cmpProd.ean===prod.ean){ $("#scanStatus").textContent="È lo stesso prodotto: scansiona o cerca un prodotto diverso per confrontare."; }
   else if(cmpProd&&!hasDati){ $("#scanStatus").textContent="Questo prodotto non ha dati sufficienti per il confronto: prova con un altro."; }
@@ -3836,7 +3861,9 @@ function obApply(){
   if(scopoEff!=="dimagrire"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento"; }
   else if(OB.mode==="tonifica"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento";
     U.protKg=Math.max(U.protKg||1.8,2); }
-  else { U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo; }
+  else { U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo;
+    if(U.ritmo==="aggressivo"&&!rapidoOk()){ U.ritmo="sostenuto"; /* CLINICO-DA-VALIDARE: gating del ritmo Rapido */
+      setTimeout(()=>toast("Per il tuo profilo parto dal ritmo Sostenuto: il Rapido richiede fabbisogno e BMI più alti"),400); } }
   U.passiBase=+$("#obPassi").value;
   U.vegDays=OB.veg; U.esclusioni=OB.escl; U.startDate=todayKey();
   U.mealsPref=OB.meals||"auto"; U.maxCarico=Math.max(0,+$("#obCarico").value||0);
@@ -3847,7 +3874,12 @@ function obApply(){
 function obReveal(){
   const dom0=todayKey(new Date(Date.now()+864e5));
   $("#obKcal").textContent=kcalDay(dom0)+" kcal";
-  if(U.mode==="diario"||U.mode==="prehab"){
+  if(U.gravidanza){ /* CLINICO-DA-VALIDARE */
+    $("#obKcal").textContent="—";
+    $("#obKcalLbl").textContent="In gravidanza: solo diario, i target li dà il tuo medico";
+    $("#obEtaLbl").textContent="Modalità";
+    $("#obEta2").textContent="Diario in gravidanza 💛";
+  } else if(U.mode==="diario"||U.mode==="prehab"){
     $("#obKcalLbl").textContent="Le tue calorie di riferimento";
     $("#obEtaLbl").textContent="Modalità";
     $("#obEta2").textContent=U.mode==="prehab"?"Diario · prehab in arrivo 🏥":"Diario alimentare 📓";
@@ -4453,7 +4485,7 @@ function renderWeek(){
   $("#weekTable").innerHTML=`<tr><th>Giorno</th><th>kcal</th><th>Obiett.</th><th>Prot</th><th>Passi</th><th>💧L</th><th>💪</th></tr>`+
     data.map(d=>{ const dd=dateFromKey(d.k); const l=U.log[d.k]||{passi:0,wo:false,acqua:0};
       return `<tr data-day="${d.k}" style="cursor:pointer"><td>${GIORNI[dd.getDay()]} ${dd.getDate()} ✎</td><td>${fmt(Math.round(d.tot.kcal))}</td>
-      <td>${fmt(d.target.kcal)}</td><td>${Math.round(d.tot.p)}g</td><td>${fmt(l.passi)}</td><td>${((l.acqua||0)/1000).toFixed(1)}</td><td>${l.wo?"✓":"–"}</td></tr>`; }).join("");
+      <td>${U.gravidanza?"—":fmt(d.target.kcal)}</td><td>${Math.round(d.tot.p)}g</td><td>${fmt(l.passi)}</td><td>${((l.acqua||0)/1000).toFixed(1)}</td><td>${l.wo?"✓":"–"}</td></tr>`; }).join("");
   $$("#weekTable [data-day]").forEach(tr=>tr.onclick=()=>openDayEditor(tr.dataset.day));
 }
 function openDayEditor(k){
@@ -4637,7 +4669,9 @@ function renderSpesaPagella(){
   const box=$("#spesaPagella"); if(!box) return;
   const L=U.scanLog||[]; const now=+dateFromKey(todayKey()); /* mezzogiorno di oggi: gli acquisti di stamattina contano subito */
   const inWin=(x,da,a)=>{ const t=+dateFromKey(x.d); return t>now-da*864e5&&t<=now-a*864e5; };
-  const cur=L.filter(x=>x.c&&inWin(x,30,0)), prev=L.filter(x=>x.c&&inWin(x,60,30));
+  /* la media usa SOLO punteggi della stessa formula (la più recente presente): mai mescolare scale */
+  const svMax=Math.max(1,...L.filter(x=>x.c).map(x=>x.sv||1));
+  const cur=L.filter(x=>x.c&&(x.sv||1)===svMax&&inWin(x,30,0)), prev=L.filter(x=>x.c&&(x.sv||1)===svMax&&inWin(x,60,30));
   if(cur.length<5){
     box.innerHTML=`Hai segnato come comprati <b>${cur.length}</b> prodott${cur.length===1?"o":"i"} negli ultimi 30 giorni.
       Ne servono almeno 5 per la pagella: al supermercato usa <b>➕ Aggiungi al carrello</b> dopo la scansione, oppure registra il prodotto nel diario. Le scansioni "solo per curiosità" non contano.`; return; }
@@ -4822,11 +4856,11 @@ $("#btnReport").onclick=()=>{
       <button class="btn ghost" onclick="document.getElementById('reportView').classList.remove('on')">✕ Chiudi</button>
     </div>
     <h1>Rotta 80 · report settimanale</h1>
-    <div class="small">${esc(U.nome)} · ${d0.getDate()} ${MESI[d0.getMonth()]} – ${d1.getDate()} ${MESI[d1.getMonth()]} ${d1.getFullYear()} · obiettivo ${U.goal} kg · ritmo ${esc(U.ritmo)}</div>
+    <div class="small">${esc(U.nome)} · ${d0.getDate()} ${MESI[d0.getMonth()]} – ${d1.getDate()} ${MESI[d1.getMonth()]} ${d1.getFullYear()} · ${U.gravidanza?"diario in gravidanza (nessun target: riferimento al medico)":`obiettivo ${U.goal} kg · ritmo ${esc(U.ritmo)}`}</div>
     <h3>Bilancio energetico</h3>
     <div class="grid3">
-      <div><b>${fmt(Math.round(sumT))}</b><br><span class="small">kcal assunte (target ${fmt(sumG)})</span></div>
-      <div><b>${inRange}/7</b><br><span class="small">giorni nei limiti</span></div>
+      <div><b>${fmt(Math.round(sumT))}</b><br><span class="small">${U.gravidanza?"kcal registrate (nessun target: riferimento al medico)":`kcal assunte (target ${fmt(sumG)})`}</span></div>
+      ${U.gravidanza?"":`<div><b>${inRange}/7</b><br><span class="small">giorni nei limiti</span></div>`}
       <div><b>${protM} g</b><br><span class="small">proteine medie/die</span></div>
     </div>
     <h3>Peso</h3>
@@ -4839,7 +4873,7 @@ $("#btnReport").onclick=()=>{
       <div><b>${wos}/7</b><br><span class="small">allenamenti fatti</span></div>
       <div><b>${acquaM} L</b><br><span class="small">acqua media/die</span></div>
     </div>
-    <h3>Copertura micronutrienti</h3>
+    <h3>Varietà alimentare · fonti di micronutrienti</h3>
     <div id="repMicro"></div>
     <div class="small" style="margin-top:var(--sp-4)">Generato da Rotta 80 · dati auto-registrati, stime caloriche indicative.</div>`;
   renderMicro(days,"#repMicro");
@@ -4880,7 +4914,8 @@ function renderMicro(days,sel="#microList"){
     ["Uova",acc.eggD.size+" volte/sett",acc.eggD.size>=2&&acc.eggD.size<=5?2:acc.eggD.size>=1?1:0,"colina, B12, vit. D"]];
   $(sel).innerHTML=rows.map(([n,v,s,hint])=>`
     <div class="microrow"><span>${n}<span class="small">${hint}</span></span>
-    <span style="text-align:right">${v}<br><span class="chip ${s===2?"pieno":s===1?"ricarica":"no"}">${s===2?"✓ ok":s===1?"△ quasi":"✗ manca"}</span></span></div>`).join("");
+    <span style="text-align:right">${v}<br><span class="chip ${s===2?"pieno":s===1?"ricarica":"no"}">${s===2?"✓ fonti presenti":s===1?"△ in parte":"✗ poco presenti"}</span></span></div>`).join("")
+    +`<div class="small" style="margin-top:var(--sp-1)">Questa è una lettura della varietà settimanale per gruppi di alimenti: non stima assunzioni in mg/µg e non identifica carenze.</div>`; /* CLINICO-DA-VALIDARE */
 }
 /* --- PROGRESSI --- */
 function renderTaratura(){
@@ -4997,6 +5032,9 @@ function renderProf(){
   $("#pNome").value=U.nome; $("#pSesso").value=U.sesso; $("#pEta").value=U.eta;
   $("#pAlt").value=U.alt; $("#pGoal").value=U.goal; $("#pSteps").value=U.passiBase;
   $("#pRitmo").value=U.ritmo; $("#pRicarica").value=U.ricaricaDay??"auto";
+  { const ok=rapidoOk(); const opt=$("#pRitmo").querySelector('option[value="aggressivo"]');
+    opt.disabled=!ok&&U.ritmo!=="aggressivo"; /* chi c'è già dentro non resta intrappolato */
+    $("#pRitmoNote").textContent=(!ok&&U.ritmo!=="aggressivo")?"Il ritmo Rapido è disponibile con fabbisogno ≥2.300 kcal e BMI ≥27: per il tuo profilo il massimo è Sostenuto.":""; }
   $("#pMed").checked=U.soloMed!==false; $("#pSmart").checked=!!U.spesaSmart;
   $("#pProt").value=U.protKg; $("#pVeg").value=U.vegDays;
   $("#pMeals").value=U.mealsPref||"auto"; $("#pCarico").value=U.maxCarico??16;
@@ -5015,6 +5053,7 @@ function renderProf(){
 }
 function updProtLabel(){
   const v=parseFloat($("#pProt").value); $("#protVal").textContent=v.toFixed(1).replace(".",",");
+  $("#protWarn").hidden=v<=2.0;
   const ex=PROT_EXPLAIN.find(([a,b])=>v>=a&&v<=b)||PROT_EXPLAIN[2];
   $("#protExplain").innerHTML=ex[2]+`<br><span class="small">Per te oggi: ~${Math.round(v*pesoAttuale())} g di proteine al giorno.</span>`;
 }
@@ -5085,11 +5124,12 @@ function renderFemm(){
   let h=`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="fmOn" style="width:auto" ${ck(F.on)}><span>Attiva le opzioni femminili — tutte facoltative, restano solo sul tuo dispositivo</span></label>`;
   if(F.on){
     h+=`<div style="margin-top:var(--sp-2);padding-top:var(--sp-2);border-top:1px dashed var(--line)">
-      <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="fmCiclo" style="width:auto" ${ck(F.cicloOn)}><span><b>Ciclo</b>: nota sulla ritenzione, pesate di quei giorni contate meno nella taratura, tolleranza dichiarata in fase luteale, più ferro (con vitamina C) nei giorni del ciclo</span></label>`;
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="fmCiclo" style="width:auto" ${ck(F.cicloOn)}><span><b>Ciclo</b>: nota sulla ritenzione, pesate di quei giorni contate meno nella taratura, più ferro (con vitamina C) nei giorni del ciclo</span></label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:var(--sp-1)"><input type="checkbox" id="fmLutTol" style="width:auto" ${ck(F.lutTol)}><span><b>Tolleranza luteale</b> · fino a +100 kcal nei giorni pre-ciclo, se in quei giorni senti più fame. Fase stimata dal calendario, non misurata.</span></label>`;
     if(F.cicloOn) h+=`<div class="grid2" style="margin-top:6px">
       <div><label>Data ultimo ciclo</label><input type="date" id="fmUltimo" value="${F.ultimo||""}"></div>
       <div><label>Durata media (giorni)</label><input type="number" id="fmDurata" inputmode="numeric" min="21" max="40" value="${F.durata||28}"></div></div>`;
-    h+=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:var(--sp-2)"><input type="checkbox" id="fmMeno" style="width:auto" ${ck(F.menopausa)}><span><b>Sono in menopausa</b></span></label>`;
+    h+=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:var(--sp-2)"><input type="checkbox" id="fmMeno" style="width:auto" ${ck(F.menopausa)}><span><b>Sono in menopausa</b><span class="small"> · proposta: +10% proteine e più fonti di calcio nei menu, per aiutare a preservare massa magra e ossa — attiva solo con questa sezione</span></span></label>`;
     if(calcioBoostOn()) h+=`<div class="notice" style="margin-top:6px">🦴 Dopo i 50 anni o in menopausa il fabbisogno di calcio aumenta e servono più proteine per preservare la massa magra: il paniere darà più spazio a latticini, mandorle e broccoli e il tuo target proteico sale del 10%. Per la salute delle tue ossa, parla col tuo medico.</div>`;
     h+=`<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:var(--sp-2)"><input type="checkbox" id="fmGrav" style="width:auto" ${ck(U.gravidanza)}><span><b>Sono in gravidanza o allatto</b></span></label>`;
     if(U.gravidanza) h+=`<div class="notice" style="margin-top:6px">💛 In gravidanza e allattamento niente percorso di dimagrimento: sei sul diario alimentare, con calorie di riferimento al mantenimento. Per l'alimentazione di questa fase affidati al tuo medico o a un nutrizionista.</div>`;
@@ -5102,6 +5142,7 @@ function renderFemm(){
   rewire("fmUltimo",el=>F.ultimo=el.value||null);
   rewire("fmDurata",el=>F.durata=Math.max(21,Math.min(40,+el.value||28)));
   rewire("fmMeno",el=>F.menopausa=el.checked);
+  rewire("fmLutTol",el=>F.lutTol=el.checked);
   rewire("fmGrav",el=>{ U.gravidanza=el.checked;
     if(el.checked){ U.mode="diario"; U.ritmo="mantenimento"; toast("Percorso passato al diario: prenditi cura di te 💛"); } });
 }
