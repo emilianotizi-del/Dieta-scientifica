@@ -115,6 +115,7 @@ input[type="checkbox"]{width:22px!important;height:22px;min-width:22px;accent-co
 .wb .col .tline{position:absolute;left:-3px;right:-3px;height:2px;background:var(--ink)}
 .wb .lbl{font-size:.68rem;color:var(--ink2)}
 canvas{width:100%;height:auto;display:block}
+#sysBanner:not([hidden]){display:flex} /* l'inline display batteva [hidden]: il flex si applica solo da visibile */
 /* tabelle settimanali */
 table{width:100%;border-collapse:collapse;font-size:.82rem}
 th,td{text-align:right;padding:5px 4px;border-bottom:1px solid var(--line)}
@@ -904,7 +905,7 @@ body.t-notte .fooditem:active,body.t-notte .meal li:active{background:#242E34}
     <button class="btn ob-cta" id="obFinish">Inizia il viaggio 🚀</button>
   </section>
 </div>
-<div id="sysBanner" hidden style="position:fixed;top:0;left:0;right:0;z-index:99;background:var(--pomodoro);color:#fff;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));display:flex;gap:10px;align-items:center;font-size:.9rem">
+<div id="sysBanner" hidden style="position:fixed;top:0;left:0;right:0;z-index:99;background:var(--pomodoro);color:#fff;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));gap:10px;align-items:center;font-size:.9rem">
   <span style="flex:1">⚠️</span>
   <button class="btn sm" style="background:#fff;color:var(--pomodoro)" onclick="document.getElementById('btnXferOut').click()">Esporta backup</button>
 </div>
@@ -2206,7 +2207,7 @@ function defaultUser(id){return{
   ritmo:"aggressivo", protKg:1.8, vegDays:2, schema:"flex",
   passiBase:6000, esclusioni:["fegato","finocchio"], mealsPref:"auto", maxCarico:16,
   startDate:todayKey(), pesi:[], log:{}, menuCache:{}, woCache:{}, salt:0 };}
-const APP_VERSION="2.45.0";
+const APP_VERSION="2.45.1";
 function validateState(s){
   return !!(s&&typeof s==="object"&&Array.isArray(s.users)&&s.users.length>0
     &&s.users.every(u=>u&&typeof u==="object"
@@ -3848,7 +3849,8 @@ function startOnboarding(){
     [...$$('nav button')].find(b=>b.dataset.pg==="prof")?.click();
     toast("Vai su Dati → Importa backup"); };
   $("#obBuild").onclick=()=>{ try{ obApply(); obReveal(); obShow(4); }
-    catch(e){ obWarn("Ops, qualcosa è andato storto ("+e.message+"). Riprova o scrivici."); } };
+    catch(e){ obWarn("Ops, qualcosa è andato storto ("+e.message+"). Riprova o scrivici.");
+      try{ toast("⚠️ "+e.message); diagPush("onboarding: "+e.message,e.stack); }catch(_){} } };
   $("#obFinish").onclick=()=>{ const nm=$("#obNome").value.trim();
     if(nm) U.nome=nm; save(); $("#onboard").hidden=true; render();
     toast("Benvenuto a bordo, "+(U.nome!=="Io"?U.nome:"")+" 🍅"); };
@@ -3861,13 +3863,14 @@ function obApply(){
   if(scopoEff!=="dimagrire"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento"; }
   else if(OB.mode==="tonifica"){ U.goal=+$("#obPeso").value; U.ritmo="mantenimento";
     U.protKg=Math.max(U.protKg||1.8,2); }
-  else { U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo;
-    if(U.ritmo==="aggressivo"&&!rapidoOk()){ U.ritmo="sostenuto"; /* CLINICO-DA-VALIDARE: gating del ritmo Rapido */
-      setTimeout(()=>toast("Per il tuo profilo parto dal ritmo Sostenuto: il Rapido richiede fabbisogno e BMI più alti"),400); } }
+  else { U.goal=+$("#obGoal").value; U.ritmo=OB.ritmo; }
   U.passiBase=+$("#obPassi").value;
   U.vegDays=OB.veg; U.esclusioni=OB.escl; U.startDate=todayKey();
   U.mealsPref=OB.meals||"auto"; U.maxCarico=Math.max(0,+$("#obCarico").value||0);
   U.pesi=[{d:todayKey(),kg:+$("#obPeso").value}];
+  /* CLINICO-DA-VALIDARE: gating del ritmo Rapido — valutato ADESSO, coi dati appena inseriti */
+  if(U.ritmo==="aggressivo"&&!rapidoOk()){ U.ritmo="sostenuto";
+    setTimeout(()=>toast("Per il tuo profilo parto dal ritmo Sostenuto: il Rapido richiede fabbisogno e BMI più alti"),400); }
   U.menuCache={}; U.salt=hash(todayKey()+U.alt+U.goal)%1000;
   save();
 }
